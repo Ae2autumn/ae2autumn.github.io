@@ -1,6 +1,22 @@
 {
-    "title":"Blog Title",
-    "subTitle":"Blog description",
-    "avatarUrl":"https://github.githubassets.com/favicons/favicon.svg",
-    "GMEEK_VERSION":"last"
+    "title":"Ae1autumn的博客",
+    "subTitle":"欢迎来到我的博客，在这里你可以看到我的日常以及最新的项目进度",
+    "avatarUrl":"https://avatars.githubusercontent.com/u/169991880?v=4",
+    "GMEEK_VERSION":"last",
+    "displayTitle":"Ae1autumn",
+    "faviconUrl":"https://avatars.githubusercontent.com/u/169991880?v=4",
+    "email":"qiujishiyu@outlook.com",
+    "startSite":"2024.07.10",
+    "onePageListNum":15,
+    "singlePage":["about","link"],
+    "iconList":{"music":"M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z"},
+    "commentLabelColor":"#FF0000",
+    "yearColorList":["#3FFF00", "#00FFFF", "#7000FF", "#FF00F0"],
+    "themeMode":"fix",
+    "dayTheme":"dark",
+    "nightTheme":"github-dark",
+    "showPostSource":0,
+    "rssSplit":"sentence",
+    "bottomText":"By:Ae1autumn",
+    "needComment":1
 }
