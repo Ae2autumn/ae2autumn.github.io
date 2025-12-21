@@ -41,6 +41,26 @@ jobs:
           lastTag=$(git describe --tags `git rev-list --tags --max-count=1`)
           if [ $GMEEK_VERSION == 'last' ]; then git checkout $lastTag; else git checkout $GMEEK_VERSION; fi;
 
+      - name: Copy custom templates (Black-Red Theme)
+        run: |
+          echo "开始复制黑红主题模板文件..."
+          # 检查是否有自定义模板目录
+          if [ -d "templates" ]; then
+            echo "找到自定义模板目录，开始复制..."
+            # 复制黑红主题模板
+            cp -r templates/* /opt/Gmeek/templates/
+            echo "黑红主题模板复制完成"
+            
+            # 验证模板文件
+            echo "验证模板文件..."
+            ls -la /opt/Gmeek/templates/
+            echo "模板文件验证完成"
+          else
+            echo "未找到自定义模板目录，跳过模板复制"
+            echo "如需使用黑红主题，请在仓库根目录创建 templates/ 目录"
+            echo "包含以下文件：base.html, plist.html, post.html, tag.html"
+          fi
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -60,7 +80,7 @@ jobs:
           git config --local user.email "$(jq -r ".email" config.json)"
           git config --local user.name "${{ github.repository_owner }}"
           git add .
-          git commit -a -m '🎉auto update by Gmeek action' || echo "nothing to commit"
+          git commit -a -m 'Auto run"
           git push || echo "nothing to push"
           sleep 3
           
