@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="https://avatars.githubusercontent.com/u/169991880?v=4">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    <meta name="description" content="Ae1autumn search page">
+    <title>Ae1autumn - 标签</title>
+    <style>
+        :root {
+            --primary-bg: #0a0a0a;
+            --secondary-bg: #111;
+            --card-bg: #151515;
+            --accent-red: #e63946;
+            --accent-red-light: #ff6b6b;
+            --accent-red-dark: #c1121f;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --text-muted: #6c757d;
+            --border-color: #2d3439;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --gradient-red: linear-gradient(135deg, #e63946 0%, #ff6b6b 100%);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light-theme {
+            --primary-bg: #f8f9fa;
+            --secondary-bg: #ffffff;
+            --card-bg: #ffffff;
+            --accent-red: #e63946;
+            --accent-red-light: #ff6b6b;
+            --accent-red-dark: #c1121f;
+            --text-primary: #212529;
+            --text-secondary: #495057;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        #header {
+            background: var(--secondary-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem 0 1.2rem;
+            position: relative;
+            z-index: 1000;
+            transition: var(--transition);
+            box-shadow: 0 2px 20px var(--shadow-color);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tagTitle {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            background: var(--gradient-red);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            border-radius: 50%;
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn:hover {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            transform: rotate(15deg);
+        }
+
+        .subnav-search {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .subnav-search-input {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.7rem 1rem 0.7rem 2.5rem;
+            border-radius: 25px 0 0 25px;
+            width: 160px;
+            transition: var(--transition);
+        }
+
+        .subnav-search-input:focus {
+            outline: none;
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+        }
+
+        .subnav-search button {
+            background: var(--gradient-red);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.2rem;
+            border-radius: 0 25px 25px 0;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .subnav-search button:hover {
+            filter: brightness(1.1);
+        }
+
+        .subnav-search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        #content {
+            flex: 1;
+            padding: 3rem 0 4rem;
+        }
+
+        #taglabel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .Label {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            color: white;
+            font-weight: 500;
+        }
+
+        .Label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .Counter {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 0.3rem;
+        }
+
+        .SideNav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .SideNav-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .SideNav-item:hover {
+            transform: translateX(5px);
+            border-color: var(--accent-red);
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .d-flex {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .SideNav-icon {
+            color: var(--accent-red);
+        }
+
+        .listTitle {
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .listLabels {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .LabelName {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+        }
+
+        .LabelTime {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            background-color: var(--accent-red) !important;
+        }
+
+        .notFind {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 0;
+            font-size: 1.2rem;
+        }
+
+        #footer {
+            background: var(--secondary-bg);
+            padding: 3rem 0 2rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            text-align: center;
+        }
+
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-red);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(230, 57, 70, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .tagTitle {
+                font-size: 2rem;
+            }
+            
+            .title-right {
+                margin-top: 1rem;
+            }
+            
+            .subnav-search {
+                order: -1;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .SideNav-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.8rem;
+            }
+            
+            .listLabels {
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tagTitle {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+            <div class="header-content">
+                <span class="tagTitle">标签</span>
+                <div class="title-right">
+                    <div class="subnav-search">
+                        <input type="search" class="subnav-search-input" aria-label="Search site" placeholder="搜索文章...">
+                        <button class="btn" type="button" onclick="searchShow()">搜索</button>
+                        <svg class="subnav-search-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M11.5 7a4.499 4.499 0 11-8.998 0A4.499 4.499 0 0111.5 7zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z"></path>
+                        </svg>
+                    </div>
+                    <a href="https://ae2autumn.github.io" class="btn" title="首页">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <button class="btn" id="themeToggle" title="切换主题">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="content">
+        <div class="container">
+            <div id="taglabel" style="margin-bottom: 16px;"></div>
+            <nav class="SideNav"></nav>
+            <div class="notFind" style="display:none;">没有找到相关文章</div>
+        </div>
+    </div>
+
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <footer id="footer">
+        <div class="container">
+            <div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://ae2autumn.github.io" style="color: var(--accent-red); text-decoration: none;">Ae1autumn</a></div>
+            <div id="footer2">
+                <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank" style="color: var(--accent-red); text-decoration: none;">Gmeek</a></span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        var IconList = {
+            'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z',
+            'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z',
+            'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z',
+            'search': 'M15.7 13.3l-3.81-3.83A5.93 5.93 0 0 0 13 6c0-3.31-2.69-6-6-6S1 2.69 1 6s2.69 6 6 6c1.3 0 2.48-.41 3.47-1.11l3.83 3.81c.19.2.45.3.7.3.25 0 .52-.09.7-.3a.996.996 0 0 0 0-1.41v.01zM7 10.7c-2.59 0-4.7-2.11-4.7-4.7 0-2.59 2.11-4.7 4.7-4.7 2.59 0 4.7 2.11 4.7 4.7 0 2.59-2.11 4.7-4.7 4.7z',
+            'post': 'M0 3.75C0 2.784.784 2 1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25Zm1.75-.25a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-8.5a.25.25 0 0 0-.25-.25ZM3.5 6.25a.75.75 0 0 1 .75-.75h7a.75.75 0 0 1 0 1.5h-7a.75.75 0 0 1-.75-.75Zm.75 2.25h4a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1 0-1.5Z'
+        };
+
+        var tagList = [];
+        var labelsCount = {};
+        var jsonData = '';
+        var requestJson = "postList.json";
+        var request = new XMLHttpRequest();
+        request.open("GET", requestJson);
+        request.responseType = 'text';
+        request.send();
+        request.onload = function() {
+            jsonData = JSON.parse(request.response);
+            console.log(jsonData);
+            showList(labelsCount);
+            setClassDisplay(decodeURI(window.location.hash.slice(1)));
+        };
+
+        function showList(labelsCount) {
+            var SideNav = document.getElementsByClassName("SideNav")[0];
+            var taglabel = document.getElementById("taglabel");
+
+            jsonData['labelColorDict']["All"] = "#e63946";
+            labelsCount["All"] = 0;
+            for (var key in jsonData) {
+                if (key !== 'labelColorDict' && Array.isArray(jsonData[key]['labels'])) {
+                    labelsCount["All"]++;
+                    for (var i = 0; i < jsonData[key]['labels'].length; i++) {
+                        var label = jsonData[key]['labels'][i];
+                        labelsCount[label] = (labelsCount[label] || 0) + 1;
+                    }
+                }
+            }
+
+            var sortedLabelsList = Object.keys(labelsCount).sort(function(a, b) {
+                return labelsCount[b] - labelsCount[a];
+            });
+            
+            for (var j = 0; j < sortedLabelsList.length; j++) {
+                var label = sortedLabelsList[j];
+                tagList.push(label);
+                var showLabels = document.createElement("button");
+                showLabels.setAttribute("class", "Label");
+                showLabels.setAttribute("style", "background-color:" + jsonData['labelColorDict'][label]);
+                showLabels.innerHTML = label + " ";
+                showLabels.setAttribute("onclick", "updateShowTag('" + label + "');");
+
+                var LabelNum = document.createElement("span");
+                LabelNum.setAttribute("class", "Counter");
+                LabelNum.innerHTML = labelsCount[label];
+                showLabels.appendChild(LabelNum);
+                taglabel.appendChild(showLabels);
+            }
+
+            for(var key in jsonData) {
+                if(key != 'labelColorDict') {
+                    var div = document.createElement("div");
+                    div.setAttribute("class", "lists " + jsonData[key]['labels'].join(" "));
+                    var item = document.createElement("a");
+                    item.setAttribute("class", "SideNav-item");
+                    item.setAttribute("href", jsonData[key]['postUrl']);
+
+                    var center = document.createElement("div");
+                    center.setAttribute("class", "d-flex");
+
+                    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute("class", "SideNav-icon");
+                    svg.setAttribute("width", "16");
+                    svg.setAttribute("height", "16");
+                    svg.setAttribute("viewBox", "0 0 16 16");
+                    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", IconList["post"]);
+                    svg.appendChild(path);
+
+                    var title = document.createElement("span");
+                    title.setAttribute("class", "listTitle");
+                    title.innerHTML = jsonData[key]['postTitle'];
+                    center.appendChild(svg);
+                    center.appendChild(title);
+
+                    var listLabels = document.createElement("div");
+                    listLabels.setAttribute("class", "listLabels");
+                    
+                    for(var k = 0; k < jsonData[key]['labels'].length; k++) {
+                        var label = jsonData[key]['labels'][k];
+                        var LabelName = document.createElement("span");
+                        LabelName.setAttribute("class", "Label LabelName");
+                        LabelName.setAttribute("style", "background-color:" + jsonData['labelColorDict'][label]);
+                        LabelName.innerHTML = label;
+                        listLabels.appendChild(LabelName);
+                    }
+
+                    var LabelTime = document.createElement("span");
+                    LabelTime.setAttribute("class", "Label LabelTime");
+                    LabelTime.innerHTML = jsonData[key]['createdDate'];
+                    listLabels.appendChild(LabelTime);
+
+                    item.appendChild(center);
+                    item.appendChild(listLabels);
+                    div.appendChild(item);
+                    SideNav.appendChild(div);
+                }
+            }
+        }
+
+        function updateShowTag(tag) {
+            var lists = document.getElementsByClassName("lists");
+            var notFind = document.querySelector(".notFind");
+            var hasVisible = false;
+            
+            for(var i = 0; i < lists.length; i++) {
+                if(tag == "All" || lists[i].classList.contains(tag)) {
+                    lists[i].style.display = "block";
+                    hasVisible = true;
+                } else {
+                    lists[i].style.display = "none";
+                }
+            }
+            
+            if(!hasVisible) {
+                notFind.style.display = "block";
+            } else {
+                notFind.style.display = "none";
+            }
+            
+            window.location.hash = tag;
+        }
+
+        function setClassDisplay(tag) {
+            if(tag) {
+                updateShowTag(tag);
+            }
+        }
+
+        function searchShow() {
+            var input = document.querySelector('.subnav-search-input');
+            var keyword = input.value.trim().toLowerCase();
+            var lists = document.getElementsByClassName("lists");
+            var notFind = document.querySelector(".notFind");
+            var hasVisible = false;
+            
+            for(var i = 0; i < lists.length; i++) {
+                var title = lists[i].querySelector('.listTitle').textContent.toLowerCase();
+                if(keyword === "" || title.includes(keyword)) {
+                    lists[i].style.display = "block";
+                    hasVisible = true;
+                } else {
+                    lists[i].style.display = "none";
+                }
+            }
+            
+            if(!hasVisible && keyword !== "") {
+                notFind.style.display = "block";
+            } else {
+                notFind.style.display = "none";
+            }
+            
+            if(keyword !== "") {
+                window.location.hash = "search:" + encodeURIComponent(keyword);
+            }
+        }
+
+        var themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            var themeIcon = themeToggle.querySelector('i');
+            
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('light-theme');
+                
+                if (document.body.classList.contains('light-theme')) {
+                    themeIcon.className = 'fas fa-sun';
+                    themeToggle.setAttribute('title', '切换到暗色模式');
+                } else {
+                    themeIcon.className = 'fas fa-moon';
+                    themeToggle.setAttribute('title', '切换到亮色模式');
+                }
+                
+                localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+            });
+
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                themeIcon.className = 'fas fa-sun';
+                themeToggle.setAttribute('title', '切换到暗色模式');
+            }
+        }
+
+        var header = document.getElementById('header');
+        var backToTop = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                header.style.padding = '1rem 0';
+            } else {
+                header.style.padding = '2rem 0 1.2rem';
+            }
+            
+            if (window.scrollY > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+
+        backToTop.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        document.querySelector('.subnav-search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchShow();
+            }
+        });
+
+        window.addEventListener('load', function() {
+            var now = new Date();
+            document.getElementById("copyrightYear").innerHTML = now.getFullYear();
+            
+            if("2024.07.10" != "") {
+                var startSite = new Date("2024.07.10");
+                var diff = now.getTime() - startSite.getTime();
+                var diffDay = Math.floor(diff/(1000*60*60*24));
+                document.getElementById("runday").innerHTML = "网站运行" + diffDay + "天 • ";
+            }
+        });
+    </script>
+</body>
+</html>
