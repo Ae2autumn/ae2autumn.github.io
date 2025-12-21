@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="{{ blogBase['faviconUrl'] }}">
+    {{ blogBase['primerCSS']|safe }}
+    
+    <style>
+        /* CSS变量 - 支持主题切换 */
+        :root {
+            --primary-bg: #0a0a0a;
+            --secondary-bg: #111;
+            --card-bg: #151515;
+            --accent-red: #e63946;
+            --accent-red-light: #ff6b6b;
+            --accent-red-dark: #c1121f;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --text-muted: #6c757d;
+            --border-color: #2d3439;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --gradient-red: linear-gradient(135deg, #e63946 0%, #ff6b6b 100%);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light-theme {
+            --primary-bg: #f8f9fa;
+            --secondary-bg: #ffffff;
+            --card-bg: #ffffff;
+            --accent-red: #e63946;
+            --accent-red-light: #ff6b6b;
+            --accent-red-dark: #c1121f;
+            --text-primary: #212529;
+            --text-secondary: #495057;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        #header {
+            background: var(--secondary-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 2rem 0 1.2rem;
+            position: relative;
+            z-index: 1000;
+            transition: var(--transition);
+            box-shadow: 0 2px 20px var(--shadow-color);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .avatar {
+            transition: 0.8s;
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid var(--accent-red);
+        }
+
+        .avatar:hover {
+            transform: scale(1.15) rotate(360deg);
+        }
+
+        .blogTitle {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-left: 1rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            background: var(--gradient-red);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            border-radius: 50%;
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn:hover {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            transform: rotate(15deg);
+        }
+
+        #content {
+            flex: 1;
+            padding: 3rem 0 4rem;
+        }
+
+        #footer {
+            background: var(--secondary-bg);
+            padding: 3rem 0 2rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            text-align: center;
+        }
+
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-red);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(230, 57, 70, 0.4);
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .blogTitle {
+                font-size: 2rem;
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            
+            .title-right {
+                margin-top: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .blogTitle {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+    {% if blogBase['allHead'] %}{{ blogBase['allHead']|safe }}{% endif %}
+</head>
+<body>
+    <div id="header">
+        <div class="container">
+            <div class="header-content">
+                {% block header %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <div id="content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <footer id="footer">
+        <div class="container footer-content">
+            <div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="{{ blogBase['homeUrl'] }}" style="color: var(--accent-red); text-decoration: none;">{{ blogBase['displayTitle'] }}</a></div>
+            <div id="footer2">
+                <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank" style="color: var(--accent-red); text-decoration: none;">Gmeek</a></span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        window.addEventListener('load', function() {
+            var now = new Date();
+            document.getElementById("copyrightYear").innerHTML = now.getFullYear();
+            
+            {% if blogBase['startSite'] %}
+            var startSite = new Date("{{ blogBase['startSite'] }}");
+            var diff = now.getTime() - startSite.getTime();
+            var diffDay = Math.floor(diff/(1000*60*60*24));
+            document.getElementById("runday").innerHTML = "网站运行" + diffDay + "天 • ";
+            {% endif %}
+        });
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            const themeIcon = themeToggle.querySelector('i');
+            
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('light-theme');
+                
+                if (document.body.classList.contains('light-theme')) {
+                    themeIcon.className = 'fas fa-sun';
+                    themeToggle.setAttribute('title', '切换到暗色模式');
+                } else {
+                    themeIcon.className = 'fas fa-moon';
+                    themeToggle.setAttribute('title', '切换到亮色模式');
+                }
+                
+                localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+            });
+
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                themeIcon.className = 'fas fa-sun';
+                themeToggle.setAttribute('title', '切换到暗色模式');
+            }
+        }
+
+        const header = document.getElementById('header');
+        const backToTop = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                header.style.padding = '1rem 0';
+            } else {
+                header.style.padding = '2rem 0 1.2rem';
+            }
+            
+            if (window.scrollY > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+
+        backToTop.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        setTimeout(() => {
+            document.body.style.opacity = 1;
+        }, 100);
+    </script>
+    {% block script %}{% endblock %}
+</body>
+</html>
