@@ -1,223 +1,117 @@
 {% extends 'base.html' %}
 
 {% block head %}
-<meta name="description" content="{{ blogBase['description'] }}">
-<meta property="og:title" content="{{ blogBase['postTitle'] }}">
-<meta property="og:description" content="{{ blogBase['description'] }}">
-<meta property="og:type" content="article">
-<meta property="og:url" content="{{ blogBase['postUrl'] }}">
+<meta name="description" content="{{ blogBase['subTitle'] }}">
+<meta property="og:title" content="{{ blogBase['title'] }}">
+<meta property="og:description" content="{{ blogBase['subTitle'] }}">
+<meta property="og:type" content="blog">
+<meta property="og:url" content="{{ blogBase['homeUrl'] }}">
 <meta property="og:image" content="{{ blogBase['ogImage'] }}">
-<title>{{ blogBase['postTitle'] }}</title>
-{% if blogBase['highlight']==1 %}<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />{% endif %}
-{{ blogBase['head'] }}
+<title>{{ blogBase['title'] }}</title>
 {% endblock %}
 
 {% block style %}
 <style>
-    .post-header {
+    .intro-section {
         text-align: center;
         padding: 2rem 0 3rem;
         margin-bottom: 2rem;
-        border-bottom: 2px solid rgba(230, 57, 70, 0.3);
     }
 
-    .post-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 1.5rem;
-        line-height: 1.2;
+    .intro-section p {
+        color: var(--text-secondary);
+        font-size: 1.2rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .articles-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        margin-bottom: 3rem;
+    }
+
+    .article-item {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: var(--transition);
+        border: 1px solid var(--border-color);
+        text-decoration: none;
+        display: block;
+        color: inherit;
+    }
+
+    .article-item:hover {
+        transform: translateX(5px);
+        border-color: var(--accent-red);
+        box-shadow: 0 10px 20px var(--shadow-color);
+    }
+
+    .article-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .article-title {
+        font-size: 1.3rem;
+        font-weight: 700;
         color: var(--text-primary);
+        flex: 1;
+        margin-right: 1rem;
     }
 
-    .post-meta {
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-    }
-
-    .post-meta-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .post-meta-item i {
+    .article-title:hover {
         color: var(--accent-red);
     }
 
-    .post-tags {
-        display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
+    .article-date {
+        color: var(--accent-red);
+        font-size: 0.9rem;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
-    .post-tag {
+    .article-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .article-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .article-tag {
         font-size: 0.8rem;
-        padding: 0.4rem 0.8rem;
+        padding: 0.3rem 0.8rem;
         border-radius: 20px;
         background: rgba(230, 57, 70, 0.1);
         color: var(--accent-red);
         border: 1px solid rgba(230, 57, 70, 0.2);
     }
 
-    .post-content {
-        line-height: 1.8;
-        font-size: 1.1rem;
-        margin-bottom: 3rem;
-    }
-
-    .post-content h1,
-    .post-content h2,
-    .post-content h3,
-    .post-content h4 {
-        margin: 2rem 0 1rem;
-        color: var(--text-primary);
-        line-height: 1.3;
-    }
-
-    .post-content h1 {
-        font-size: 2rem;
-        border-bottom: 2px solid var(--accent-red);
-        padding-bottom: 0.5rem;
-    }
-
-    .post-content h2 {
-        font-size: 1.8rem;
-        border-left: 4px solid var(--accent-red);
-        padding-left: 1rem;
-    }
-
-    .post-content h3 {
-        font-size: 1.5rem;
-        color: var(--accent-red);
-    }
-
-    .post-content p {
-        margin: 1.5rem 0;
-        color: var(--text-secondary);
-    }
-
-    .post-content a {
-        color: var(--accent-red);
-        text-decoration: none;
-        border-bottom: 1px solid rgba(230, 57, 70, 0.3);
-        transition: var(--transition);
-    }
-
-    .post-content a:hover {
-        border-bottom-color: var(--accent-red);
-    }
-
-    .post-content code {
-        background: rgba(230, 57, 70, 0.1);
-        color: var(--accent-red);
-        padding: 0.2rem 0.4rem;
-        border-radius: 4px;
-        font-family: 'Monaco', 'Consolas', monospace;
-        font-size: 0.9em;
-    }
-
-    .post-content pre {
-        background: var(--secondary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 1.5rem;
-        overflow-x: auto;
-        margin: 1.5rem 0;
-        position: relative;
-    }
-
-    .post-content pre code {
-        background: none;
-        color: var(--text-primary);
-        padding: 0;
-    }
-
-    .post-content blockquote {
-        border-left: 4px solid var(--accent-red);
-        margin: 1.5rem 0;
-        padding-left: 1.5rem;
-        color: var(--text-muted);
-        font-style: italic;
-        background: rgba(230, 57, 70, 0.05);
-        padding: 1rem 1.5rem;
-        border-radius: 0 8px 8px 0;
-    }
-
-    .post-content img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-    }
-
-    .post-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 1.5rem 0;
-    }
-
-    .post-content th,
-    .post-content td {
-        border: 1px solid var(--border-color);
-        padding: 0.8rem;
-        text-align: left;
-    }
-
-    .post-content th {
-        background: rgba(230, 57, 70, 0.1);
-        color: var(--accent-red);
-        font-weight: 600;
-    }
-
-    .post-content ul,
-    .post-content ol {
-        margin: 1.5rem 0;
-        padding-left: 2rem;
-    }
-
-    .post-content li {
-        margin: 0.5rem 0;
-        color: var(--text-secondary);
-    }
-
-    .post-footer {
+    .pagination-container {
         margin-top: 3rem;
         padding-top: 2rem;
         border-top: 1px solid var(--border-color);
+    }
+
+    .pagination {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
     }
 
-    .post-source {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-    }
-
-    .post-source a {
-        color: var(--accent-red);
-        text-decoration: none;
-    }
-
-    .post-source a:hover {
-        text-decoration: underline;
-    }
-
-    .post-actions {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .post-action {
+    .pagination-link {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
@@ -230,78 +124,35 @@
         transition: var(--transition);
     }
 
-    .post-action:hover {
+    .pagination-link:hover {
         background-color: rgba(230, 57, 70, 0.1);
         border-color: var(--accent-red);
     }
 
-    .comments-section {
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .comments-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        color: var(--text-primary);
-    }
-
-    .copy-button {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(230, 57, 70, 0.1);
-        border: 1px solid rgba(230, 57, 70, 0.3);
-        color: var(--accent-red);
-        border-radius: 4px;
-        padding: 6px 12px;
-        cursor: pointer;
-        transition: var(--transition);
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .copy-button:hover {
-        background: rgba(230, 57, 70, 0.2);
+    .pagination-link.disabled {
+        color: var(--text-muted);
+        pointer-events: none;
+        border-color: var(--border-color);
     }
 
     @media (max-width: 768px) {
-        .post-title {
-            font-size: 2rem;
-        }
-        
-        .post-meta {
+        .article-header {
             flex-direction: column;
-            align-items: center;
             gap: 0.5rem;
         }
         
-        .post-footer {
+        .article-title {
+            margin-right: 0;
+        }
+        
+        .article-footer {
             flex-direction: column;
             align-items: flex-start;
-        }
-        
-        .post-actions {
-            align-self: stretch;
-            justify-content: space-between;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .post-title {
-            font-size: 1.5rem;
-        }
-        
-        .post-content {
-            font-size: 1rem;
+            gap: 1rem;
         }
     }
 </style>
-{{ blogBase['style'] }}
+{{ blogBase['indexStyle'] }}
 {% endblock %}
 
 {% block header %}
@@ -313,11 +164,19 @@
     <a href="{{ blogBase['homeUrl'] }}/tag.html" class="btn" title="{{ i18n['Search'] }}">
         <i class="fas fa-search"></i>
     </a>
-    {% if blogBase['showPostSource']==1 %}
-    <a href="{{ blogBase['postSourceUrl'] }}" target="_blank" class="btn" title="原文链接">
-        <i class="fas fa-link"></i>
+    {% for key, value in blogBase['exlink'].items() -%}
+    <a href="{{ value }}" class="btn" title="{{ key }}" target="_blank">
+        <i class="fab fa-{{ key|lower }}"></i>
     </a>
-    {% endif %}
+    {%- endfor %}
+    {% for num in blogBase['singeListJson'] -%}
+    <a href="{{ blogBase['homeUrl'] }}/{{ blogBase['singeListJson'][num]['labels'][0] }}.html" class="btn" title="{{ blogBase['singeListJson'][num]['postTitle'] }}">
+        <i class="fas fa-{{ blogBase['singeListJson'][num]['labels'][0]|lower }}"></i>
+    </a>
+    {%- endfor %}
+    <a href="{{ blogBase['homeUrl'] }}/rss.xml" target="_blank" class="btn" title="RSS">
+        <i class="fas fa-rss"></i>
+    </a>
     <button class="btn" id="themeToggle" title="{{ i18n['switchTheme'] }}" {%- if blogBase['themeMode']=='fix' -%}style="display:none;"{%- endif -%}>
         <i class="fas fa-moon"></i>
     </button>
@@ -325,146 +184,74 @@
 {% endblock %}
 
 {% block content %}
-<!-- 文章头部 -->
-<header class="post-header">
-    <h1 class="post-title">{{ blogBase['postTitle'] }}</h1>
-    <div class="post-meta">
-        {% if blogBase['createdDate'] %}
-        <span class="post-meta-item">
-            <i class="far fa-calendar"></i> {{ blogBase['createdDate'] }}
-        </span>
-        {% endif %}
-        {% if blogBase['commentNum'] is defined %}
-        <span class="post-meta-item">
-            <i class="far fa-comment"></i> {{ blogBase['commentNum'] }} {{ i18n['comments'] }}
-        </span>
-        {% endif %}
-    </div>
-    {% if blogBase['labels'] %}
-    <div class="post-tags">
-        {% for label in blogBase['labels'] %}
-        {% if label in blogBase['labelColorDict'] %}
-        <span class="post-tag" style="background-color: {{ blogBase['labelColorDict'][label] }}; color: white;">
-            {{ label }}
-        </span>
-        {% else %}
-        <span class="post-tag">{{ label }}</span>
-        {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}
-</header>
+<section class="intro-section">
+    <p>{{ blogBase['subTitle'] }}</p>
+</section>
 
-<!-- 文章内容 -->
-<article class="post-content markdown-body">
-    {{ blogBase['postBody']|safe }}
-</article>
-
-<!-- 文章底部 -->
-<footer class="post-footer">
-    {% if blogBase['showPostSource'] and blogBase['postSourceUrl'] %}
-    <div class="post-source">
-        <i class="fas fa-link"></i> 
-        <a href="{{ blogBase['postSourceUrl'] }}" target="_blank">原文链接</a>
-    </div>
-    {% endif %}
-    <div class="post-actions">
-        <a href="{{ blogBase['homeUrl'] }}" class="post-action">
-            <i class="fas fa-home"></i> {{ i18n['home'] }}
-        </a>
-        {% if blogBase['needComment'] and blogBase['repoName'] %}
-        <button class="post-action" onclick="openComments()" id="cmButton">
-            <i class="far fa-comment"></i> {{ i18n['comments'] }}
-            {% if blogBase['commentNum'] and blogBase['commentNum'] > 0 %}
-            <span style="background: var(--accent-red); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; margin-left: 0.5rem;">
-                {{ blogBase['commentNum'] }}
+<div class="articles-list">
+    {% for num in postListJson -%}
+    <a href="{{ postListJson[num]['postUrl']|e }}" class="article-item">
+        <div class="article-header">
+            <h3 class="article-title">{{ postListJson[num]['postTitle']|e }}</h3>
+            <span class="article-date">{{ postListJson[num]['createdDate'] }}</span>
+        </div>
+        <div class="article-footer">
+            <div class="article-tags">
+                {% if postListJson[num]['commentNum']>0 %}
+                <span class="article-tag" style="background-color: {{ blogBase['commentLabelColor'] }}; color: white;">
+                    <i class="far fa-comment"></i> {{ postListJson[num]['commentNum'] }}
+                </span>
+                {% endif %}
+                {% for label in postListJson[num]['labels'] -%}
+                <span class="article-tag" style="background-color: {{ blogBase['labelColorDict'][label] }}; color: white;">
+                    {{ label }}
+                </span>
+                {%- endfor %}
+            </div>
+            {% if postListJson[num]['top'] == 1 %}
+            <span class="article-tag" style="background-color: var(--accent-red); color: white;">
+                <i class="fas fa-thumbtack"></i> 置顶
             </span>
             {% endif %}
-        </button>
-        {% endif %}
+        </div>
+    </a>
+    {%- endfor %}
+</div>
+
+{%- if blogBase['prevUrl']!='disabled' or blogBase['nextUrl']!='disabled' -%}
+<div class="pagination-container">
+    <div class="pagination">
+        {%- if blogBase['prevUrl']=='disabled' -%}
+        <span class="pagination-link disabled">{{ i18n['Previous'] }}</span>
+        {% else -%}
+        <a href="{{ blogBase['homeUrl'] }}{{ blogBase['prevUrl'] }}" class="pagination-link">
+            <i class="fas fa-arrow-left"></i> {{ i18n['Previous'] }}
+        </a>
+        {%- endif -%}
+        
+        {%- if blogBase['nextUrl']=='disabled' -%}
+        <span class="pagination-link disabled">{{ i18n['Next'] }}</span>
+        {% else -%}
+        <a href="{{ blogBase['homeUrl'] }}{{ blogBase['nextUrl'] }}" class="pagination-link">
+            {{ i18n['Next'] }} <i class="fas fa-arrow-right"></i>
+        </a>
+        {%- endif -%}
     </div>
-</footer>
-
-<!-- 底部文本 -->
-{% if blogBase['bottomText'] %}
-<div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
-    {{ blogBase['bottomText']|safe }}
 </div>
-{% endif %}
-
-<!-- 评论区域 -->
-{% if blogBase['needComment'] and blogBase['repoName'] %}
-<div class="comments-section" id="commentsSection" style="display: none;">
-    <h3 class="comments-title">{{ i18n['comments'] }}</h3>
-    <div id="comments"></div>
-</div>
-{% endif %}
+{%- endif %}
 {% endblock %}
 
 {% block script %}
 <script>
-    // 代码块复制功能
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('pre').forEach((pre) => {
-            const code = pre.querySelector('code');
-            if (code) {
-                const button = document.createElement('button');
-                button.className = 'copy-button';
-                button.innerHTML = '<i class="fas fa-copy"></i> 复制';
-                
-                button.addEventListener('click', async () => {
-                    try {
-                        await navigator.clipboard.writeText(code.textContent);
-                        button.innerHTML = '<i class="fas fa-check"></i> 已复制';
-                        button.style.color = 'var(--accent-red)';
-                        
-                        setTimeout(() => {
-                            button.innerHTML = '<i class="fas fa-copy"></i> 复制';
-                            button.style.color = '';
-                        }, 2000);
-                    } catch (err) {
-                        console.error('复制失败:', err);
-                    }
-                });
-                
-                pre.style.position = 'relative';
-                pre.appendChild(button);
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        const articles = document.querySelectorAll('.article-item');
+        articles.forEach((article, index) => {
+            setTimeout(() => {
+                article.style.opacity = '1';
+                article.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     });
-
-    {% if blogBase['needComment'] and blogBase['repoName'] %}
-    function openComments() {
-        const commentsSection = document.getElementById('commentsSection');
-        const cmButton = document.getElementById('cmButton');
-        
-        if (commentsSection.style.display === 'none') {
-            commentsSection.style.display = 'block';
-            cmButton.disabled = true;
-            cmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
-            
-            const script = document.createElement('script');
-            script.src = "https://utteranc.es/client.js";
-            script.repo = "{{ blogBase['repoName'] }}";
-            script['issue-term'] = "pathname";
-            
-            if (document.body.classList.contains('light-theme')) {
-                script.theme = "github-light";
-            } else {
-                script.theme = "github-dark";
-            }
-            
-            script.crossorigin = "anonymous";
-            script.async = true;
-            
-            document.getElementById('comments').appendChild(script);
-            
-            setTimeout(() => {
-                commentsSection.scrollIntoView({ behavior: 'smooth' });
-            }, 500);
-        }
-    }
-    {% endif %}
 </script>
-{{ blogBase['script'] }}
+{{ blogBase['indexScript'] }}
 {% endblock %}
