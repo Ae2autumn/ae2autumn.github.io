@@ -1,4 +1,4 @@
-name: build Gmeek
+name: Build
 
 on:
   workflow_dispatch:
@@ -44,14 +44,10 @@ jobs:
       - name: Copy custom templates (Black-Red Theme)
         run: |
           echo "开始复制黑红主题模板文件..."
-          # 检查是否有自定义模板目录
           if [ -d "templates" ]; then
             echo "找到自定义模板目录，开始复制..."
-            # 复制黑红主题模板
             cp -r templates/* /opt/Gmeek/templates/
             echo "黑红主题模板复制完成"
-            
-            # 验证模板文件
             echo "验证模板文件..."
             ls -la /opt/Gmeek/templates/
             echo "模板文件验证完成"
@@ -70,17 +66,18 @@ jobs:
         run: |
           cp -r ./* /opt/Gmeek/
           cd /opt/Gmeek/
-          python Gmeek.py ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} --issue_number '${{ github.event.issue.number }}'
+          python Gmeek.py ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} --issue_number "${{ github.event.issue.number }}"
           cp -a /opt/Gmeek/docs ${{ github.workspace }} 
           cp -a /opt/Gmeek/backup ${{ github.workspace }} 
           cp /opt/Gmeek/blogBase.json ${{ github.workspace }} 
           
       - name: update html
         run: |
-          git config --local user.email "$(jq -r ".email" config.json)"
+          EMAIL=$(jq -r '.email' config.json)
+          git config --local user.email "$EMAIL"
           git config --local user.name "${{ github.repository_owner }}"
           git add .
-          git commit -a -m 'Auto run"
+          git commit -a -m 'Auto Run' || echo "nothing to commit"
           git push || echo "nothing to push"
           sleep 3
           
