@@ -9,9 +9,8 @@
     <link rel="icon" href="https://avatars.githubusercontent.com/u/169991880?v=4">
     <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
     <meta name="description" content="Ae1autumn search page">
-    <title>Ae1autumn-Tag</title>
+    <title>Ae1autumn - 标签</title>
     <style>
-        /* CSS变量 - 支持主题切换 */
         :root {
             --primary-bg: #0a0a0a;
             --secondary-bg: #111;
@@ -66,7 +65,6 @@
             padding: 0 20px;
         }
 
-        /* 头部样式 */
         #header {
             background: var(--secondary-bg);
             backdrop-filter: blur(10px);
@@ -120,7 +118,6 @@
             transform: rotate(15deg);
         }
 
-        /* 搜索区域 */
         .subnav-search {
             display: flex;
             align-items: center;
@@ -165,13 +162,11 @@
             color: var(--text-muted);
         }
 
-        /* 主要内容区 */
         #content {
             flex: 1;
             padding: 3rem 0 4rem;
         }
 
-        /* 标签区域 */
         #taglabel {
             display: flex;
             flex-wrap: wrap;
@@ -203,7 +198,6 @@
             margin-left: 0.3rem;
         }
 
-        /* 文章列表 */
         .SideNav {
             display: flex;
             flex-direction: column;
@@ -271,7 +265,6 @@
             font-size: 1.2rem;
         }
 
-        /* 页脚 */
         #footer {
             background: var(--secondary-bg);
             padding: 3rem 0 2rem;
@@ -291,7 +284,6 @@
             border-top: 1px solid var(--border-color);
         }
 
-        /* 回到顶部按钮 */
         .back-to-top {
             position: fixed;
             bottom: 2rem;
@@ -325,7 +317,6 @@
             box-shadow: 0 8px 30px rgba(230, 57, 70, 0.4);
         }
 
-        /* 响应式设计 */
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -370,7 +361,6 @@
     </style>
 </head>
 <body>
-    <!-- 头部 -->
     <div id="header">
         <div class="container">
             <div class="header-content">
@@ -394,7 +384,6 @@
         </div>
     </div>
 
-    <!-- 主要内容 -->
     <div id="content">
         <div class="container">
             <div id="taglabel" style="margin-bottom: 16px;"></div>
@@ -403,12 +392,10 @@
         </div>
     </div>
 
-    <!-- 回到顶部按钮 -->
     <a href="#" class="back-to-top" id="backToTop">
         <i class="fas fa-arrow-up"></i>
     </a>
 
-    <!-- 页脚 -->
     <footer id="footer">
         <div class="container">
             <div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://ae2autumn.github.io" style="color: var(--accent-red); text-decoration: none;">Ae1autumn</a></div>
@@ -430,8 +417,8 @@
         var tagList = [];
         var labelsCount = {};
         var jsonData = '';
-        let requestJson = "postList.json";
-        let request = new XMLHttpRequest();
+        var requestJson = "postList.json";
+        var request = new XMLHttpRequest();
         request.open("GET", requestJson);
         request.responseType = 'text';
         request.send();
@@ -440,79 +427,85 @@
             console.log(jsonData);
             showList(labelsCount);
             setClassDisplay(decodeURI(window.location.hash.slice(1)));
-        }
+        };
 
         function showList(labelsCount) {
-            let SideNav = document.getElementsByClassName("SideNav")[0];
-            let taglabel = document.getElementById("taglabel");
+            var SideNav = document.getElementsByClassName("SideNav")[0];
+            var taglabel = document.getElementById("taglabel");
 
             jsonData['labelColorDict']["All"] = "#e63946";
             labelsCount["All"] = 0;
-            for (let key in jsonData) {
+            for (var key in jsonData) {
                 if (key !== 'labelColorDict' && Array.isArray(jsonData[key]['labels'])) {
                     labelsCount["All"]++;
-                    for (let label of jsonData[key]['labels']) {
+                    for (var i = 0; i < jsonData[key]['labels'].length; i++) {
+                        var label = jsonData[key]['labels'][i];
                         labelsCount[label] = (labelsCount[label] || 0) + 1;
                     }
                 }
             }
 
-            let sortedLabelsList = Object.keys(labelsCount).sort((a, b) => labelsCount[b] - labelsCount[a]);
-            for (let label of sortedLabelsList) {
+            var sortedLabelsList = Object.keys(labelsCount).sort(function(a, b) {
+                return labelsCount[b] - labelsCount[a];
+            });
+            
+            for (var j = 0; j < sortedLabelsList.length; j++) {
+                var label = sortedLabelsList[j];
                 tagList.push(label);
-                let showLabels = document.createElement("button");
+                var showLabels = document.createElement("button");
                 showLabels.setAttribute("class", "Label");
                 showLabels.setAttribute("style", "background-color:" + jsonData['labelColorDict'][label]);
                 showLabels.innerHTML = label + " ";
                 showLabels.setAttribute("onclick", "updateShowTag('" + label + "');");
 
-                let LabelNum = document.createElement("span");
+                var LabelNum = document.createElement("span");
                 LabelNum.setAttribute("class", "Counter");
                 LabelNum.innerHTML = labelsCount[label];
                 showLabels.appendChild(LabelNum);
                 taglabel.appendChild(showLabels);
             }
 
-            for(i in jsonData) {
-                if(i != 'labelColorDict') {
-                    let div = document.createElement("div");
-                    div.setAttribute("class", "lists " + jsonData[i]['labels'].join(" "));
-                    let item = document.createElement("a");
+            for(var key in jsonData) {
+                if(key != 'labelColorDict') {
+                    var div = document.createElement("div");
+                    div.setAttribute("class", "lists " + jsonData[key]['labels'].join(" "));
+                    var item = document.createElement("a");
                     item.setAttribute("class", "SideNav-item");
-                    item.setAttribute("href", jsonData[i]['postUrl']);
+                    item.setAttribute("href", jsonData[key]['postUrl']);
 
-                    let center = document.createElement("div");
+                    var center = document.createElement("div");
                     center.setAttribute("class", "d-flex");
 
-                    let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     svg.setAttribute("class", "SideNav-icon");
                     svg.setAttribute("width", "16");
                     svg.setAttribute("height", "16");
                     svg.setAttribute("viewBox", "0 0 16 16");
-                    let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", IconList["post"]);
                     svg.appendChild(path);
 
-                    let title = document.createElement("span");
+                    var title = document.createElement("span");
                     title.setAttribute("class", "listTitle");
-                    title.innerHTML = jsonData[i]['postTitle'];
+                    title.innerHTML = jsonData[key]['postTitle'];
                     center.appendChild(svg);
                     center.appendChild(title);
 
-                    let listLabels = document.createElement("div");
+                    var listLabels = document.createElement("div");
                     listLabels.setAttribute("class", "listLabels");
                     
-                    for(label of jsonData[i]['labels']) {
-                        let LabelName = document.createElement("span");
+                    for(var k = 0; k < jsonData[key]['labels'].length; k++) {
+                        var label = jsonData[key]['labels'][k];
+                        var LabelName = document.createElement("span");
                         LabelName.setAttribute("class", "Label LabelName");
                         LabelName.setAttribute("style", "background-color:" + jsonData['labelColorDict'][label]);
                         LabelName.innerHTML = label;
                         listLabels.appendChild(LabelName);
                     }
 
-                    let LabelTime = document.createElement("span");
+                    var LabelTime = document.createElement("span");
                     LabelTime.setAttribute("class", "Label LabelTime");
-                    LabelTime.innerHTML = jsonData[i]['createdDate'];
+                    LabelTime.innerHTML = jsonData[key]['createdDate'];
                     listLabels.appendChild(LabelTime);
 
                     item.appendChild(center);
@@ -524,11 +517,11 @@
         }
 
         function updateShowTag(tag) {
-            let lists = document.getElementsByClassName("lists");
-            let notFind = document.querySelector(".notFind");
-            let hasVisible = false;
+            var lists = document.getElementsByClassName("lists");
+            var notFind = document.querySelector(".notFind");
+            var hasVisible = false;
             
-            for(let i = 0; i < lists.length; i++) {
+            for(var i = 0; i < lists.length; i++) {
                 if(tag == "All" || lists[i].classList.contains(tag)) {
                     lists[i].style.display = "block";
                     hasVisible = true;
@@ -553,14 +546,14 @@
         }
 
         function searchShow() {
-            let input = document.querySelector('.subnav-search-input');
-            let keyword = input.value.trim().toLowerCase();
-            let lists = document.getElementsByClassName("lists");
-            let notFind = document.querySelector(".notFind");
-            let hasVisible = false;
+            var input = document.querySelector('.subnav-search-input');
+            var keyword = input.value.trim().toLowerCase();
+            var lists = document.getElementsByClassName("lists");
+            var notFind = document.querySelector(".notFind");
+            var hasVisible = false;
             
-            for(let i = 0; i < lists.length; i++) {
-                let title = lists[i].querySelector('.listTitle').textContent.toLowerCase();
+            for(var i = 0; i < lists.length; i++) {
+                var title = lists[i].querySelector('.listTitle').textContent.toLowerCase();
                 if(keyword === "" || title.includes(keyword)) {
                     lists[i].style.display = "block";
                     hasVisible = true;
@@ -580,10 +573,9 @@
             }
         }
 
-        // 主题切换
-        const themeToggle = document.getElementById('themeToggle');
+        var themeToggle = document.getElementById('themeToggle');
         if (themeToggle) {
-            const themeIcon = themeToggle.querySelector('i');
+            var themeIcon = themeToggle.querySelector('i');
             
             themeToggle.addEventListener('click', function() {
                 document.body.classList.toggle('light-theme');
@@ -599,7 +591,7 @@
                 localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
             });
 
-            const savedTheme = localStorage.getItem('theme');
+            var savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-theme');
                 themeIcon.className = 'fas fa-sun';
@@ -607,9 +599,8 @@
             }
         }
 
-        // 页面滚动处理
-        const header = document.getElementById('header');
-        const backToTop = document.getElementById('backToTop');
+        var header = document.getElementById('header');
+        var backToTop = document.getElementById('backToTop');
         
         window.addEventListener('scroll', function() {
             if (window.scrollY > 50) {
@@ -625,7 +616,6 @@
             }
         });
 
-        // 回到顶部
         backToTop.addEventListener('click', function(e) {
             e.preventDefault();
             window.scrollTo({
@@ -634,17 +624,23 @@
             });
         });
 
-        // 搜索框回车键支持
         document.querySelector('.subnav-search-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchShow();
             }
         });
 
-        // 页面加载完成
         window.addEventListener('load', function() {
             var now = new Date();
             document.getElementById("copyrightYear").innerHTML = now.getFullYear();
             
             if("2024.07.10" != "") {
-                var startSite = new Date("2024.07
+                var startSite = new Date("2024.07.10");
+                var diff = now.getTime() - startSite.getTime();
+                var diffDay = Math.floor(diff/(1000*60*60*24));
+                document.getElementById("runday").innerHTML = "网站运行" + diffDay + "天 • ";
+            }
+        });
+    </script>
+</body>
+</html>
