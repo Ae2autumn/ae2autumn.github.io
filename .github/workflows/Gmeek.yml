@@ -1,4 +1,4 @@
-name: Build
+name: build Gmeek
 
 on:
   workflow_dispatch:
@@ -41,22 +41,6 @@ jobs:
           lastTag=$(git describe --tags `git rev-list --tags --max-count=1`)
           if [ $GMEEK_VERSION == 'last' ]; then git checkout $lastTag; else git checkout $GMEEK_VERSION; fi;
 
-      - name: Copy custom templates (Black-Red Theme)
-        run: |
-          echo "开始复制黑红主题模板文件..."
-          if [ -d "templates" ]; then
-            echo "找到自定义模板目录，开始复制..."
-            cp -r templates/* /opt/Gmeek/templates/
-            echo "黑红主题模板复制完成"
-            echo "验证模板文件..."
-            ls -la /opt/Gmeek/templates/
-            echo "模板文件验证完成"
-          else
-            echo "未找到自定义模板目录，跳过模板复制"
-            echo "如需使用黑红主题，请在仓库根目录创建 templates/ 目录"
-            echo "包含以下文件：base.html, plist.html, post.html, tag.html"
-          fi
-
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -66,18 +50,17 @@ jobs:
         run: |
           cp -r ./* /opt/Gmeek/
           cd /opt/Gmeek/
-          python Gmeek.py ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} --issue_number "${{ github.event.issue.number }}"
+          python Gmeek.py ${{ secrets.GITHUB_TOKEN }} ${{ github.repository }} --issue_number '${{ github.event.issue.number }}'
           cp -a /opt/Gmeek/docs ${{ github.workspace }} 
           cp -a /opt/Gmeek/backup ${{ github.workspace }} 
           cp /opt/Gmeek/blogBase.json ${{ github.workspace }} 
           
       - name: update html
         run: |
-          EMAIL=$(jq -r '.email' config.json)
-          git config --local user.email "$EMAIL"
+          git config --local user.email "$(jq -r ".email" config.json)"
           git config --local user.name "${{ github.repository_owner }}"
           git add .
-          git commit -a -m 'Auto Run' || echo "nothing to commit"
+          git commit -a -m '🎉auto update by Gmeek action' || echo "nothing to commit"
           git push || echo "nothing to push"
           sleep 3
           
