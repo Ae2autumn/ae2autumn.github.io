@@ -1,16 +1,14 @@
 blog:
   avatar: "https://avatars.githubusercontent.com/u/195545824?v=4"           # 头像文件路径（相对路径）
-  name: "Title"                         # 博客名称
-  sname: "Title"                        # Special卡片标题
-  description: "Des."                   # 博客描述
-  favicon: "static/favicon.ico"         # 网站图标
+  name: "Ae1autumn"                         # 博客名称
+  sname: "特别项目"                        # Special卡片标题
+  description: "欢迎光临我的小站"                   # 博客描述
+  favicon: "https://avatars.githubusercontent.com/u/195545824?v=4"         # 网站图标
 
 # 浮动菜单配置
 floating_menu:
   - tag: "about"                        # 需要匹配的文章标签
     display: "关于"                      # 菜单显示文本
-  - tag: "contact"                      # 需要匹配的文章标签
-    display: "联系"                      # 菜单显示文本
   # 用户可自定义添加，但总项目数不超过10个
 
 # Special卡片配置
@@ -22,7 +20,7 @@ special:
     Copyright: "©"
     C_Link: "Link"
     Total_time: "2026.01.01"            # 格式: yyyy.mm.dd，自动计算运行天数
-    Others: "其他说明文本"
+    Others: ""
 
 # 主题配置（**修正**）
 theme:
@@ -33,4 +31,4 @@ theme:
 
 # 自定义的特殊文章标签
 special_tags:
-  - "Tags"
+  - "项目"
