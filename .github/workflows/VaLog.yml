@@ -15,14 +15,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 必须开启：允许 Action 把文件推回你的仓库
+      contents: write
       issues: read
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 获取完整历史以确保 Git 提交正常
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,22 +37,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-        run: python VaLog.py
+        run: |
+          python VaLog.py
+          touch docs/.nojekyll
 
-      - name: Sync Data Back to Repo
-        # 这一步非常重要：它把增量更新的 json 和生成的 base.yaml 同步回 main 分支
+      - name: Commit Cache and Config to Main
+        # 只提交缓存和配置文件，不提交生成的网站
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add O-MD/ base.yaml docs/
-          # 如果没有变化，commit 会跳过而不报错
-          git commit -m "docs: 自动更新博客内容与缓存数据 [skip ci]" || echo "No changes to commit"
-          git push origin main
+          git add O-MD/ base.yaml
+          # 不添加 docs/ 文件夹
+          if git diff --cached --quiet; then
+            echo "No cache/config changes"
+          else
+            git commit -m "chore: 更新缓存数据 [skip ci]"
+            git push origin main
+          fi
 
       - name: Deploy to GitHub Pages
-        # 依然保持部署到 gh-pages 分支，用于网站展示
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
           publish_branch: gh-pages
+          force_orphan: true
