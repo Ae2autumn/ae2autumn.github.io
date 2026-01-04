@@ -13,7 +13,8 @@ articles:
 - id: '1'
   title: 弑杀
   date: '2026-01-04'
-  tags: []
+  tags:
+  - 记录
   content:
   - 暂无简介
   url: article/1.html
