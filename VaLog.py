@@ -12,6 +12,10 @@ OMD_DIR = os.path.join(BASE_DIR, "O-MD")
 OMD_JSON = os.path.join(OMD_DIR, "articles.json")
 BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 
+# 默认模板文件名
+DEFAULT_ARTICLE_TEMPLATE = "article.html"
+DEFAULT_HOME_TEMPLATE = "home.html"
+
 # 创建必要的目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
 os.makedirs(OMD_DIR, exist_ok=True)
@@ -32,6 +36,13 @@ class VaLogGenerator:
             except Exception as e:
                 print(f"配置文件加载失败: {e}")
                 self.config = {}
+        
+        # 从配置中读取模板文件名，如果没有配置则使用默认值
+        self.article_template_name = self.config.get('templates', {}).get('VaLog-default-article', DEFAULT_ARTICLE_TEMPLATE)
+        self.home_template_name = self.config.get('templates', {}).get('VaLog-default-index', DEFAULT_HOME_TEMPLATE)
+        
+        print(f"文章模板: {self.article_template_name}")
+        print(f"首页模板: {self.home_template_name}")
         
         # 加载缓存
         self.cache = {}
@@ -61,46 +72,46 @@ class VaLogGenerator:
         print("Jinja2环境初始化完成")
 
     def extract_metadata_and_body(self, body):
-            """准确提取元数据并在渲染前将其从正文中彻底移除"""
-            if not body:
-                return {
-                    "summary": ["暂无简介"],
-                    "vertical_title": "",
-                    "body": ""
-                }
-                
-            lines = body.split('\n')
-            summary = ["暂无简介"]
-            vertical_title = ""
-            
-            # 定义需要跳过的行索引
-            meta_indices = []
-            
-            # 1. 检查第一行是否为摘要元数据
-            if len(lines) > 0 and lines[0].strip().startswith('!vml-'):
-                match = re.search(r'<span[^>]*>(.*?)</span>', lines[0])
-                if match:
-                    summary = [match.group(1).strip()]
-                    meta_indices.append(0) # 记录该行需要被移除
-            
-            # 2. 检查第二行是否为垂直标题元数据
-            if len(lines) > 1 and lines[1].strip().startswith('!vml-'):
-                match = re.search(r'<span[^>]*>(.*?)</span>', lines[1])
-                if match:
-                    vertical_title = match.group(1).strip()
-                    meta_indices.append(1) # 记录该行需要被移除
-            
-            # 3. 过滤正文：只排除那些被确认为元数据的行
-            content_lines = [
-                line for i, line in enumerate(lines) 
-                if i not in meta_indices
-            ]
-            
+        """准确提取元数据并在渲染前将其从正文中彻底移除"""
+        if not body:
             return {
-                "summary": summary,
-                "vertical_title": vertical_title,
-                "body": "\n".join(content_lines).strip()
+                "summary": ["暂无简介"],
+                "vertical_title": "",
+                "body": ""
             }
+            
+        lines = body.split('\n')
+        summary = ["暂无简介"]
+        vertical_title = ""
+        
+        # 定义需要跳过的行索引
+        meta_indices = []
+        
+        # 1. 检查第一行是否为摘要元数据
+        if len(lines) > 0 and lines[0].strip().startswith('!vml-'):
+            match = re.search(r'<span[^>]*>(.*?)</span>', lines[0])
+            if match:
+                summary = [match.group(1).strip()]
+                meta_indices.append(0) # 记录该行需要被移除
+        
+        # 2. 检查第二行是否为垂直标题元数据
+        if len(lines) > 1 and lines[1].strip().startswith('!vml-'):
+            match = re.search(r'<span[^>]*>(.*?)</span>', lines[1])
+            if match:
+                vertical_title = match.group(1).strip()
+                meta_indices.append(1) # 记录该行需要被移除
+        
+        # 3. 过滤正文：只排除那些被确认为元数据的行
+        content_lines = [
+            line for i, line in enumerate(lines) 
+            if i not in meta_indices
+        ]
+        
+        return {
+            "summary": summary,
+            "vertical_title": vertical_title,
+            "body": "\n".join(content_lines).strip()
+        }
 
     def process_body(self, body):
         """处理正文，转换为HTML（这里接收的是已经移除了元数据的正文）"""
@@ -207,7 +218,7 @@ class VaLogGenerator:
                     
                     # 获取文章模板
                     try:
-                        tmpl = self.env.get_template("article.html")
+                        tmpl = self.env.get_template(self.article_template_name)
                     except Exception as e:
                         print(f"  模板加载失败: {e}")
                         # 使用简单模板作为备选
@@ -299,7 +310,7 @@ class VaLogGenerator:
             view = special_cfg.get('view', {})
             
             # 计算运行天数
-            run_date_str = view.get('Total_time', '2023.01.01')
+            run_date_str = view.get('Total_time', '2026.01.01')
             try:
                 run_date = datetime.strptime(run_date_str, '%Y.%m.%d')
                 days_running = (datetime.now() - run_date).days
@@ -348,13 +359,15 @@ class VaLogGenerator:
     def generate_index(self, articles, specials):
         print("生成首页...")
         
-        home_tmpl_path = os.path.join(TEMPLATE_DIR, "home.html")
+        # 使用配置的首页模板文件名
+        home_tmpl_path = os.path.join(TEMPLATE_DIR, self.home_template_name)
         if not os.path.exists(home_tmpl_path):
             print(f"错误: 首页模板不存在: {home_tmpl_path}")
             return
         
         try:
-            tmpl = self.env.get_template("home.html")
+            # 使用配置的首页模板文件名
+            tmpl = self.env.get_template(self.home_template_name)
             
             context = {
                 "BLOG_NAME": self.config.get('blog', {}).get('name', 'VaLog'),
