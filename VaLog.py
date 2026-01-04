@@ -61,46 +61,46 @@ class VaLogGenerator:
         print("Jinja2环境初始化完成")
 
     def extract_metadata_and_body(self, body):
-        """提取摘要、垂直标题并分离正文"""
-        if not body:
-            return {
-                "summary": ["暂无简介"],
-                "vertical_title": "",
-                "body": ""
-            }
-            
-        lines = body.split('\n')
-        summary = []
-        vertical_title = ""
-        content_lines = []
-        
-        # 处理第一行元数据（摘要）
-        if len(lines) > 0 and lines[0].startswith('!vml-'):
-            match = re.search(r'<span[^>]*>(.*?)</span>', lines[0])
-            if match:
-                summary = [match.group(1).strip()]
-            else:
-                summary = ["暂无简介"]
-        else:
+            """准确提取元数据并在渲染前将其从正文中彻底移除"""
+            if not body:
+                return {
+                    "summary": ["暂无简介"],
+                    "vertical_title": "",
+                    "body": ""
+                }
+                
+            lines = body.split('\n')
             summary = ["暂无简介"]
-        
-        # 处理第二行元数据（垂直标题）
-        if len(lines) > 1 and lines[1].startswith('!vml-'):
-            match = re.search(r'<span[^>]*>(.*?)</span>', lines[1])
-            if match:
-                vertical_title = match.group(1).strip()
-        
-        # 从第三行开始是正文（跳过前两行元数据行）
-        if len(lines) > 2:
-            content_lines = lines[2:]  # 保留原始行，包含可能的空行
-        else:
-            content_lines = []
-        
-        return {
-            "summary": summary,
-            "vertical_title": vertical_title,
-            "body": "\n".join(content_lines).strip()  # 保留正文内容
-        }
+            vertical_title = ""
+            
+            # 定义需要跳过的行索引
+            meta_indices = []
+            
+            # 1. 检查第一行是否为摘要元数据
+            if len(lines) > 0 and lines[0].strip().startswith('!vml-'):
+                match = re.search(r'<span[^>]*>(.*?)</span>', lines[0])
+                if match:
+                    summary = [match.group(1).strip()]
+                    meta_indices.append(0) # 记录该行需要被移除
+            
+            # 2. 检查第二行是否为垂直标题元数据
+            if len(lines) > 1 and lines[1].strip().startswith('!vml-'):
+                match = re.search(r'<span[^>]*>(.*?)</span>', lines[1])
+                if match:
+                    vertical_title = match.group(1).strip()
+                    meta_indices.append(1) # 记录该行需要被移除
+            
+            # 3. 过滤正文：只排除那些被确认为元数据的行
+            content_lines = [
+                line for i, line in enumerate(lines) 
+                if i not in meta_indices
+            ]
+            
+            return {
+                "summary": summary,
+                "vertical_title": vertical_title,
+                "body": "\n".join(content_lines).strip()
+            }
 
     def process_body(self, body):
         """处理正文，转换为HTML（这里接收的是已经移除了元数据的正文）"""
