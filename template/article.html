@@ -504,13 +504,26 @@
       });
       
       function applyTheme() {
-         const configTheme = "{{ blog.theme.mode }}";
-         const theme = configTheme || 'dark';
-         if (theme === 'light') {
+        // 优先读取 localStorage
+        const savedTheme = localStorage.getItem('theme');
+        
+        if (savedTheme) {
+          // 使用用户保存的主题
+          if (savedTheme === 'light') {
             document.body.classList.add('light-mode');
-         } else {
+          } else {
             document.body.classList.remove('light-mode');
-         }
+          }
+        } else {
+          // 使用服务器配置的主题
+          const configTheme = "{{ blog.theme.mode }}";
+          const theme = configTheme || 'dark';
+          if (theme === 'light') {
+            document.body.classList.add('light-mode');
+          } else {
+            document.body.classList.remove('light-mode');
+          }
+        }
       }
       
       applyTheme();
