@@ -381,6 +381,151 @@ class VaLogGenerator:
                 "ARTICLES_JSON": json.dumps(articles, ensure_ascii=False),
                 "SPECIALS_JSON": json.dumps(specials, ensure_ascii=False),
                 "MENU_ITEMS_JSON": json.dumps(self.config.get('floating_menu', []), ensure_ascii=False)
+                "SPECIAL_TAGS": self.config.get('special_tags', [])
+            }
+            
+            rendered = tmpl.render(**context)
+            
+            index_path = os.path.join(DOCS_DIR, "index.html")
+            with open(index_path, "w", encoding="utf-8") as f:
+                f.write(rendered)
+            
+            print(f"首页已生成: {index_path}")
+            print(f"首页大小: {len(rendered)} 字节")
+            
+        except Exception as e:
+            print(f"首页生成失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+def main():
+    print("=" * 50)
+    print("VaLog Generator 启动")
+    print(f"工作目录: {os.getcwd()}")
+    print(f"Python版本: {os.sys.version}")
+    print("=" * 50)
+    
+    try:
+        generator = VaLogGenerator()
+        generator.run()
+        print("=" * 50)
+        print("VaLog Generator 完成")
+        print("=" * 50)
+    except Exception as e:
+        print(f"生成器运行失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1  # 返回错误代码
+    
+    return 0  # 成功
+
+if __name__ == "__main__":
+    exit_code = main()
+    exit(exit_code)
+       break
+                
+                if is_special:
+                    # 如果是特殊文章，只添加到specials列表
+                    specials.append(article_data)
+                else:
+                    # 如果不是特殊文章，添加到all_articles列表
+                    all_articles.append(article_data)
+                
+                # 更新缓存
+                new_cache[iid] = updated_at
+                    
+            except Exception as e:
+                print(f"  处理文章时出错: {e}")
+                continue
+        
+        print(f"普通文章: {len(all_articles)} 篇")
+        print(f"特殊文章: {len(specials)} 篇")
+        print(f"文章处理完成，总计: {len(all_articles) + len(specials)} 篇")
+        
+        # 保存缓存
+        try:
+            with open(OMD_JSON, 'w', encoding='utf-8') as f:
+                json.dump(new_cache, f, indent=2, ensure_ascii=False)
+            print(f"缓存已保存: {OMD_JSON}")
+        except Exception as e:
+            print(f"缓存保存失败: {e}")
+        
+        # 如果special数组为空，使用配置信息填充
+        if not specials and special_cfg.get('view'):
+            view = special_cfg.get('view', {})
+            
+            # 计算运行天数
+            run_date_str = view.get('Total_time', '2026.01.01')
+            try:
+                run_date = datetime.strptime(run_date_str, '%Y.%m.%d')
+                days_running = (datetime.now() - run_date).days
+                days_text = f"运行天数: {days_running} 天"
+            except:
+                days_text = "运行天数: 计算中..."
+            
+            # 创建默认的特殊文章
+            default_special = {
+                "id": "0",
+                "title": "",
+                "date": "",
+                "tags": [],
+                "content": [
+                    view.get('RF_Information', ''),
+                    view.get('Copyright', ''),
+                    days_text,
+                    view.get('Others', '')
+                ],
+                "url": "",
+                "verticalTitle": "Special"
+            }
+            specials.append(default_special)
+            print("已使用配置信息填充special数组")
+        
+        # 生成 base.yaml
+        try:
+            base_data = {
+                "blog": {**blog_cfg, "theme": theme_cfg}, 
+                "articles": all_articles, 
+                "specials": specials, 
+                "floating_menu": self.config.get('floating_menu', []),
+                "special_config": special_cfg
+            }
+            with open(BASE_YAML_OUT, 'w', encoding='utf-8') as f:
+                yaml.dump(base_data, f, allow_unicode=True, sort_keys=False)
+            print(f"base.yaml 已生成: {BASE_YAML_OUT}")
+        except Exception as e:
+            print(f"base.yaml 生成失败: {e}")
+        
+        # 生成首页
+        self.generate_index(all_articles, specials)
+        
+        print("生成器运行完成！")
+
+    def generate_index(self, articles, specials):
+        print("生成首页...")
+        
+        # 使用配置的首页模板文件名
+        home_tmpl_path = os.path.join(TEMPLATE_DIR, self.home_template_name)
+        if not os.path.exists(home_tmpl_path):
+            print(f"错误: 首页模板不存在: {home_tmpl_path}")
+            return
+        
+        try:
+            # 使用配置的首页模板文件名
+            tmpl = self.env.get_template(self.home_template_name)
+            
+            context = {
+                "BLOG_NAME": self.config.get('blog', {}).get('name', 'VaLog'),
+                "SPECIAL_NAME": self.config.get('blog', {}).get('sname', 'Special'),
+                "BLOG_DESCRIPTION": self.config.get('blog', {}).get('description', ''),
+                "BLOG_AVATAR": self.config.get('blog', {}).get('avatar', ''),
+                "BLOG_FAVICON": self.config.get('blog', {}).get('favicon', ''),
+                "THEME_MODE": self.config.get('theme', {}).get('mode', 'dark'),
+                "PRIMARY_COLOR": self.config.get('theme', {}).get('primary_color', '#e74c3c'),
+                "TOTAL_TIME": self.config.get('special', {}).get('view', {}).get('Total_time', '2023.01.01'),
+                "ARTICLES_JSON": json.dumps(articles, ensure_ascii=False),
+                "SPECIALS_JSON": json.dumps(specials, ensure_ascii=False),
+                "MENU_ITEMS_JSON": json.dumps(self.config.get('floating_menu', []), ensure_ascii=False)
             }
             
             rendered = tmpl.render(**context)
