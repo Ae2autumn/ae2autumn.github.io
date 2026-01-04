@@ -15,10 +15,10 @@ floating_menu:
 special:
   top: true                             # true: 置顶文章放入Special | false: 普通列表显示置顶
   view:                                 # 当Special无内容时显示的文本信息
-    RF_Information: "Text"
-    RF_Link: "Link"
-    Copyright: "©"
-    C_Link: "Link"
+    RF_Information: ""
+    RF_Link: ""
+    Copyright: ""
+    C_Link: ""
     Total_time: "2026.01.01"            # 格式: yyyy.mm.dd，自动计算运行天数
     Others: ""
 
@@ -29,6 +29,11 @@ theme:
   dark_bg: "#121212"                    # 暗色背景（修正为代码中的实际值）
   light_bg: "#f5f7fa"                   # 亮色背景
 
+# 自定义模板文件
+templates:
+  article: "article.html"  # 文章页面模板
+  home: "home.html"        # 首页模板
+  
 # 自定义的特殊文章标签
 special_tags:
   - "项目"
