@@ -11,13 +11,15 @@ on:
       - 'VaLog.py'
   workflow_dispatch:
 
+# 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: read
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -39,57 +41,27 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python VaLog.py
-          
-          # 调试：显示生成的文件
-          echo "=== 调试信息 ==="
-          echo "当前目录:"
-          pwd
-          echo "docs/ 文件夹内容:"
-          ls -la docs/
-          echo "docs/index.html 是否存在:"
-          [ -f docs/index.html ] && echo "✅ 存在" || echo "❌ 不存在"
-          echo "docs/index.html 大小:"
-          if [ -f docs/index.html ]; then
-            ls -lh docs/index.html
-            echo "前100个字符:"
-            head -c 100 docs/index.html
-          fi
-          echo "article/ 文件夹:"
-          ls -la docs/article/ || echo "article 文件夹不存在"
-          
-          # 添加 .nojekyll
+          # 必须创建 .nojekyll，防止 GitHub 忽略下划线开头的文件夹
           touch docs/.nojekyll
-          echo "已创建 docs/.nojekyll"
 
-      - name: Sync Data Back to Repo
+      # 步骤 A: 将生成的数据同步回 main 分支（可选，如果你想保留缓存数据）
+      - name: Sync Data Back to Main
         run: |
-          echo "=== Git 状态 ==="
-          git status
-          echo "docs/ 文件夹的 Git 状态:"
-          git status docs/
-          
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
-          echo "添加文件到暂存区..."
           git add O-MD/ base.yaml docs/
-          
-          echo "检查暂存区变化..."
-          git diff --cached --name-only
-          
-          # 如果没有变化，commit 会跳过而不报错
-          if git diff --cached --quiet; then
-            echo "没有更改需要提交"
-          else
-            git commit -m "docs: 自动更新博客内容与缓存数据 [skip ci]"
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: 自动更新内容 [skip ci]"
             git push origin main
-            echo "更改已提交"
           fi
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      # 步骤 B: 核心部署动作 - 上传生成的静态文件
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          publish_branch: gh-pages
-          force_orphan: true
+          path: ./docs
+
+      # 步骤 C: 核心部署动作 - 执行 Pages 发布
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
