@@ -381,7 +381,7 @@ class VaLogGenerator:
                 "ARTICLES_JSON": json.dumps(articles, ensure_ascii=False),
                 "SPECIALS_JSON": json.dumps(specials, ensure_ascii=False),
                 "MENU_ITEMS_JSON": json.dumps(self.config.get('floating_menu', []), ensure_ascii=False),
-                "SPECIAL_TAGS": self.config.get('special_tags', []),
+                "SPECIAL_TAGS": self.config.get('special_tags', ''),
             }
             
             rendered = tmpl.render(**context)
