@@ -10,6 +10,14 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '2'
+  title: R_Land
+  date: '2026-01-04'
+  tags: []
+  content:
+  - 暂无简介
+  url: article/2.html
+  verticalTitle: R_Land
 - id: '1'
   title: 弑杀
   date: '2026-01-04'
