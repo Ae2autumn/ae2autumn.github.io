@@ -10,14 +10,6 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
-- id: '2'
-  title: R_Land
-  date: '2026-01-04'
-  tags: []
-  content:
-  - 暂无简介
-  url: article/2.html
-  verticalTitle: R_Land
 - id: '1'
   title: 弑杀
   date: '2026-01-04'
@@ -28,17 +20,15 @@ articles:
   url: article/1.html
   verticalTitle: 弑杀
 specials:
-- id: '0'
-  title: ''
-  date: ''
-  tags: []
+- id: '2'
+  title: R_Land
+  date: '2026-01-04'
+  tags:
+  - top
   content:
-  - Text
-  - ©
-  - '运行天数: 3 天'
-  - ''
-  url: ''
-  verticalTitle: Special
+  - 暂无简介
+  url: article/2.html
+  verticalTitle: R_Land
 floating_menu:
 - tag: about
   display: 关于
