@@ -39,20 +39,51 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           python VaLog.py
+          
+          # 调试：显示生成的文件
+          echo "=== 调试信息 ==="
+          echo "当前目录:"
+          pwd
+          echo "docs/ 文件夹内容:"
+          ls -la docs/
+          echo "docs/index.html 是否存在:"
+          [ -f docs/index.html ] && echo "✅ 存在" || echo "❌ 不存在"
+          echo "docs/index.html 大小:"
+          if [ -f docs/index.html ]; then
+            ls -lh docs/index.html
+            echo "前100个字符:"
+            head -c 100 docs/index.html
+          fi
+          echo "article/ 文件夹:"
+          ls -la docs/article/ || echo "article 文件夹不存在"
+          
+          # 添加 .nojekyll
           touch docs/.nojekyll
+          echo "已创建 docs/.nojekyll"
 
-      - name: Commit Cache and Config to Main
-        # 只提交缓存和配置文件，不提交生成的网站
+      - name: Sync Data Back to Repo
         run: |
+          echo "=== Git 状态 ==="
+          git status
+          echo "docs/ 文件夹的 Git 状态:"
+          git status docs/
+          
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add O-MD/ base.yaml
-          # 不添加 docs/ 文件夹
+          
+          echo "添加文件到暂存区..."
+          git add O-MD/ base.yaml docs/
+          
+          echo "检查暂存区变化..."
+          git diff --cached --name-only
+          
+          # 如果没有变化，commit 会跳过而不报错
           if git diff --cached --quiet; then
-            echo "No cache/config changes"
+            echo "没有更改需要提交"
           else
-            git commit -m "chore: 更新缓存数据 [skip ci]"
+            git commit -m "docs: 自动更新博客内容与缓存数据 [skip ci]"
             git push origin main
+            echo "更改已提交"
           fi
 
       - name: Deploy to GitHub Pages
