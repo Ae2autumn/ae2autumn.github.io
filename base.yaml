@@ -35,9 +35,9 @@ floating_menu:
 special_config:
   top: true
   view:
-    RF_Information: Text
-    RF_Link: Link
-    Copyright: ©
-    C_Link: Link
+    RF_Information: ''
+    RF_Link: ''
+    Copyright: ''
+    C_Link: ''
     Total_time: 2026.01.01
     Others: ''
