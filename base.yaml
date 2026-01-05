@@ -10,6 +10,16 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '5'
+  title: yuuhh
+  date: '2026-01-05'
+  tags:
+  - 普通
+  - 日常
+  content:
+  - 暂无简介
+  url: article/5.html
+  verticalTitle: yuuhh
 - id: '4'
   title: yyh
   date: '2026-01-05'
