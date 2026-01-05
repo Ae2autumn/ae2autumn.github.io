@@ -9,16 +9,7 @@ blog:
     primary_color: '#e74c3c'
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
-articles:
-- id: '1'
-  title: 弑杀
-  date: '2026-01-04'
-  tags:
-  - 记录
-  content:
-  - 暂无简介
-  url: article/1.html
-  verticalTitle: 弑杀
+articles: []
 specials:
 - id: '2'
   title: R_Land
