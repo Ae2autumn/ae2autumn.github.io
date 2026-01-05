@@ -1093,473 +1093,649 @@
    </div>
 
    <script>
-     // ==================== 数据注入点 (由生成引擎替换) ====================
-     const blogData = {
-       articles: [],
-       specials: [{"id": "2", "title": "R_Land", "date": "2026-01-04", "tags": ["top"], "content": ["暂无简介"], "url": "article/2.html", "verticalTitle": "R_Land"}]
-     };
-     const menuItemsData = [{"tag": "about", "display": "关于"}];
-     const blogConfig = {
-       themeColor: "#e74c3c",
-       runDate: "2026.01.01"
-     };
-     
-     // ==================== 标签过滤器 ====================
-     class TagFilter {
-        constructor() {
-           // 内部标签列表，可以配置
-           this.internalTags = new Set( ['top', 'special', '项目'] );
-        }
-        
-        // 过滤掉内部标签
-        filterTags(tags) {
-           if (!tags || !Array.isArray(tags)) {
-              return [];
-           }
-           return tags.filter(tag => tag && !this.internalTags.has(tag.toLowerCase().trim()));
-        }
-        
-        // 过滤文章（用于搜索时）
-        filterArticle(article) {
-           if (!article) return false;
-           
-           // 返回文章的过滤后标签
-           const filteredTags = this.filterTags(article.tags);
-           return {
-              ...article,
-              filteredTags: filteredTags
-           };
-        }
-        
-        // 检查是否应该显示（用于搜索过滤）
-        shouldDisplayByTag(tags) {
-           if (!tags || !Array.isArray(tags)) return true;
-           return tags.some(tag => !this.internalTags.has(tag.toLowerCase().trim()));
-        }
-        
-        // 获取第一个可显示标签（用于垂直标题）
-        getFirstDisplayableTag(tags) {
-           if (!tags || !Array.isArray(tags)) return null;
-           for (let tag of tags) {
-              if (tag && !this.internalTags.has(tag.toLowerCase().trim())) {
-                 return tag;
-              }
-           }
-           return null;
-        }
-        
-        // 添加内部标签
-        addInternalTag(tag) {
-           if (tag) {
-              this.internalTags.add(tag.toLowerCase().trim());
-           }
-        }
-        
-        // 移除内部标签
-        removeInternalTag(tag) {
-           if (tag) {
-              this.internalTags.delete(tag.toLowerCase().trim());
-           }
-        }
-        
-        // 获取所有内部标签
-        getInternalTags() {
-           return Array.from(this.internalTags);
-        }
+   // ==================== 数据注入点 (由生成引擎替换) ====================
+   const blogData = {
+     articles: [],
+     specials: [{"id": "2", "title": "R_Land", "date": "2026-01-04", "tags": ["top"], "content": ["暂无简介"], "url": "article/2.html", "verticalTitle": "R_Land"}]
+   };
+   const menuItemsData = [{"tag": "about", "display": "关于"}];
+   const blogConfig = {
+     themeColor: "#e74c3c",
+     runDate: "2026.01.01"
+   };
+   
+   // ==================== 标签过滤器 ====================
+   class TagFilter {
+     constructor() {
+       // 内部标签列表，可以配置
+       this.internalTags = new Set( ['top', 'special', '项目'] );
      }
      
-     // 初始化标签过滤器
-     const tagFilter = new TagFilter();
-     
-     // ==================== 状态管理 ====================
-     const SEARCH_TYPES = { TITLE: 'title', TAG: 'tag', CONTENT: 'content' };
-     const state = {
-       isSearchMode: false,
-       currentArticles: [],
-       searchType: SEARCH_TYPES.TITLE
-     };
-     
-     // ==================== 主题管理 ====================
-     
-     // 获取当前主题
-     function getCurrentTheme() {
-       return document.body.classList.contains('light-mode') ? 'light' : 'dark';
-     }
-     
-     // 设置主题
-     function setTheme(theme) {
-       const isLight = theme === 'light';
-       
-       // 切换类
-       if (isLight) {
-         document.body.classList.add('light-mode');
-         document.body.classList.remove('dark-mode');
-       } else {
-         document.body.classList.add('dark-mode');
-         document.body.classList.remove('light-mode');
+     // 过滤掉内部标签
+     filterTags(tags) {
+       if (!tags || !Array.isArray(tags)) {
+         return [];
        }
-       
-       // 更新按钮文本
-       const themeBtn = document.getElementById('darkModeToggle');
-       if (themeBtn) {
-         themeBtn.textContent = isLight ? '夜间模式' : '日间模式';
+       return tags.filter(tag => tag && !this.internalTags.has(tag.toLowerCase().trim()));
+     }
+     
+     // 检查是否应该显示（用于搜索过滤）
+     shouldDisplayByTag(tags) {
+       if (!tags || !Array.isArray(tags)) return true;
+       return tags.some(tag => !this.internalTags.has(tag.toLowerCase().trim()));
+     }
+     
+     // 获取第一个可显示标签（用于垂直标题）
+     getFirstDisplayableTag(tags) {
+       if (!tags || !Array.isArray(tags)) return null;
+       for (let tag of tags) {
+         if (tag && !this.internalTags.has(tag.toLowerCase().trim())) {
+           return tag;
+         }
        }
-       
-       // 保存到 localStorage
-       localStorage.setItem('theme', theme);
+       return null;
      }
      
-     // 切换主题
-     function toggleTheme() {
-       const currentTheme = getCurrentTheme();
-       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-       setTheme(newTheme);
-       closeFloatingMenu();
-     }
-     
-     // 初始化主题
-     function initTheme() {
-       // 尝试从 localStorage 读取用户设置
-       const savedTheme = localStorage.getItem('theme');
-       
-       if (savedTheme === 'light' || savedTheme === 'dark') {
-         // 使用用户保存的设置
-         setTheme(savedTheme);
-       } else {
-         // 如果没有保存的设置，使用初始设置（从HTML的body类获取）
-         const initialTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
-         // 保存初始设置
-         setTheme(initialTheme);
+     // 添加内部标签
+     addInternalTag(tag) {
+       if (tag) {
+         this.internalTags.add(tag.toLowerCase().trim());
        }
      }
      
-     // ==================== 核心逻辑 ====================
-     
-     // 规格 4.4: 仅文本模式触发条件
-     function shouldShowOnlyContent(special) {
-       const hasTitle = special.title && special.title.trim() !== '';
-       const hasTags = special.tags && special.tags.length > 0;
-       const hasContent = special.content && special.content.length > 0;
-       // 只有内容，没有标题和标签时触发
-       return hasContent && !hasTitle && !hasTags;
+     // 移除内部标签
+     removeInternalTag(tag) {
+       if (tag) {
+         this.internalTags.delete(tag.toLowerCase().trim());
+       }
      }
      
-     function renderArticles(articles = blogData.articles, isSearchMode = false) {
-       const wrapper = document.getElementById('mobileCardsWrapper');
-       wrapper.innerHTML = '';
-       
-       // 按日期倒序
-       const sorted = [...articles].sort((a, b) => new Date(b.date) - new Date(a.date));
+     // 获取所有内部标签
+     getInternalTags() {
+       return Array.from(this.internalTags);
+     }
+   }
+   
+   // 初始化标签过滤器
+   const tagFilter = new TagFilter();
+   
+   // ==================== 常量定义 ====================
+   const SEARCH_TYPES = {
+     TITLE: 'title',
+     TAG: 'tag',
+     CONTENT: 'content'
+   };
+   
+   // ==================== 状态管理 ====================
+   const state = {
+     isSearchMode: false,
+     originalArticles: [],
+     currentArticles: [],
+     searchType: SEARCH_TYPES.TITLE
+   };
+   
+   // ==================== 主题管理 ====================
+   
+   // 获取当前主题
+   function getCurrentTheme() {
+     return document.body.classList.contains('light-mode') ? 'light' : 'dark';
+   }
+   
+   // 设置主题
+   function setTheme(theme) {
+     const isLight = theme === 'light';
      
-       sorted.forEach((article, index) => {
-         const card = document.createElement('article');
-         card.className = 'rectangle-card';
+     // 切换类
+     if (isLight) {
+       document.body.classList.add('light-mode');
+       document.body.classList.remove('dark-mode');
+     } else {
+       document.body.classList.add('dark-mode');
+       document.body.classList.remove('light-mode');
+     }
+     
+     // 更新按钮文本
+     const themeBtn = document.getElementById('darkModeToggle');
+     if (themeBtn) {
+       themeBtn.textContent = isLight ? '夜间模式' : '日间模式';
+     }
+     
+     // 保存到 localStorage
+     localStorage.setItem('theme', theme);
+   }
+   
+   // 切换主题
+   function toggleTheme() {
+     const currentTheme = getCurrentTheme();
+     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+     setTheme(newTheme);
+     closeFloatingMenu();
+   }
+   
+   // 初始化主题
+   function initTheme() {
+     // 尝试从 localStorage 读取用户设置
+     const savedTheme = localStorage.getItem('theme');
+     
+     if (savedTheme === 'light' || savedTheme === 'dark') {
+       // 使用用户保存的设置
+       setTheme(savedTheme);
+     } else {
+       // 如果没有保存的设置，使用初始设置（从HTML的body类获取）
+       const initialTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+       // 保存初始设置
+       setTheme(initialTheme);
+     }
+   }
+   
+   // ==================== 工具函数 ====================
+   function debounce(func, delay) {
+     let timeoutId;
+     return (...args) => {
+       clearTimeout(timeoutId);
+       timeoutId = setTimeout(() => func.apply(this, args), delay);
+     };
+   }
+   
+   function sortArticlesByDateDesc(articles) {
+     return articles.sort((a, b) => new Date(b.date) - new Date(a.date));
+   }
+   
+   function filterArticles(articles, keyword, type) {
+     if (!keyword.trim()) return articles;
+     
+     keyword = keyword.trim().toLowerCase();
+     
+     return articles.filter(article => {
+       if (type === SEARCH_TYPES.TITLE) {
+         return article.title.toLowerCase().includes(keyword);
+       } 
+       else if (type === SEARCH_TYPES.TAG) {
+         const keywords = keyword.split(' ').filter(k => k.trim() !== '');
+         if (keywords.length === 0) return true;
          
          // 使用标签过滤器获取过滤后的标签
          const filteredTags = tagFilter.filterTags(article.tags);
-         const firstDisplayableTag = tagFilter.getFirstDisplayableTag(article.tags);
+         return keywords.some(k => 
+           filteredTags.some(tag => tag.toLowerCase().includes(k))
+         );
+       } 
+       else if (type === SEARCH_TYPES.CONTENT) {
+         return article.content.some(c => c.toLowerCase().includes(keyword));
+       }
+       return true;
+     });
+   }
+   
+   // 检查是否需要只显示内容模式
+   function shouldShowOnlyContent(special) {
+     const hasTitle = special.title && special.title.trim() !== '';
+     const hasTags = special.tags && special.tags.length > 0;
+     const hasContent = special.content && special.content.length > 0;
+     // 只有内容，没有标题和标签时触发
+     return hasContent && !hasTitle && !hasTags;
+   }
+   
+   // ==================== 渲染函数 ====================
+   function renderArticles(articles = blogData.articles, isSearchMode = false) {
+     const wrapper = document.getElementById('mobileCardsWrapper');
+     wrapper.innerHTML = '';
+     
+     // 按日期倒序
+     const sorted = [...articles].sort((a, b) => new Date(b.date) - new Date(a.date));
+   
+     sorted.forEach((article, index) => {
+       const card = document.createElement('article');
+       card.className = 'rectangle-card';
+       card.id = `card${index + 1}`;
+       card.setAttribute('role', 'article');
+       card.setAttribute('aria-labelledby', `card${index + 1}Title`);
+       
+       // 使用标签过滤器获取过滤后的标签
+       const filteredTags = tagFilter.filterTags(article.tags);
+       const firstDisplayableTag = tagFilter.getFirstDisplayableTag(article.tags);
+       
+       // 规格 3.3: 默认垂直标题为第一个可显示标签
+       const vTitle = article.verticalTitle || firstDisplayableTag || 'Blog';
+       
+       // 构建标签HTML - 只显示过滤后的标签
+       let tagsHTML = '';
+       if (article.date) {
+         tagsHTML += `<span class="card-tag date-tag">${article.date}</span>`;
+       }
+       if (filteredTags && Array.isArray(filteredTags)) {
+         tagsHTML += filteredTags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join('');
+       }
+       
+       // 构建内容HTML
+       let contentHTML = '';
+       if (article.content && Array.isArray(article.content)) {
+         contentHTML = article.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+       }
+       
+       card.innerHTML = `
+         <div class="vertical-title">${escapeHtml(vTitle)}</div>
+         <div class="card-content-expanded">
+           <div class="card-tags">
+             ${tagsHTML}
+           </div>
+           <div class="card-title-container">
+             <h2 id="card${index + 1}Title">${escapeHtml(article.title)}</h2>
+           </div>
+           <div class="card-content-main">
+             ${contentHTML}
+           </div>
+           <div class="card-footer">
+             <button class="mobile-card-btn" onclick="window.location.href='${escapeHtml(article.url)}'">Read</button>
+           </div>
+         </div>
+       `;
+   
+       // 搜索模式默认展开第一个，普通模式默认展开第二个(索引1)
+       if ((!isSearchMode && index === 1) || (isSearchMode && index === 0)) {
+         setTimeout(() => card.classList.add('active'), 100);
+       }
+   
+       card.addEventListener('click', (e) => {
+         if (e.target.closest('.mobile-card-btn')) return;
+         document.querySelectorAll('.rectangle-card').forEach(c => c !== card && c.classList.remove('active'));
+         card.classList.toggle('active');
+       });
+       wrapper.appendChild(card);
+     });
+   }
+   
+   function renderSpecialCards() {
+     const container = document.getElementById('specialCardsContainer');
+     const specialSection = document.getElementById('specialCard');
+     container.innerHTML = '';
+   
+     if (!blogData.specials || blogData.specials.length === 0) {
+       specialSection.style.display = 'none';
+       return;
+     }
+   
+     // 检查是否需要只显示内容模式
+     if (blogData.specials.length === 1 && shouldShowOnlyContent(blogData.specials[0])) {
+       // 只显示内容模式
+       const special = blogData.specials[0];
+       
+       // 添加只显示内容的类
+       specialSection.classList.add('only-content');
+       // 设置标题为不可点击
+       document.querySelector('.special-card-header').style.cursor = 'default';
+       // 默认展开内容区域
+       specialSection.classList.add('expanded');
+       specialSection.setAttribute('aria-expanded', 'true');
+       
+       const item = document.createElement('div');
+       item.className = 'special-card-item-content-simple';
+       
+       // 构建纯文本内容
+       let contentHTML = '';
+       if (special.content && Array.isArray(special.content)) {
+         contentHTML = special.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+       }
+       item.innerHTML = contentHTML;
+       
+       container.appendChild(item);
+     } else {
+       // 正常模式
+       specialSection.classList.remove('only-content');
+       document.querySelector('.special-card-header').style.cursor = 'pointer';
+       
+       blogData.specials.forEach(special => {
+         const item = document.createElement('div');
+         item.className = 'special-card-item';
          
-         // 规格 3.3: 默认垂直标题为第一个可显示标签
-         const vTitle = article.verticalTitle || firstDisplayableTag || 'Blog';
+         // 使用标签过滤器获取过滤后的标签
+         const filteredTags = tagFilter.filterTags(special.tags);
          
          // 构建标签HTML - 只显示过滤后的标签
          let tagsHTML = '';
-         if (article.date) {
-           tagsHTML += `<span class="card-tag date-tag">${article.date}</span>`;
-         }
          if (filteredTags && Array.isArray(filteredTags)) {
-           tagsHTML += filteredTags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join('');
+           tagsHTML = filteredTags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('');
          }
          
          // 构建内容HTML
          let contentHTML = '';
-         if (article.content && Array.isArray(article.content)) {
-           contentHTML = article.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+         if (special.content && Array.isArray(special.content)) {
+           contentHTML = special.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
          }
          
-         card.innerHTML = `
-           <div class="vertical-title">${escapeHtml(vTitle)}</div>
-           <div class="card-content-expanded">
-             <div class="card-tags">
-               ${tagsHTML}
-             </div>
-             <div class="card-title-container">
-               <h2>${escapeHtml(article.title)}</h2>
-             </div>
-             <div class="card-content-main">
-               ${contentHTML}
-             </div>
-             <div class="card-footer">
-               <button class="mobile-card-btn" onclick="window.location.href='${escapeHtml(article.url)}'">Read</button>
-             </div>
-           </div>
-         `;
-     
-         // 搜索模式默认展开第一个，普通模式默认展开第二个(索引1)
-         if ((!isSearchMode && index === 1) || (isSearchMode && index === 0)) {
-           setTimeout(() => card.classList.add('active'), 100);
-         }
-     
-         card.addEventListener('click', (e) => {
-           if (e.target.closest('.mobile-card-btn')) return;
-           document.querySelectorAll('.rectangle-card').forEach(c => c !== card && c.classList.remove('active'));
-           card.classList.toggle('active');
-         });
-         wrapper.appendChild(card);
-       });
-     }
-     
-     function renderSpecialCards() {
-       const container = document.getElementById('specialCardsContainer');
-       const specialSection = document.getElementById('specialCard');
-       container.innerHTML = '';
-     
-       if (!blogData.specials || blogData.specials.length === 0) {
-         specialSection.style.display = 'none';
-         return;
-       }
-     
-       blogData.specials.forEach(special => {
-         const item = document.createElement('div');
-         
-         if (shouldShowOnlyContent(special)) {
-           // 仅文本模式
-           specialSection.classList.add('only-content', 'expanded');
-           item.className = 'special-card-item-content-simple';
-           
-           // 构建纯文本内容
-           let contentHTML = '';
-           if (special.content && Array.isArray(special.content)) {
-             contentHTML = special.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-           }
-           item.innerHTML = contentHTML;
-         } else {
-           // 正常模式
-           item.className = 'special-card-item';
-           
-           // 使用标签过滤器获取过滤后的标签
-           const filteredTags = tagFilter.filterTags(special.tags);
-           
-           // 构建标签HTML - 只显示过滤后的标签
-           let tagsHTML = '';
-           if (filteredTags && Array.isArray(filteredTags)) {
-             tagsHTML = filteredTags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('');
-           }
-           
-           // 构建内容HTML
-           let contentHTML = '';
-           if (special.content && Array.isArray(special.content)) {
-             contentHTML = special.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-           }
-           
-           // 构建按钮HTML
-           let buttonHTML = '';
-           if (special.url) {
-             buttonHTML = `
-               <div class="special-card-item-footer">
-                 <button class="special-card-btn" onclick="window.open('${escapeHtml(special.url)}', '_blank')">Visit</button>
-               </div>
-             `;
-           }
-           
-           item.innerHTML = `
-             <div class="special-card-item-content">
-               <div class="card-tags">
-                 ${tagsHTML}
-               </div>
-               <h4>${escapeHtml(special.title || '')}</h4>
-               <div class="special-card-item-content-main">
-                 ${contentHTML}
-               </div>
-               ${buttonHTML}
+         // 构建按钮HTML
+         let buttonHTML = '';
+         if (special.url) {
+           buttonHTML = `
+             <div class="special-card-item-footer">
+               <button class="special-card-btn" onclick="window.open('${escapeHtml(special.url)}', '_blank')">Visit</button>
              </div>
            `;
          }
+         
+         item.innerHTML = `
+           <div class="special-card-item-content">
+             ${filteredTags.length > 0 ? `
+             <div class="card-tags">
+               ${tagsHTML}
+             </div>
+             ` : ''}
+             ${special.title ? `<h4>${escapeHtml(special.title)}</h4>` : ''}
+             <div class="special-card-item-content-main">
+               ${contentHTML}
+             </div>
+             ${buttonHTML}
+           </div>
+         `;
+         
          container.appendChild(item);
        });
      }
+   }
+   
+   function renderDynamicMenuItems() {
+     const menuContainer = document.getElementById('menuItems');
+     const searchBtn = document.getElementById('searchMenuItem');
+     const themeBtn = document.getElementById('darkModeToggle');
      
-     function renderMenu() {
-       const menuContainer = document.getElementById('menuItems');
-       const searchBtn = document.getElementById('searchMenuItem');
-       const themeBtn = document.getElementById('darkModeToggle');
-       
-       // 保留搜索和主题切换，清空其他的
-       menuContainer.innerHTML = '';
-       menuContainer.appendChild(searchBtn);
+     // 清空现有菜单项（除了搜索和主题切换）
+     while (menuContainer.firstChild) {
+       menuContainer.removeChild(menuContainer.firstChild);
+     }
      
-       if (menuItemsData && Array.isArray(menuItemsData)) {
-         menuItemsData.forEach(item => {
-           // 如果item有url，直接使用
-           if (item.url) {
+     // 重新添加搜索项
+     menuContainer.appendChild(searchBtn);
+   
+     if (menuItemsData && Array.isArray(menuItemsData)) {
+       menuItemsData.forEach(item => {
+         // 如果item有url，直接使用
+         if (item.url) {
+           const link = document.createElement('a');
+           link.className = 'menu-item';
+           link.href = item.url;
+           link.textContent = item.display;
+           link.onclick = () => closeFloatingMenu();
+           menuContainer.appendChild(link);
+         } 
+         // 如果item有tag，查找对应的文章
+         else if (item.tag) {
+           // 在articles中查找对应tag的文章
+           const matchedArticle = blogData.articles.find(article => 
+             article.tags && article.tags.includes(item.tag)
+           );
+           
+           if (matchedArticle && matchedArticle.url) {
              const link = document.createElement('a');
              link.className = 'menu-item';
-             link.href = item.url;
-             link.textContent = item.display;
+             link.href = matchedArticle.url;
+             link.textContent = item.display || item.tag;
              link.onclick = () => closeFloatingMenu();
              menuContainer.appendChild(link);
-           } 
-           // 如果item有tag，查找对应的文章
-           else if (item.tag) {
-             // 在articles中查找对应tag的文章
-             const matchedArticle = blogData.articles.find(article => 
-               article.tags && article.tags.includes(item.tag)
-             );
-             
-             if (matchedArticle && matchedArticle.url) {
-               const link = document.createElement('a');
-               link.className = 'menu-item';
-               link.href = matchedArticle.url;
-               link.textContent = item.display || item.tag;
-               link.onclick = () => closeFloatingMenu();
-               menuContainer.appendChild(link);
-             }
            }
-           // 如果既没有url也没有tag，跳过不显示
-         });
-       }
-     
-       menuContainer.appendChild(themeBtn);
-     }
-     
-     // ==================== 辅助函数 ====================
-     function escapeHtml(text) {
-       if (!text) return '';
-       const div = document.createElement('div');
-       div.textContent = text;
-       return div.innerHTML;
-     }
-     
-     // ==================== 交互事件 ====================
-     function toggleFloatingMenu() {
-       const menu = document.getElementById('floatingMenu');
-       const isClosing = menu.classList.contains('active');
-       if (isClosing) {
-         menu.classList.add('closing');
-         menu.classList.remove('active');
-         setTimeout(() => menu.classList.remove('closing'), 250);
-       } else {
-         menu.classList.add('active');
-       }
-     }
-     
-     function closeFloatingMenu() {
-       const menu = document.getElementById('floatingMenu');
-       if(menu.classList.contains('active')) toggleFloatingMenu();
-     }
-     
-     function performSearch() {
-       const input = document.getElementById('searchInput');
-       const keyword = input.value.trim().toLowerCase();
-       if (!keyword) return;
-     
-       const filtered = blogData.articles.filter(a => {
-         if (!a) return false;
-         
-         if (state.searchType === SEARCH_TYPES.TITLE) {
-           return a.title && a.title.toLowerCase().includes(keyword);
          }
-         if (state.searchType === SEARCH_TYPES.TAG) {
-           // 搜索时也过滤掉内部标签
-           const filteredTags = tagFilter.filterTags(a.tags);
-           return filteredTags && filteredTags.some(t => t && t.toLowerCase().includes(keyword));
-         }
-         if (state.searchType === SEARCH_TYPES.CONTENT) {
-           return a.content && a.content.some(c => c && c.toLowerCase().includes(keyword));
-         }
-         return false;
+         // 如果既没有url也没有tag，跳过不显示
        });
-     
-       if (filtered.length > 0) {
-         state.isSearchMode = true;
-         renderArticles(filtered, true);
-         document.getElementById('searchOverlay').classList.remove('active');
-         input.value = '';
-         input.placeholder = '输入关键词搜索...';
-       } else {
-         input.classList.add('error');
-         setTimeout(() => {
-           input.classList.remove('error');
-           input.placeholder = '未找到相关内容';
-         }, 500);
-       }
      }
+   
+     menuContainer.appendChild(themeBtn);
+   }
+   
+   // ==================== 辅助函数 ====================
+   function escapeHtml(text) {
+     if (!text) return '';
+     const div = document.createElement('div');
+     div.textContent = text;
+     return div.innerHTML;
+   }
+   
+   // ==================== 搜索功能 ====================
+   function enterSearchMode(filteredArticles) {
+     state.isSearchMode = true;
+     state.currentArticles = filteredArticles;
+     const sortedArticles = sortArticlesByDateDesc([...filteredArticles]);
+     renderArticles(sortedArticles, true);
+     closeSearchOverlay();
+   }
+   
+   function exitSearchMode() {
+     state.isSearchMode = false;
+     state.currentArticles = [];
+     const originalSorted = sortArticlesByDateDesc([...blogData.articles]);
+     renderArticles(originalSorted, false);
+     closeSearchOverlay();
+   }
+   
+   function performSearch() {
+     const input = document.getElementById('searchInput');
+     const keyword = input.value.trim();
+     const searchType = state.searchType;
+   
+     if (!keyword) {
+       showSearchError('未输入');
+       return;
+     }
+   
+     let filtered = filterArticles(blogData.articles, keyword, searchType);
      
-     // ==================== 初始化 ====================
-     document.addEventListener('DOMContentLoaded', () => {
-       // 初始化主题
-       initTheme();
-       
-       // 渲染内容
-       renderArticles();
-       renderSpecialCards();
-       renderMenu();
+     if (filtered.length === 0) {
+       showSearchError(`没有符合"${keyword}"的文章`);
+       return;
+     }
+   
+     enterSearchMode(filtered);
+   }
+   
+   function showSearchError(message) {
+     const input = document.getElementById('searchInput');
+     input.value = '';
+     input.placeholder = message;
+     input.classList.add('error');
      
-       // 基础事件绑定
-       document.getElementById('menuBtn').addEventListener('click', toggleFloatingMenu);
-       document.getElementById('searchMenuItem').addEventListener('click', () => {
-         document.getElementById('searchOverlay').classList.add('active');
-         document.getElementById('searchInput').focus();
-         closeFloatingMenu();
-       });
+     const restoreOnNextInput = () => {
+       input.classList.remove('error');
+       input.placeholder = 'Enter确认,点击标题退出';
+       input.removeEventListener('input', restoreOnNextInput);
+     };
+     
+     input.addEventListener('input', restoreOnNextInput);
+   }
+   
+   // ==================== UI 交互控制 ====================
+   function openSearchOverlay() {
+     const overlay = document.getElementById('searchOverlay');
+     const input = document.getElementById('searchInput');
+   
+     input.value = '';
+     input.placeholder = 'Enter确认,点击标题退出';
+     input.classList.remove('error');
+   
+     overlay.classList.add('active');
+     input.focus();
+   }
+   
+   function closeSearchOverlay() {
+     document.getElementById('searchOverlay').classList.remove('active');
+   }
+   
+   function openFloatingMenu() {
+     const menu = document.getElementById('floatingMenu');
+     menu.classList.remove('closing');
+     menu.classList.add('active');
+     document.getElementById('menuBtn').setAttribute('aria-expanded', 'true');
+     menu.setAttribute('aria-hidden', 'false');
+   }
+   
+   function closeFloatingMenu() {
+     const menu = document.getElementById('floatingMenu');
+     if (menu.classList.contains('active')) {
+       // 先添加关闭动画类
+       menu.classList.add('closing');
+       menu.classList.remove('active');
        
-       // 主题切换按钮 - 使用新的切换函数
-       document.getElementById('darkModeToggle').addEventListener('click', toggleTheme);
-       
-       document.getElementById('titleToggle').addEventListener('click', () => {
-         if (state.isSearchMode) {
-           state.isSearchMode = false;
-           renderArticles();
-         } else {
-           document.getElementById('mobileTopSection').classList.toggle('expanded');
-           document.getElementById('mobileTopSection').classList.toggle('collapsed');
+       // 动画结束后完全隐藏菜单
+       setTimeout(() => {
+         menu.classList.remove('closing');
+         menu.setAttribute('aria-hidden', 'true');
+         document.getElementById('menuBtn').setAttribute('aria-expanded', 'false');
+       }, 250); // 动画时间250ms
+     }
+   }
+   
+   function toggleFloatingMenu() {
+     const menu = document.getElementById('floatingMenu');
+     
+     if (menu.classList.contains('active') || menu.classList.contains('closing')) {
+       closeFloatingMenu();
+     } else {
+       openFloatingMenu();
+     }
+   }
+   
+   // ==================== 事件绑定 ====================
+   function bindEvents() {
+     // 搜索菜单项点击事件
+     document.getElementById('searchMenuItem').addEventListener('click', () => {
+       openSearchOverlay();
+       closeFloatingMenu();
+     });
+   
+     // 菜单按钮点击事件
+     document.getElementById('menuBtn').addEventListener('click', (e) => {
+       e.stopPropagation();
+       toggleFloatingMenu();
+     });
+   
+     // 搜索输入框事件
+     document.getElementById('searchInput').addEventListener('keypress', (e) => {
+       if (e.key === 'Enter') performSearch();
+     });
+   
+     // 键盘事件
+     document.addEventListener('keydown', (e) => {
+       if (e.key === 'Escape') {
+         const overlay = document.getElementById('searchOverlay');
+         if (overlay.classList.contains('active')) {
+           closeSearchOverlay();
          }
-       });
-       
-       document.getElementById('searchInput').addEventListener('keypress', (e) => {
-         if (e.key === 'Enter') {
-           performSearch();
-         }
-       });
-       
-       // 点击外部关闭
-       document.addEventListener('click', (e) => {
-         if (!e.target.closest('#floatingMenu') && !e.target.closest('#menuBtn')) {
+         const floatingMenu = document.getElementById('floatingMenu');
+         if (floatingMenu.classList.contains('active')) {
            closeFloatingMenu();
          }
-         if (e.target.id === 'searchOverlay') {
-           e.target.classList.remove('active');
-           const input = document.getElementById('searchInput');
-           input.value = '';
-           input.placeholder = '输入关键词搜索...';
-         }
-       });
-     
-       // 搜索类型切换
-       document.querySelectorAll('.search-option').forEach(btn => {
-         btn.addEventListener('click', () => {
-           document.querySelectorAll('.search-option').forEach(b => b.classList.remove('active'));
-           btn.classList.add('active');
-           state.searchType = btn.dataset.type;
-         });
-       });
-     
-       // Special Header 点击
-       const specialHeader = document.querySelector('.special-card-header');
-       if (specialHeader) {
-         specialHeader.addEventListener('click', () => {
-           const card = document.getElementById('specialCard');
-           if (card && !card.classList.contains('only-content')) {
-             card.classList.toggle('expanded');
-           }
-         });
        }
+     });
+   
+     // 搜索选项点击事件 - 修改为保持输入框焦点
+     document.querySelectorAll('#searchOptions .search-option').forEach(btn => {
+       btn.addEventListener('click', (e) => {
+         e.preventDefault();
+         document.querySelectorAll('#searchOptions .search-option').forEach(b => b.classList.remove('active'));
+         btn.classList.add('active');
+         state.searchType = btn.dataset.type;
+         
+         // 重新聚焦到搜索输入框
+         setTimeout(() => {
+           document.getElementById('searchInput').focus();
+         }, 10);
+       });
+     });
+   
+     // 搜索遮罩点击事件
+     document.getElementById('searchOverlay').addEventListener('click', (e) => {
+       if (e.target === e.currentTarget) closeSearchOverlay();
+     });
+   
+     // 全局点击事件 - 修复：点击非菜单区域时关闭菜单
+     document.addEventListener('click', (e) => {
+       const menu = document.getElementById('floatingMenu');
+       const btn = document.getElementById('menuBtn');
        
-       // 设置主题颜色
-       if (blogConfig.themeColor) {
-         document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
+       // 如果点击的不是菜单本身也不是菜单按钮，且菜单是打开的，则关闭菜单
+       if (!menu.contains(e.target) && !btn.contains(e.target) && 
+           (menu.classList.contains('active') || menu.classList.contains('closing'))) {
+         closeFloatingMenu();
        }
-     }); // DOMContentLoaded结束
+     });
+   
+     // 阻止菜单内部的点击事件冒泡，避免立即关闭菜单
+     const floatingMenu = document.getElementById('floatingMenu');
+     floatingMenu.addEventListener('click', (e) => {
+       e.stopPropagation();
+     });
+   
+     // 主题切换事件
+     document.getElementById('darkModeToggle').addEventListener('click', toggleTheme);
+   
+     // 标题点击事件
+     document.getElementById('titleToggle').addEventListener('click', () => {
+       if (state.isSearchMode) {
+         exitSearchMode();
+       } else {
+         const topSection = document.getElementById('mobileTopSection');
+         topSection.classList.toggle('expanded');
+         topSection.classList.toggle('collapsed');
+       }
+     });
+   
+     // 特殊卡片点击事件
+     const specialCardHeader = document.querySelector('.special-card-header');
+     if (specialCardHeader) {
+       specialCardHeader.addEventListener('click', (e) => {
+         // 如果只有内容模式，则不展开/折叠
+         if (blogData.specials.length === 1 && shouldShowOnlyContent(blogData.specials[0])) {
+           e.preventDefault();
+           e.stopPropagation();
+           return false;
+         }
+         
+         e.stopPropagation();
+         const card = document.getElementById('specialCard');
+         card.classList.toggle('expanded');
+         card.setAttribute('aria-expanded', card.classList.contains('expanded'));
+       });
+     }
+   }
+   
+   // 绑定菜单事件
+   function bindMenuEvents() {
+     // 绑定动态菜单项的点击事件
+     const menuContainer = document.getElementById('menuItems');
+     const menuItemElements = menuContainer.querySelectorAll('.menu-item');
+     
+     menuItemElements.forEach(item => {
+       if (item.id !== 'searchMenuItem' && item.id !== 'darkModeToggle') {
+         item.addEventListener('click', () => {
+           closeFloatingMenu();
+         });
+       }
+     });
+   }
+   
+   // ==================== 页面初始化 ====================
+   document.addEventListener('DOMContentLoaded', () => {
+     // 初始化主题
+     initTheme();
+     
+     // 初始化状态
+     state.originalArticles = [...blogData.articles];
+     state.currentArticles = blogData.articles;
+   
+     // 渲染内容
+     const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
+     renderArticles(sortedArticles, false);
+     renderSpecialCards();
+     
+     // 渲染动态菜单项
+     renderDynamicMenuItems();
+   
+     // 绑定事件
+     bindEvents();
+     bindMenuEvents();
+     
+     // 设置主题颜色
+     if (blogConfig.themeColor) {
+       document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
+     }
+   });
    </script>
 </body>
 
