@@ -1029,6 +1029,160 @@
          scroll-behavior: smooth;
          -webkit-overflow-scrolling: touch;
       }
+
+      /* ==================== 虚拟滚动相关样式 ==================== */
+      .mobile-cards-wrapper {
+         flex: 1;
+         display: flex;
+         flex-direction: column;
+         min-height: 0;
+         overflow: hidden;
+         position: relative;
+      }
+
+      .cards-viewport {
+         flex: 1;
+         position: relative;
+         overflow-x: auto;
+         overflow-y: hidden;
+         -ms-overflow-style: none;
+         scrollbar-width: none;
+         will-change: transform;
+         backface-visibility: hidden;
+         -webkit-backface-visibility: hidden;
+         transform: translateZ(0);
+         -webkit-transform: translateZ(0);
+         contain: layout style paint;
+         z-index: 1;
+      }
+
+      .cards-viewport::-webkit-scrollbar {
+         display: none;
+      }
+
+      .cards-container {
+         position: relative;
+         height: 100%;
+         will-change: transform;
+         contain: layout style;
+      }
+
+      .rectangle-card {
+         position: absolute;
+         top: 0;
+         height: 100%;
+         min-width: 82px;
+         border-radius: 10px;
+         cursor: pointer;
+         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+         overflow: hidden;
+         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+         will-change: transform, min-width, left;
+         contain: layout style;
+         background: linear-gradient(135deg, var(--primary-color), #c0392b);
+         z-index: 1;
+      }
+
+      .rectangle-card.active {
+         min-width: 279px;
+         background: linear-gradient(135deg, #c0392b, #a93226);
+         z-index: 2;
+      }
+
+      /* 为虚拟滚动添加加载指示器 */
+      .scroll-loader {
+         position: absolute;
+         bottom: 10px;
+         left: 50%;
+         transform: translateX(-50%);
+         background: rgba(0, 0, 0, 0.7);
+         color: white;
+         padding: 8px 16px;
+         border-radius: 20px;
+         font-size: 12px;
+         opacity: 0;
+         transition: opacity 0.3s ease;
+         pointer-events: none;
+         z-index: 1000;
+      }
+
+      .scroll-loader.visible {
+         opacity: 1;
+      }
+
+      /* 为滚动容器添加渐变边缘 */
+      .cards-viewport::after {
+         content: '';
+         position: absolute;
+         top: 0;
+         right: 0;
+         width: 30px;
+         height: 100%;
+         background: linear-gradient(90deg, transparent, var(--dark-bg));
+         pointer-events: none;
+         opacity: 0;
+         transition: opacity 0.3s ease;
+      }
+
+      .cards-viewport.scrolling::after {
+         opacity: 0.7;
+      }
+
+      /* 添加滚动提示 */
+      .scroll-hint {
+         position: absolute;
+         right: 10px;
+         top: 50%;
+         transform: translateY(-50%);
+         color: rgba(255, 255, 255, 0.5);
+         font-size: 24px;
+         animation: bounce 2s infinite;
+         pointer-events: none;
+         z-index: 10;
+      }
+
+      @keyframes bounce {
+         0%, 20%, 50%, 80%, 100% {
+            transform: translateY(-50%) translateX(0);
+         }
+         40% {
+            transform: translateY(-50%) translateX(-5px);
+         }
+         60% {
+            transform: translateY(-50%) translateX(-3px);
+         }
+      }
+
+      /* 响应式调整 */
+      @media (max-width: 480px) {
+         .rectangle-card {
+            min-width: 70px;
+         }
+         
+         .rectangle-card.active {
+            min-width: 250px;
+         }
+         
+         .card-content-expanded {
+            width: 250px;
+         }
+      }
+
+      @media (max-width: 360px) {
+         .rectangle-card {
+            min-width: 65px;
+         }
+         
+         .rectangle-card.active {
+            min-width: 220px;
+         }
+         
+         .card-content-expanded {
+            width: 220px;
+         }
+      }
+
+      /* ... [保持其他CSS不变] ... */
    </style>
 </head>
 
@@ -1063,6 +1217,12 @@
          <div class="article-list-section" id="articleListSection">
             <div class="mobile-cards-container">
                <div class="mobile-cards-wrapper" id="mobileCardsWrapper">
+                  <!-- 虚拟滚动容器 -->
+                  <div class="cards-viewport" id="cardsViewport">
+                     <div class="cards-container" id="cardsContainer"></div>
+                     <div class="scroll-hint" id="scrollHint">›</div>
+                  </div>
+                  <div class="scroll-loader" id="scrollLoader">加载中...</div>
                </div>
             </div>
          </div>
@@ -1103,6 +1263,468 @@
      themeColor: "#e74c3c",
      runDate: "2026.01.01"
    };
+   
+   // ==================== 虚拟滚动管理器 ====================
+   class VirtualScroll {
+     constructor() {
+       this.viewport = document.getElementById('cardsViewport');
+       this.container = document.getElementById('cardsContainer');
+       this.scrollLoader = document.getElementById('scrollLoader');
+       this.scrollHint = document.getElementById('scrollHint');
+       
+       // 卡片尺寸配置
+       this.cardWidth = {
+         collapsed: 82,    // 折叠状态宽度
+         expanded: 279     // 展开状态宽度
+       };
+       
+       // 可视区域左右额外渲染的卡片数
+       this.buffer = 2;
+       
+       // 状态管理
+       this.state = {
+         allArticles: [],          // 所有文章数据
+         visibleArticles: [],      // 当前可见文章
+         renderedCards: new Map(), // 已渲染的卡片DOM (index -> element)
+         cardStates: new Map(),    // 卡片状态 (index -> { isActive: boolean, width: number })
+         scrollLeft: 0,            // 当前滚动位置
+         viewportWidth: 0,         // 视口宽度
+         containerWidth: 0,        // 容器总宽度
+         isScrolling: false,       // 是否正在滚动
+         scrollTimer: null,        // 滚动计时器
+         activeCardIndex: 1        // 默认激活的卡片索引（第二个）
+       };
+       
+       // 性能监控
+       this.stats = {
+         renderCount: 0,
+         lastRenderTime: 0,
+         visibleCount: 0
+       };
+       
+       // 绑定事件
+       this.bindEvents();
+     }
+     
+     // 初始化虚拟滚动
+     init(articles) {
+       this.state.allArticles = [...articles];
+       this.calculateViewportSize();
+       this.updateContainerSize();
+       this.renderVisibleCards();
+       this.updateScrollHint();
+     }
+     
+     // 计算视口尺寸
+     calculateViewportSize() {
+       const rect = this.viewport.getBoundingClientRect();
+       this.state.viewportWidth = rect.width;
+     }
+     
+     // 更新容器总宽度
+     updateContainerSize() {
+       let totalWidth = 0;
+       const gap = 15; // 卡片间距
+       
+       this.state.allArticles.forEach((article, index) => {
+         const isActive = index === this.state.activeCardIndex;
+         const width = isActive ? this.cardWidth.expanded : this.cardWidth.collapsed;
+         
+         // 保存卡片状态
+         this.state.cardStates.set(index, {
+           isActive,
+           width,
+           left: totalWidth
+         });
+         
+         totalWidth += width + gap;
+       });
+       
+       // 减去最后一个卡片的间距
+       totalWidth -= gap;
+       
+       this.state.containerWidth = totalWidth;
+       this.container.style.width = `${totalWidth}px`;
+     }
+     
+     // 获取可见卡片的索引范围
+     getVisibleRange() {
+       const scrollLeft = this.state.scrollLeft;
+       const viewportWidth = this.state.viewportWidth;
+       
+       let startIndex = -1;
+       let endIndex = -1;
+       let currentLeft = 0;
+       
+       // 查找开始索引
+       for (let i = 0; i < this.state.allArticles.length; i++) {
+         const state = this.state.cardStates.get(i);
+         if (!state) continue;
+         
+         if (currentLeft + state.width > scrollLeft) {
+           startIndex = Math.max(0, i - this.buffer);
+           break;
+         }
+         currentLeft += state.width + 15;
+       }
+       
+       if (startIndex === -1) {
+         startIndex = 0;
+         currentLeft = 0;
+       }
+       
+       // 查找结束索引
+       let viewportRight = scrollLeft + viewportWidth;
+       for (let i = startIndex; i < this.state.allArticles.length; i++) {
+         const state = this.state.cardStates.get(i);
+         if (!state) continue;
+         
+         if (currentLeft > viewportRight) {
+           endIndex = Math.min(this.state.allArticles.length - 1, i + this.buffer);
+           break;
+         }
+         
+         if (i === this.state.allArticles.length - 1) {
+           endIndex = this.state.allArticles.length - 1;
+         }
+         
+         currentLeft += state.width + 15;
+       }
+       
+       return { startIndex, endIndex };
+     }
+     
+     // 渲染可见卡片
+     renderVisibleCards() {
+       const startTime = performance.now();
+       const { startIndex, endIndex } = this.getVisibleRange();
+       
+       // 更新性能统计
+       this.stats.visibleCount = endIndex - startIndex + 1;
+       
+       // 移除不在可见范围内的卡片
+       for (const [index, card] of this.state.renderedCards) {
+         if (index < startIndex || index > endIndex) {
+           card.remove();
+           this.state.renderedCards.delete(index);
+         }
+       }
+       
+       // 添加或更新可见卡片
+       for (let i = startIndex; i <= endIndex; i++) {
+         if (!this.state.renderedCards.has(i)) {
+           const card = this.createCardElement(i);
+           this.container.appendChild(card);
+           this.state.renderedCards.set(i, card);
+         }
+         
+         // 更新卡片位置
+         this.updateCardPosition(i);
+       }
+       
+       // 记录渲染时间
+       this.stats.lastRenderTime = performance.now() - startTime;
+       this.stats.renderCount++;
+       
+       // 更新加载提示
+       this.updateLoaderHint(startIndex, endIndex);
+     }
+     
+     // 创建卡片元素
+     createCardElement(index) {
+       const article = this.state.allArticles[index];
+       const cardState = this.state.cardStates.get(index);
+       
+       if (!article || !cardState) return null;
+       
+       const card = document.createElement('article');
+       card.className = `rectangle-card ${cardState.isActive ? 'active' : ''}`;
+       card.id = `card${index + 1}`;
+       card.setAttribute('role', 'article');
+       card.setAttribute('aria-labelledby', `card${index + 1}Title`);
+       card.setAttribute('data-index', index);
+       
+       // 使用标签过滤器获取过滤后的标签
+       const filteredTags = tagFilter.filterTags(article.tags);
+       const firstDisplayableTag = tagFilter.getFirstDisplayableTag(article.tags);
+       
+       // 垂直标题
+       const vTitle = article.verticalTitle || firstDisplayableTag || 'Blog';
+       
+       // 构建标签HTML
+       let tagsHTML = '';
+       if (article.date) {
+         tagsHTML += `<span class="card-tag date-tag">${article.date}</span>`;
+       }
+       if (filteredTags && Array.isArray(filteredTags)) {
+         tagsHTML += filteredTags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join('');
+       }
+       
+       // 构建内容HTML
+       let contentHTML = '';
+       if (article.content && Array.isArray(article.content)) {
+         contentHTML = article.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
+       }
+       
+       card.innerHTML = `
+         <div class="vertical-title">${escapeHtml(vTitle)}</div>
+         <div class="card-content-expanded">
+           <div class="card-tags">
+             ${tagsHTML}
+           </div>
+           <div class="card-title-container">
+             <h2 id="card${index + 1}Title">${escapeHtml(article.title)}</h2>
+           </div>
+           <div class="card-content-main">
+             ${contentHTML}
+           </div>
+           <div class="card-footer">
+             <button class="mobile-card-btn" onclick="window.location.href='${escapeHtml(article.url)}'">Read</button>
+           </div>
+         </div>
+       `;
+       
+       // 添加点击事件
+       card.addEventListener('click', (e) => {
+         if (e.target.closest('.mobile-card-btn')) return;
+         this.handleCardClick(index);
+       });
+       
+       return card;
+     }
+     
+     // 更新卡片位置
+     updateCardPosition(index) {
+       const card = this.state.renderedCards.get(index);
+       const cardState = this.state.cardStates.get(index);
+       
+       if (card && cardState) {
+         card.style.left = `${cardState.left}px`;
+         card.style.width = `${cardState.width}px`;
+       }
+     }
+     
+     // 处理卡片点击
+     handleCardClick(clickedIndex) {
+       // 如果点击的是已激活的卡片，则折叠
+       if (this.state.cardStates.get(clickedIndex).isActive) {
+         this.deactivateCard(clickedIndex);
+       } else {
+         // 先折叠其他所有卡片
+         this.state.cardStates.forEach((state, index) => {
+           if (state.isActive) {
+             this.deactivateCard(index);
+           }
+         });
+         
+         // 激活点击的卡片
+         this.activateCard(clickedIndex);
+       }
+       
+       // 确保激活的卡片在视口内可见
+       this.scrollToCard(clickedIndex);
+     }
+     
+     // 激活卡片
+     activateCard(index) {
+       const cardState = this.state.cardStates.get(index);
+       if (!cardState) return;
+       
+       cardState.isActive = true;
+       cardState.width = this.cardWidth.expanded;
+       
+       // 更新状态
+       this.state.activeCardIndex = index;
+       
+       // 更新卡片UI
+       const card = this.state.renderedCards.get(index);
+       if (card) {
+         card.classList.add('active');
+       }
+       
+       // 重新计算所有卡片位置
+       this.updateAllPositions();
+     }
+     
+     // 取消激活卡片
+     deactivateCard(index) {
+       const cardState = this.state.cardStates.get(index);
+       if (!cardState) return;
+       
+       cardState.isActive = false;
+       cardState.width = this.cardWidth.collapsed;
+       
+       // 更新卡片UI
+       const card = this.state.renderedCards.get(index);
+       if (card) {
+         card.classList.remove('active');
+       }
+       
+       // 重新计算所有卡片位置
+       this.updateAllPositions();
+     }
+     
+     // 重新计算所有卡片位置
+     updateAllPositions() {
+       let currentLeft = 0;
+       const gap = 15;
+       
+       // 重新计算所有卡片位置
+       for (let i = 0; i < this.state.allArticles.length; i++) {
+         const cardState = this.state.cardStates.get(i);
+         if (!cardState) continue;
+         
+         cardState.left = currentLeft;
+         currentLeft += cardState.width + gap;
+         
+         // 更新已渲染卡片的位置
+         if (this.state.renderedCards.has(i)) {
+           this.updateCardPosition(i);
+         }
+       }
+       
+       // 更新容器宽度
+       this.state.containerWidth = currentLeft - gap;
+       this.container.style.width = `${this.state.containerWidth}px`;
+     }
+     
+     // 滚动到指定卡片
+     scrollToCard(index) {
+       const cardState = this.state.cardStates.get(index);
+       if (!cardState) return;
+       
+       const viewportWidth = this.state.viewportWidth;
+       const cardLeft = cardState.left;
+       const cardWidth = cardState.width;
+       
+       // 计算最佳滚动位置，使卡片在视口中居中
+       let targetScroll = cardLeft - (viewportWidth - cardWidth) / 2;
+       
+       // 限制滚动范围
+       targetScroll = Math.max(0, Math.min(targetScroll, this.state.containerWidth - viewportWidth));
+       
+       // 平滑滚动
+       this.viewport.scrollTo({
+         left: targetScroll,
+         behavior: 'smooth'
+       });
+     }
+     
+     // 更新加载提示
+     updateLoaderHint(startIndex, endIndex) {
+       if (startIndex > 0 || endIndex < this.state.allArticles.length - 1) {
+         this.scrollLoader.textContent = `显示 ${startIndex + 1}-${endIndex + 1} / ${this.state.allArticles.length}`;
+         this.scrollLoader.classList.add('visible');
+       } else {
+         this.scrollLoader.classList.remove('visible');
+       }
+     }
+     
+     // 更新滚动提示
+     updateScrollHint() {
+       const maxScroll = this.state.containerWidth - this.state.viewportWidth;
+       const showHint = this.state.scrollLeft < maxScroll - 50;
+       
+       if (showHint) {
+         this.scrollHint.style.display = 'block';
+       } else {
+         this.scrollHint.style.display = 'none';
+       }
+     }
+     
+     // 处理滚动事件
+     handleScroll() {
+       this.state.scrollLeft = this.viewport.scrollLeft;
+       
+       // 设置滚动状态
+       this.viewport.classList.add('scrolling');
+       this.state.isScrolling = true;
+       
+       // 清除之前的计时器
+       if (this.state.scrollTimer) {
+         clearTimeout(this.state.scrollTimer);
+       }
+       
+       // 设置新的计时器
+       this.state.scrollTimer = setTimeout(() => {
+         this.viewport.classList.remove('scrolling');
+         this.state.isScrolling = false;
+       }, 150);
+       
+       // 更新可见卡片
+       this.renderVisibleCards();
+       this.updateScrollHint();
+       
+       // 节流渲染
+       this.throttleRender();
+     }
+     
+     // 节流渲染
+     throttleRender() {
+       if (this.renderTimeout) {
+         cancelAnimationFrame(this.renderTimeout);
+       }
+       
+       this.renderTimeout = requestAnimationFrame(() => {
+         this.renderVisibleCards();
+       });
+     }
+     
+     // 处理窗口大小变化
+     handleResize() {
+       this.calculateViewportSize();
+       this.renderVisibleCards();
+       this.updateScrollHint();
+     }
+     
+     // 绑定事件
+     bindEvents() {
+       this.viewport.addEventListener('scroll', () => this.handleScroll());
+       window.addEventListener('resize', () => this.handleResize());
+       
+       // 使用防抖处理resize
+       this.debouncedResize = debounce(() => this.handleResize(), 150);
+       window.addEventListener('resize', this.debouncedResize);
+     }
+     
+     // 销毁
+     destroy() {
+       this.viewport.removeEventListener('scroll', () => this.handleScroll());
+       window.removeEventListener('resize', this.debouncedResize);
+       if (this.state.scrollTimer) {
+         clearTimeout(this.state.scrollTimer);
+       }
+     }
+     
+     // 获取性能统计
+     getStats() {
+       return {
+         ...this.stats,
+         renderedCards: this.state.renderedCards.size,
+         totalCards: this.state.allArticles.length
+       };
+     }
+     
+     // 搜索模式切换
+     setSearchMode(isSearchMode, filteredArticles = null) {
+       const articles = filteredArticles || this.state.allArticles;
+       this.init(articles);
+       
+       // 搜索模式下激活第一个卡片
+       if (isSearchMode) {
+         setTimeout(() => {
+           this.activateCard(0);
+           this.scrollToCard(0);
+         }, 100);
+       } else {
+         // 普通模式激活第二个卡片
+         setTimeout(() => {
+           this.activateCard(1);
+           this.scrollToCard(1);
+         }, 100);
+       }
+     }
+   }
    
    // ==================== 标签过滤器 ====================
    class TagFilter {
@@ -1171,7 +1793,8 @@
      isSearchMode: false,
      originalArticles: [],
      currentArticles: [],
-     searchType: SEARCH_TYPES.TITLE
+     searchType: SEARCH_TYPES.TITLE,
+     virtualScroll: null
    };
    
    // ==================== 主题管理 ====================
@@ -1278,71 +1901,13 @@
    
    // ==================== 渲染函数 ====================
    function renderArticles(articles = blogData.articles, isSearchMode = false) {
-     const wrapper = document.getElementById('mobileCardsWrapper');
-     wrapper.innerHTML = '';
-     
-     // 按日期倒序
-     const sorted = [...articles].sort((a, b) => new Date(b.date) - new Date(a.date));
-   
-     sorted.forEach((article, index) => {
-       const card = document.createElement('article');
-       card.className = 'rectangle-card';
-       card.id = `card${index + 1}`;
-       card.setAttribute('role', 'article');
-       card.setAttribute('aria-labelledby', `card${index + 1}Title`);
-       
-       // 使用标签过滤器获取过滤后的标签
-       const filteredTags = tagFilter.filterTags(article.tags);
-       const firstDisplayableTag = tagFilter.getFirstDisplayableTag(article.tags);
-       
-       // 规格 3.3: 默认垂直标题为第一个可显示标签
-       const vTitle = article.verticalTitle || firstDisplayableTag || 'Blog';
-       
-       // 构建标签HTML - 只显示过滤后的标签
-       let tagsHTML = '';
-       if (article.date) {
-         tagsHTML += `<span class="card-tag date-tag">${article.date}</span>`;
-       }
-       if (filteredTags && Array.isArray(filteredTags)) {
-         tagsHTML += filteredTags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join('');
-       }
-       
-       // 构建内容HTML
-       let contentHTML = '';
-       if (article.content && Array.isArray(article.content)) {
-         contentHTML = article.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-       }
-       
-       card.innerHTML = `
-         <div class="vertical-title">${escapeHtml(vTitle)}</div>
-         <div class="card-content-expanded">
-           <div class="card-tags">
-             ${tagsHTML}
-           </div>
-           <div class="card-title-container">
-             <h2 id="card${index + 1}Title">${escapeHtml(article.title)}</h2>
-           </div>
-           <div class="card-content-main">
-             ${contentHTML}
-           </div>
-           <div class="card-footer">
-             <button class="mobile-card-btn" onclick="window.location.href='${escapeHtml(article.url)}'">Read</button>
-           </div>
-         </div>
-       `;
-   
-       // 搜索模式默认展开第一个，普通模式默认展开第二个(索引1)
-       if ((!isSearchMode && index === 1) || (isSearchMode && index === 0)) {
-         setTimeout(() => card.classList.add('active'), 100);
-       }
-   
-       card.addEventListener('click', (e) => {
-         if (e.target.closest('.mobile-card-btn')) return;
-         document.querySelectorAll('.rectangle-card').forEach(c => c !== card && c.classList.remove('active'));
-         card.classList.toggle('active');
-       });
-       wrapper.appendChild(card);
-     });
+     if (state.virtualScroll) {
+       state.virtualScroll.setSearchMode(isSearchMode, articles);
+     } else {
+       // 初始化虚拟滚动
+       state.virtualScroll = new VirtualScroll();
+       state.virtualScroll.init(articles);
+     }
    }
    
    function renderSpecialCards() {
@@ -1735,8 +2300,16 @@
      if (blogConfig.themeColor) {
        document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
      }
+     
+   // 页面卸载时清理
+   window.addEventListener('beforeunload', () => {
+     if (state.virtualScroll) {
+       state.virtualScroll.destroy();
+     }
    });
+   
    </script>
+   
 </body>
 
 </html>
