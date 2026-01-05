@@ -36,4 +36,6 @@ templates:
   
 # 自定义的特殊文章标签
 special_tags:
+  - "top"
+  - "special"
   - "项目"
