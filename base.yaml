@@ -9,7 +9,16 @@ blog:
     primary_color: '#e74c3c'
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
-articles: []
+articles:
+- id: '3'
+  title: Tek It
+  date: '2026-01-05'
+  tags:
+  - 普通
+  content:
+  - 暂无简介
+  url: article/3.html
+  verticalTitle: Tek It
 specials:
 - id: '2'
   title: R_Land
