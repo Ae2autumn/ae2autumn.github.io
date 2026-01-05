@@ -2,7 +2,7 @@ blog:
   avatar: "https://avatars.githubusercontent.com/u/195545824?v=4"           # 头像文件路径（相对路径）
   name: "Ae1autumn"                         # 博客名称
   sname: "特别项目"                        # Special卡片标题
-  description: "他们想让我的心脏结冰,哈哈哈,可是他们不知道,我的心有多冷,冷到结不了冰"                   # 博客描述
+  description: "他们想让我的心脏结冰\n哈哈哈,可是他们不知道,我的心有多冷,冷到结不了冰"                   # 博客描述
   favicon: "https://avatars.githubusercontent.com/u/195545824?v=4"         # 网站图标
 
 # 浮动菜单配置
