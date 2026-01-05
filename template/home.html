@@ -1128,31 +1128,6 @@
          opacity: 0.7;
       }
 
-      /* 添加滚动提示 */
-      .scroll-hint {
-         position: absolute;
-         right: 10px;
-         top: 50%;
-         transform: translateY(-50%);
-         color: rgba(255, 255, 255, 0.5);
-         font-size: 24px;
-         animation: bounce 2s infinite;
-         pointer-events: none;
-         z-index: 10;
-      }
-
-      @keyframes bounce {
-         0%, 20%, 50%, 80%, 100% {
-            transform: translateY(-50%) translateX(0);
-         }
-         40% {
-            transform: translateY(-50%) translateX(-5px);
-         }
-         60% {
-            transform: translateY(-50%) translateX(-3px);
-         }
-      }
-
       /* 响应式调整 */
       @media (max-width: 480px) {
          .rectangle-card {
@@ -1181,8 +1156,6 @@
             width: 220px;
          }
       }
-
-      /* ... [保持其他CSS不变] ... */
    </style>
 </head>
 
@@ -1220,7 +1193,7 @@
                   <!-- 虚拟滚动容器 -->
                   <div class="cards-viewport" id="cardsViewport">
                      <div class="cards-container" id="cardsContainer"></div>
-                     <div class="scroll-hint" id="scrollHint">›</div>
+                     <!-- 移除了scroll-hint -->
                   </div>
                   <div class="scroll-loader" id="scrollLoader">加载中...</div>
                </div>
@@ -1270,7 +1243,6 @@
        this.viewport = document.getElementById('cardsViewport');
        this.container = document.getElementById('cardsContainer');
        this.scrollLoader = document.getElementById('scrollLoader');
-       this.scrollHint = document.getElementById('scrollHint');
        
        // 卡片尺寸配置
        this.cardWidth = {
@@ -1295,13 +1267,6 @@
          activeCardIndex: 1        // 默认激活的卡片索引（第二个）
        };
        
-       // 性能监控
-       this.stats = {
-         renderCount: 0,
-         lastRenderTime: 0,
-         visibleCount: 0
-       };
-       
        // 绑定事件
        this.bindEvents();
      }
@@ -1312,7 +1277,6 @@
        this.calculateViewportSize();
        this.updateContainerSize();
        this.renderVisibleCards();
-       this.updateScrollHint();
      }
      
      // 计算视口尺寸
@@ -1396,11 +1360,7 @@
      
      // 渲染可见卡片
      renderVisibleCards() {
-       const startTime = performance.now();
        const { startIndex, endIndex } = this.getVisibleRange();
-       
-       // 更新性能统计
-       this.stats.visibleCount = endIndex - startIndex + 1;
        
        // 移除不在可见范围内的卡片
        for (const [index, card] of this.state.renderedCards) {
@@ -1414,17 +1374,15 @@
        for (let i = startIndex; i <= endIndex; i++) {
          if (!this.state.renderedCards.has(i)) {
            const card = this.createCardElement(i);
-           this.container.appendChild(card);
-           this.state.renderedCards.set(i, card);
+           if (card) {
+             this.container.appendChild(card);
+             this.state.renderedCards.set(i, card);
+           }
          }
          
          // 更新卡片位置
          this.updateCardPosition(i);
        }
-       
-       // 记录渲染时间
-       this.stats.lastRenderTime = performance.now() - startTime;
-       this.stats.renderCount++;
        
        // 更新加载提示
        this.updateLoaderHint(startIndex, endIndex);
@@ -1620,18 +1578,6 @@
        }
      }
      
-     // 更新滚动提示
-     updateScrollHint() {
-       const maxScroll = this.state.containerWidth - this.state.viewportWidth;
-       const showHint = this.state.scrollLeft < maxScroll - 50;
-       
-       if (showHint) {
-         this.scrollHint.style.display = 'block';
-       } else {
-         this.scrollHint.style.display = 'none';
-       }
-     }
-     
      // 处理滚动事件
      handleScroll() {
        this.state.scrollLeft = this.viewport.scrollLeft;
@@ -1653,34 +1599,17 @@
        
        // 更新可见卡片
        this.renderVisibleCards();
-       this.updateScrollHint();
-       
-       // 节流渲染
-       this.throttleRender();
-     }
-     
-     // 节流渲染
-     throttleRender() {
-       if (this.renderTimeout) {
-         cancelAnimationFrame(this.renderTimeout);
-       }
-       
-       this.renderTimeout = requestAnimationFrame(() => {
-         this.renderVisibleCards();
-       });
      }
      
      // 处理窗口大小变化
      handleResize() {
        this.calculateViewportSize();
        this.renderVisibleCards();
-       this.updateScrollHint();
      }
      
      // 绑定事件
      bindEvents() {
        this.viewport.addEventListener('scroll', () => this.handleScroll());
-       window.addEventListener('resize', () => this.handleResize());
        
        // 使用防抖处理resize
        this.debouncedResize = debounce(() => this.handleResize(), 150);
@@ -1694,15 +1623,6 @@
        if (this.state.scrollTimer) {
          clearTimeout(this.state.scrollTimer);
        }
-     }
-     
-     // 获取性能统计
-     getStats() {
-       return {
-         ...this.stats,
-         renderedCards: this.state.renderedCards.size,
-         totalCards: this.state.allArticles.length
-       };
      }
      
      // 搜索模式切换
@@ -1730,7 +1650,7 @@
    class TagFilter {
      constructor() {
        // 内部标签列表，可以配置
-       this.internalTags = new Set( {{ SPECIAL_TAGS }} );
+       this.internalTags = new Set({{ SPECIAL_TAGS }});
      }
      
      // 过滤掉内部标签
@@ -1770,11 +1690,6 @@
        if (tag) {
          this.internalTags.delete(tag.toLowerCase().trim());
        }
-     }
-     
-     // 获取所有内部标签
-     getInternalTags() {
-       return Array.from(this.internalTags);
      }
    }
    
@@ -2300,7 +2215,8 @@
      if (blogConfig.themeColor) {
        document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
      }
-     
+   });
+   
    // 页面卸载时清理
    window.addEventListener('beforeunload', () => {
      if (state.virtualScroll) {
