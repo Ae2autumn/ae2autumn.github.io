@@ -10,6 +10,15 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '6'
+  title: gvjgchj
+  date: '2026-01-05'
+  tags:
+  - 普通
+  content:
+  - 暂无简介
+  url: article/6.html
+  verticalTitle: gvjgchj
 - id: '5'
   title: yuuhh
   date: '2026-01-05'
