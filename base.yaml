@@ -10,6 +10,15 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '7'
+  title: 考虑考虑咯
+  date: '2026-01-05'
+  tags:
+  - 记录
+  content:
+  - 暂无简介
+  url: article/7.html
+  verticalTitle: 考虑考虑咯
 - id: '6'
   title: gvjgchj
   date: '2026-01-05'
