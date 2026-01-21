@@ -1340,24 +1340,24 @@
       // 初始化标签过滤器
       const tagFilter = new TagFilter();
       
-      // ==================== 优化动画的虚拟滚动 ====================
+      // ==================== 虚拟滚动管理器 (优化版) ====================
       class VirtualScroll {
         constructor() {
           this.viewport = document.getElementById('cardsViewport');
           this.container = document.getElementById('cardsContainer');
           
+          // 卡片尺寸配置
           this.cardWidth = {
             collapsed: 82,
             expanded: 279
           };
-          this.gap = 15;
-          this.buffer = 2;
+          this.gap = 15; // 卡片间距
           
-          // 动画配置
-          this.animationDuration = 500; // 与 CSS transition 时长匹配
+          this.buffer = 2; // 缓冲区卡片数量
           
           this.state = {
             allArticles: [],
+            visibleArticles: [],
             renderedCards: new Map(),
             cardStates: new Map(),
             scrollLeft: 0,
@@ -1366,14 +1366,11 @@
             isScrolling: false,
             scrollTimer: null,
             activeCardIndex: 1,
-            isTransitioning: false,
-            isAnimating: false, // 新增: 标记是否正在执行卡片动画
-            animationTimer: null, // 新增: 动画定时器
-            scrollLockTarget: null // 新增: 动画期间锁定的滚动目标
+            isTransitioning: false // 新增: 标记是否正在过渡中
           };
           
           this.themeTransitionTimeout = null;
-          this.scrollAnimationFrame = null;
+          this.scrollAnimationFrame = null; // 新增: RAF ID
           
           this.bindEvents();
         }
@@ -1390,6 +1387,7 @@
           this.state.viewportWidth = rect.width;
         }
         
+        // 优化: 使用单次遍历计算所有位置
         updateContainerSize() {
           let totalWidth = 0;
           
@@ -1413,6 +1411,7 @@
           this.container.style.width = `${totalWidth}px`;
         }
         
+        // 修复: 改进可见范围计算逻辑
         getVisibleRange() {
           const scrollLeft = this.state.scrollLeft;
           const viewportWidth = this.state.viewportWidth;
@@ -1421,12 +1420,14 @@
           let startIndex = -1;
           let endIndex = -1;
           
+          // 找到起始索引
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
             const cardRight = state.left + state.width;
             
+            // 卡片右边缘在视口左边缘右侧,即卡片可见
             if (cardRight > scrollLeft) {
               startIndex = Math.max(0, i - this.buffer);
               break;
@@ -1437,16 +1438,19 @@
             return { startIndex: 0, endIndex: Math.min(this.buffer * 2, this.state.allArticles.length - 1) };
           }
           
+          // 找到结束索引
           for (let i = startIndex; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
+            // 卡片左边缘在视口右边缘右侧,即卡片不可见
             if (state.left > viewportRight) {
               endIndex = Math.min(this.state.allArticles.length - 1, i - 1 + this.buffer);
               break;
             }
           }
           
+          // 如果遍历到最后都没找到结束索引,说明最后的卡片也在视口内
           if (endIndex === -1) {
             endIndex = this.state.allArticles.length - 1;
           }
@@ -1457,6 +1461,7 @@
         renderVisibleCards() {
           const { startIndex, endIndex } = this.getVisibleRange();
           
+          // 移除不可见的卡片
           const toRemove = [];
           for (const [index, card] of this.state.renderedCards) {
             if (index < startIndex || index > endIndex) {
@@ -1472,6 +1477,7 @@
             this.state.renderedCards.delete(index);
           });
           
+          // 渲染可见的卡片
           for (let i = startIndex; i <= endIndex; i++) {
             if (!this.state.renderedCards.has(i)) {
               const card = this.createCardElement(i);
@@ -1497,6 +1503,7 @@
           card.setAttribute('role', 'article');
           card.setAttribute('data-index', index);
           
+          // 设置颜色索引 (1-5 循环)
           const colorIndex = (index % 5) + 1;
           card.setAttribute('data-color-index', colorIndex);
           
@@ -1554,80 +1561,21 @@
         }
         
         handleCardClick(clickedIndex) {
-          if (this.state.isTransitioning || this.state.isAnimating) return;
+          if (this.state.isTransitioning) return; // 防止过渡期间点击
           
-          const isCurrentlyActive = this.state.cardStates.get(clickedIndex).isActive;
-          
-          if (isCurrentlyActive) {
+          if (this.state.cardStates.get(clickedIndex).isActive) {
             this.deactivateCard(clickedIndex);
           } else {
-            // 找到当前激活的卡片
-            let previousActiveIndex = -1;
             this.state.cardStates.forEach((state, index) => {
               if (state.isActive) {
-                previousActiveIndex = index;
+                this.deactivateCard(index);
               }
             });
             
-            // 开始动画序列
-            this.startCardAnimation(previousActiveIndex, clickedIndex);
-          }
-        }
-        
-        // 新增: 卡片动画序列管理
-        startCardAnimation(fromIndex, toIndex) {
-          this.state.isAnimating = true;
-          
-          // 1. 记录动画开始前的滚动位置
-          const currentScrollLeft = this.viewport.scrollLeft;
-          
-          // 2. 计算目标卡片动画后的预期位置
-          const targetCard = this.state.cardStates.get(toIndex);
-          const fromCard = fromIndex >= 0 ? this.state.cardStates.get(fromIndex) : null;
-          
-          // 预计算宽度变化
-          const widthDelta = fromCard ? 
-            (this.cardWidth.collapsed - this.cardWidth.expanded) : 
-            0;
-          
-          // 3. 执行激活/停用
-          if (fromIndex >= 0) {
-            this.deactivateCard(fromIndex);
-          }
-          this.activateCard(toIndex);
-          
-          // 4. 在动画期间补偿滚动位置
-          // 如果被点击的卡片在之前激活卡片的左边,需要补偿滚动
-          let scrollCompensation = 0;
-          if (fromCard && toIndex < fromIndex) {
-            scrollCompensation = widthDelta;
+            this.activateCard(clickedIndex);
           }
           
-          // 5. 锁定滚动位置,防止抖动
-          const targetScrollLeft = currentScrollLeft + scrollCompensation;
-          this.state.scrollLockTarget = targetScrollLeft;
-          
-          // 立即应用补偿
-          if (scrollCompensation !== 0) {
-            this.viewport.scrollLeft = targetScrollLeft;
-            this.state.scrollLeft = targetScrollLeft;
-          }
-          
-          // 6. 动画结束后滚动到目标卡片
-          if (this.state.animationTimer) {
-            clearTimeout(this.state.animationTimer);
-          }
-          
-          this.state.animationTimer = setTimeout(() => {
-            this.state.scrollLockTarget = null;
-            this.scrollToCard(toIndex);
-            
-            // 再等一会儿才允许下次点击
-            setTimeout(() => {
-              this.state.isAnimating = false;
-              this.state.animationTimer = null;
-            }, 100);
-          }, this.animationDuration);
+          this.scrollToCard(clickedIndex);
         }
         
         activateCard(index) {
@@ -1662,6 +1610,7 @@
           this.updateAllPositions();
         }
         
+        // 优化: 批量更新位置,减少重排
         updateAllPositions() {
           let currentLeft = 0;
           const updates = [];
@@ -1685,6 +1634,7 @@
           this.state.containerWidth = currentLeft;
           this.container.style.width = `${this.state.containerWidth}px`;
           
+          // 批量更新DOM
           requestAnimationFrame(() => {
             updates.forEach(i => this.updateCardPosition(i));
           });
@@ -1707,12 +1657,15 @@
           });
         }
         
+        // 修复: 改进重置逻辑,避免动画冲突
         resetScrollToStart() {
+          // 取消任何正在进行的滚动动画
           if (this.scrollAnimationFrame) {
             cancelAnimationFrame(this.scrollAnimationFrame);
             this.scrollAnimationFrame = null;
           }
           
+          // 使用 RAF 确保在下一帧执行
           this.scrollAnimationFrame = requestAnimationFrame(() => {
             this.viewport.scrollLeft = 0;
             this.state.scrollLeft = 0;
@@ -1724,20 +1677,8 @@
           });
         }
         
+        // 优化: 使用 RAF 优化滚动处理
         handleScroll() {
-          // 如果正在动画且有锁定目标,强制回滚到锁定位置
-          if (this.state.isAnimating && this.state.scrollLockTarget !== null) {
-            const currentScroll = this.viewport.scrollLeft;
-            const lockTarget = this.state.scrollLockTarget;
-            
-            // 如果偏移超过阈值,强制回滚
-            if (Math.abs(currentScroll - lockTarget) > 5) {
-              this.viewport.scrollLeft = lockTarget;
-              this.state.scrollLeft = lockTarget;
-              return; // 不触发渲染
-            }
-          }
-          
           this.state.scrollLeft = this.viewport.scrollLeft;
           
           if (this.state.scrollTimer) {
@@ -1754,7 +1695,8 @@
             this.state.isScrolling = false;
           }, 150);
           
-          if (!this.scrollAnimationFrame && !this.state.isAnimating) {
+          // 使用 RAF 进行渲染,避免频繁触发
+          if (!this.scrollAnimationFrame) {
             this.scrollAnimationFrame = requestAnimationFrame(() => {
               this.renderVisibleCards();
               this.scrollAnimationFrame = null;
@@ -1775,6 +1717,7 @@
           window.addEventListener('resize', this.debouncedResize);
         }
         
+        // 优化: 改进主题过渡处理
         prepareForThemeTransition() {
           this.state.isTransitioning = true;
           
@@ -1809,9 +1752,6 @@
           if (this.state.scrollTimer) {
             clearTimeout(this.state.scrollTimer);
           }
-          if (this.state.animationTimer) {
-            clearTimeout(this.state.animationTimer);
-          }
           if (this.themeTransitionTimeout) {
             clearTimeout(this.themeTransitionTimeout);
           }
@@ -1819,6 +1759,7 @@
             cancelAnimationFrame(this.scrollAnimationFrame);
           }
           
+          // 清理所有渲染的卡片
           this.state.renderedCards.forEach(card => {
             if (card && card.parentNode) {
               card.remove();
@@ -1828,9 +1769,11 @@
           this.state.cardStates.clear();
         }
         
+        // 修复: 改进搜索模式切换逻辑
         setSearchMode(isSearchMode, filteredArticles = null) {
           const articles = filteredArticles || this.state.allArticles;
           
+          // 清理旧状态
           this.state.renderedCards.forEach(card => {
             if (card && card.parentNode) {
               card.remove();
@@ -1839,20 +1782,26 @@
           this.state.renderedCards.clear();
           this.state.cardStates.clear();
           
+          // 初始化新数据
           this.init(articles);
           
+          // 搜索模式下展开第一张,正常模式下展开第二张
           const activeIndex = isSearchMode ? 0 : 1;
           
+          // 使用 RAF 确保 DOM 更新完成
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              // 先取消所有激活状态
               this.state.cardStates.forEach((state, index) => {
                 if (state.isActive && index !== activeIndex) {
                   this.deactivateCard(index);
                 }
               });
               
+              // 激活目标卡片
               this.activateCard(activeIndex);
               
+              // 滚动到目标位置
               if (isSearchMode) {
                 this.scrollToCard(activeIndex);
               } else {
