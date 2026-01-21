@@ -1340,23 +1340,24 @@
       // 初始化标签过滤器
       const tagFilter = new TagFilter();
       
-      // ==================== 虚拟滚动管理器 ====================
+      // ==================== 优化动画的虚拟滚动 ====================
       class VirtualScroll {
         constructor() {
           this.viewport = document.getElementById('cardsViewport');
           this.container = document.getElementById('cardsContainer');
           
-          // 卡片尺寸配置
           this.cardWidth = {
             collapsed: 82,
             expanded: 279
           };
-          
+          this.gap = 15;
           this.buffer = 2;
+          
+          // 动画配置
+          this.animationDuration = 500; // 与 CSS transition 时长匹配
           
           this.state = {
             allArticles: [],
-            visibleArticles: [],
             renderedCards: new Map(),
             cardStates: new Map(),
             scrollLeft: 0,
@@ -1364,10 +1365,15 @@
             containerWidth: 0,
             isScrolling: false,
             scrollTimer: null,
-            activeCardIndex: 1
+            activeCardIndex: 1,
+            isTransitioning: false,
+            isAnimating: false, // 新增: 标记是否正在执行卡片动画
+            animationTimer: null, // 新增: 动画定时器
+            scrollLockTarget: null // 新增: 动画期间锁定的滚动目标
           };
           
           this.themeTransitionTimeout = null;
+          this.scrollAnimationFrame = null;
           
           this.bindEvents();
         }
@@ -1386,7 +1392,6 @@
         
         updateContainerSize() {
           let totalWidth = 0;
-          const gap = 15;
           
           this.state.allArticles.forEach((article, index) => {
             const isActive = index === this.state.activeCardIndex;
@@ -1398,10 +1403,12 @@
               left: totalWidth
             });
             
-            totalWidth += width + gap;
+            totalWidth += width;
+            if (index < this.state.allArticles.length - 1) {
+              totalWidth += this.gap;
+            }
           });
           
-          totalWidth -= gap;
           this.state.containerWidth = totalWidth;
           this.container.style.width = `${totalWidth}px`;
         }
@@ -1409,42 +1416,39 @@
         getVisibleRange() {
           const scrollLeft = this.state.scrollLeft;
           const viewportWidth = this.state.viewportWidth;
+          const viewportRight = scrollLeft + viewportWidth;
           
           let startIndex = -1;
           let endIndex = -1;
-          let currentLeft = 0;
           
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
-            if (currentLeft + state.width > scrollLeft) {
+            const cardRight = state.left + state.width;
+            
+            if (cardRight > scrollLeft) {
               startIndex = Math.max(0, i - this.buffer);
               break;
             }
-            currentLeft += state.width + 15;
           }
           
           if (startIndex === -1) {
-            startIndex = 0;
-            currentLeft = 0;
+            return { startIndex: 0, endIndex: Math.min(this.buffer * 2, this.state.allArticles.length - 1) };
           }
           
-          let viewportRight = scrollLeft + viewportWidth;
           for (let i = startIndex; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
-            if (currentLeft > viewportRight) {
-              endIndex = Math.min(this.state.allArticles.length - 1, i + this.buffer);
+            if (state.left > viewportRight) {
+              endIndex = Math.min(this.state.allArticles.length - 1, i - 1 + this.buffer);
               break;
             }
-            
-            if (i === this.state.allArticles.length - 1) {
-              endIndex = this.state.allArticles.length - 1;
-            }
-            
-            currentLeft += state.width + 15;
+          }
+          
+          if (endIndex === -1) {
+            endIndex = this.state.allArticles.length - 1;
           }
           
           return { startIndex, endIndex };
@@ -1453,12 +1457,20 @@
         renderVisibleCards() {
           const { startIndex, endIndex } = this.getVisibleRange();
           
+          const toRemove = [];
           for (const [index, card] of this.state.renderedCards) {
             if (index < startIndex || index > endIndex) {
-              card.remove();
-              this.state.renderedCards.delete(index);
+              toRemove.push(index);
             }
           }
+          
+          toRemove.forEach(index => {
+            const card = this.state.renderedCards.get(index);
+            if (card && card.parentNode) {
+              card.remove();
+            }
+            this.state.renderedCards.delete(index);
+          });
           
           for (let i = startIndex; i <= endIndex; i++) {
             if (!this.state.renderedCards.has(i)) {
@@ -1485,7 +1497,6 @@
           card.setAttribute('role', 'article');
           card.setAttribute('data-index', index);
           
-          // 设置颜色索引 (1-5 循环)
           const colorIndex = (index % 5) + 1;
           card.setAttribute('data-color-index', colorIndex);
           
@@ -1543,19 +1554,80 @@
         }
         
         handleCardClick(clickedIndex) {
-          if (this.state.cardStates.get(clickedIndex).isActive) {
+          if (this.state.isTransitioning || this.state.isAnimating) return;
+          
+          const isCurrentlyActive = this.state.cardStates.get(clickedIndex).isActive;
+          
+          if (isCurrentlyActive) {
             this.deactivateCard(clickedIndex);
           } else {
+            // 找到当前激活的卡片
+            let previousActiveIndex = -1;
             this.state.cardStates.forEach((state, index) => {
               if (state.isActive) {
-                this.deactivateCard(index);
+                previousActiveIndex = index;
               }
             });
             
-            this.activateCard(clickedIndex);
+            // 开始动画序列
+            this.startCardAnimation(previousActiveIndex, clickedIndex);
+          }
+        }
+        
+        // 新增: 卡片动画序列管理
+        startCardAnimation(fromIndex, toIndex) {
+          this.state.isAnimating = true;
+          
+          // 1. 记录动画开始前的滚动位置
+          const currentScrollLeft = this.viewport.scrollLeft;
+          
+          // 2. 计算目标卡片动画后的预期位置
+          const targetCard = this.state.cardStates.get(toIndex);
+          const fromCard = fromIndex >= 0 ? this.state.cardStates.get(fromIndex) : null;
+          
+          // 预计算宽度变化
+          const widthDelta = fromCard ? 
+            (this.cardWidth.collapsed - this.cardWidth.expanded) : 
+            0;
+          
+          // 3. 执行激活/停用
+          if (fromIndex >= 0) {
+            this.deactivateCard(fromIndex);
+          }
+          this.activateCard(toIndex);
+          
+          // 4. 在动画期间补偿滚动位置
+          // 如果被点击的卡片在之前激活卡片的左边,需要补偿滚动
+          let scrollCompensation = 0;
+          if (fromCard && toIndex < fromIndex) {
+            scrollCompensation = widthDelta;
           }
           
-          this.scrollToCard(clickedIndex);
+          // 5. 锁定滚动位置,防止抖动
+          const targetScrollLeft = currentScrollLeft + scrollCompensation;
+          this.state.scrollLockTarget = targetScrollLeft;
+          
+          // 立即应用补偿
+          if (scrollCompensation !== 0) {
+            this.viewport.scrollLeft = targetScrollLeft;
+            this.state.scrollLeft = targetScrollLeft;
+          }
+          
+          // 6. 动画结束后滚动到目标卡片
+          if (this.state.animationTimer) {
+            clearTimeout(this.state.animationTimer);
+          }
+          
+          this.state.animationTimer = setTimeout(() => {
+            this.state.scrollLockTarget = null;
+            this.scrollToCard(toIndex);
+            
+            // 再等一会儿才允许下次点击
+            setTimeout(() => {
+              this.state.isAnimating = false;
+              this.state.animationTimer = null;
+            }, 100);
+          }, this.animationDuration);
         }
         
         activateCard(index) {
@@ -1592,22 +1664,30 @@
         
         updateAllPositions() {
           let currentLeft = 0;
-          const gap = 15;
+          const updates = [];
           
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const cardState = this.state.cardStates.get(i);
             if (!cardState) continue;
             
             cardState.left = currentLeft;
-            currentLeft += cardState.width + gap;
+            currentLeft += cardState.width;
+            
+            if (i < this.state.allArticles.length - 1) {
+              currentLeft += this.gap;
+            }
             
             if (this.state.renderedCards.has(i)) {
-              this.updateCardPosition(i);
+              updates.push(i);
             }
           }
           
-          this.state.containerWidth = currentLeft - gap;
+          this.state.containerWidth = currentLeft;
           this.container.style.width = `${this.state.containerWidth}px`;
+          
+          requestAnimationFrame(() => {
+            updates.forEach(i => this.updateCardPosition(i));
+          });
         }
         
         scrollToCard(index) {
@@ -1621,29 +1701,52 @@
           let targetScroll = cardLeft - (viewportWidth - cardWidth) / 2;
           targetScroll = Math.max(0, Math.min(targetScroll, this.state.containerWidth - viewportWidth));
           
-          // 使用平滑滚动效果
           this.viewport.scrollTo({
             left: targetScroll,
             behavior: 'smooth'
           });
         }
         
-        // 重置滚动到起始位置（用于退出搜索模式）
         resetScrollToStart() {
-          // 立即重置滚动位置到最左边，不使用平滑效果
-          this.viewport.scrollLeft = 0;
-          this.state.scrollLeft = 0;
-          this.renderVisibleCards();
+          if (this.scrollAnimationFrame) {
+            cancelAnimationFrame(this.scrollAnimationFrame);
+            this.scrollAnimationFrame = null;
+          }
+          
+          this.scrollAnimationFrame = requestAnimationFrame(() => {
+            this.viewport.scrollLeft = 0;
+            this.state.scrollLeft = 0;
+            
+            requestAnimationFrame(() => {
+              this.renderVisibleCards();
+              this.scrollAnimationFrame = null;
+            });
+          });
         }
         
         handleScroll() {
-          this.state.scrollLeft = this.viewport.scrollLeft;
+          // 如果正在动画且有锁定目标,强制回滚到锁定位置
+          if (this.state.isAnimating && this.state.scrollLockTarget !== null) {
+            const currentScroll = this.viewport.scrollLeft;
+            const lockTarget = this.state.scrollLockTarget;
+            
+            // 如果偏移超过阈值,强制回滚
+            if (Math.abs(currentScroll - lockTarget) > 5) {
+              this.viewport.scrollLeft = lockTarget;
+              this.state.scrollLeft = lockTarget;
+              return; // 不触发渲染
+            }
+          }
           
-          this.viewport.classList.add('scrolling');
-          this.state.isScrolling = true;
+          this.state.scrollLeft = this.viewport.scrollLeft;
           
           if (this.state.scrollTimer) {
             clearTimeout(this.state.scrollTimer);
+          }
+          
+          if (!this.state.isScrolling) {
+            this.state.isScrolling = true;
+            this.viewport.classList.add('scrolling');
           }
           
           this.state.scrollTimer = setTimeout(() => {
@@ -1651,23 +1754,30 @@
             this.state.isScrolling = false;
           }, 150);
           
-          this.renderVisibleCards();
+          if (!this.scrollAnimationFrame && !this.state.isAnimating) {
+            this.scrollAnimationFrame = requestAnimationFrame(() => {
+              this.renderVisibleCards();
+              this.scrollAnimationFrame = null;
+            });
+          }
         }
         
         handleResize() {
           this.calculateViewportSize();
+          this.updateContainerSize();
           this.renderVisibleCards();
         }
         
         bindEvents() {
-          this.viewport.addEventListener('scroll', () => this.handleScroll());
+          this.viewport.addEventListener('scroll', () => this.handleScroll(), { passive: true });
           
           this.debouncedResize = debounce(() => this.handleResize(), 150);
           window.addEventListener('resize', this.debouncedResize);
         }
         
-        // 主题切换时禁用卡片过渡
         prepareForThemeTransition() {
+          this.state.isTransitioning = true;
+          
           if (this.themeTransitionTimeout) {
             clearTimeout(this.themeTransitionTimeout);
           }
@@ -1682,51 +1792,74 @@
           const cards = this.container.querySelectorAll('.rectangle-card');
           
           this.themeTransitionTimeout = setTimeout(() => {
-            cards.forEach(card => {
-              card.style.transition = '';
+            requestAnimationFrame(() => {
+              cards.forEach(card => {
+                card.style.transition = '';
+              });
+              this.state.isTransitioning = false;
+              this.themeTransitionTimeout = null;
             });
-            this.themeTransitionTimeout = null;
           }, 50);
         }
         
         destroy() {
           this.viewport.removeEventListener('scroll', () => this.handleScroll());
           window.removeEventListener('resize', this.debouncedResize);
+          
           if (this.state.scrollTimer) {
             clearTimeout(this.state.scrollTimer);
+          }
+          if (this.state.animationTimer) {
+            clearTimeout(this.state.animationTimer);
           }
           if (this.themeTransitionTimeout) {
             clearTimeout(this.themeTransitionTimeout);
           }
+          if (this.scrollAnimationFrame) {
+            cancelAnimationFrame(this.scrollAnimationFrame);
+          }
+          
+          this.state.renderedCards.forEach(card => {
+            if (card && card.parentNode) {
+              card.remove();
+            }
+          });
+          this.state.renderedCards.clear();
+          this.state.cardStates.clear();
         }
         
-        // 修改setSearchMode方法，处理退出搜索模式时的滚动重置
         setSearchMode(isSearchMode, filteredArticles = null) {
           const articles = filteredArticles || this.state.allArticles;
+          
+          this.state.renderedCards.forEach(card => {
+            if (card && card.parentNode) {
+              card.remove();
+            }
+          });
+          this.state.renderedCards.clear();
+          this.state.cardStates.clear();
+          
           this.init(articles);
           
-          // 搜索模式下只展开第一张卡片，正常模式下只展开第二张卡片
           const activeIndex = isSearchMode ? 0 : 1;
           
-          setTimeout(() => {
-            // 先取消所有卡片的激活状态
-            this.state.cardStates.forEach((state, index) => {
-              if (state.isActive) {
-                this.deactivateCard(index);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              this.state.cardStates.forEach((state, index) => {
+                if (state.isActive && index !== activeIndex) {
+                  this.deactivateCard(index);
+                }
+              });
+              
+              this.activateCard(activeIndex);
+              
+              if (isSearchMode) {
+                this.scrollToCard(activeIndex);
+              } else {
+                this.resetScrollToStart();
               }
             });
-            
-            // 激活指定卡片
-            this.activateCard(activeIndex);
-            
-            if (isSearchMode) {
-              // 进入搜索模式：滚动到第一张卡片
-              this.scrollToCard(activeIndex);
-            } else {
-              // 退出搜索模式：重置滚动到起始位置
-              this.resetScrollToStart();
-            }
-          }, 100);
+          });
         }
       }
       
