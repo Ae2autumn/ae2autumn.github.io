@@ -353,117 +353,154 @@
          display: block;
       }
       
-      /* 在 <style> 标签中添加以下内容 */
-
-      /* 修复内容区域的换行和空格问题 */
+      /* ==================== 文章页内容样式 ==================== */
+      
+      /* 文章标题样式 */
+      .article-header h1,
+      .article-title h1 {
+        margin-bottom: 0.5rem;  /* 减小标题下边距 */
+        line-height: 1.3;
+      }
+      
+      /* 文章元信息(日期、标签等) */
+      .article-meta {
+        margin-bottom: 1.5rem;  /* 元信息和正文之间适中的间距 */
+      }
+      
+      /* 文章正文容器 */
+      .article-content,
       .content {
-          /* 允许文本换行并保留空白 */
-          white-space: pre-wrap;       /* 保留空白和换行 */
-          word-wrap: break-word;       /* 允许长单词换行 */
-          overflow-wrap: break-word;   /* 现代浏览器标准 */
-          
-          /* 确保段落有合适的间距 */
-          line-height: 1.8;
-          font-size: 1.1rem;
+        line-height: 1.8;       /* 舒适的行高 */
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       
-      /* 针对Markdown转换后的HTML元素设置样式 */
+      /* ==================== 段落间距优化 ==================== */
+      
+      /* 段落基础样式 */
+      .article-content p,
       .content p {
-          margin-bottom: 1.5em;        /* 增加段落间距 */
-          min-height: 1.2em;           /* 确保空段落也有高度 */
+        margin-top: 0;
+        margin-bottom: 0.8em;   /* 段落间距适中 */
+        line-height: 1.8;
       }
       
-      .content pre,
-      .content code {
-          white-space: pre !important; /* 代码块保持原始格式 */
-          font-family: 'Courier New', Consolas, monospace;
+      /* 第一个段落取消上边距 */
+      .article-content > p:first-child,
+      .content > p:first-child {
+        margin-top: 0;
       }
       
-      .content pre {
-          background-color: rgba(128, 128, 128, 0.1);
-          padding: 1em;
-          border-radius: 5px;
-          overflow-x: auto;
-          margin: 1.5em 0;
+      /* 最后一个段落取消下边距 */
+      .article-content > p:last-child,
+      .content > p:last-child {
+        margin-bottom: 0;
       }
       
-      .content code:not(pre code) {
-          background-color: rgba(128, 128, 128, 0.2);
-          padding: 0.2em 0.4em;
-          border-radius: 3px;
-          font-size: 0.9em;
+      /* ==================== 标题样式 ==================== */
+      
+      .article-content h1,
+      .article-content h2,
+      .article-content h3,
+      .article-content h4,
+      .article-content h5,
+      .article-content h6 {
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        line-height: 1.3;
+        font-weight: 600;
       }
       
-      /* 标题样式 */
-      .content h1,
-      .content h2,
-      .content h3,
-      .content h4,
-      .content h5,
-      .content h6 {
-          margin-top: 2em;
-          margin-bottom: 1em;
-          padding-bottom: 0.5em;
-          border-bottom: 2px solid rgba(255, 0, 0, 0.3);
+      /* 第一个标题取消上边距 */
+      .article-content > h1:first-child,
+      .article-content > h2:first-child,
+      .article-content > h3:first-child {
+        margin-top: 0;
       }
       
-      /* 列表样式 */
-      .content ul,
-      .content ol {
-          margin: 1.5em 0;
-          padding-left: 2em;
+      /* ==================== 列表样式 ==================== */
+      
+      .article-content ul,
+      .article-content ol {
+        margin: 0.8em 0;
+        padding-left: 2em;
       }
       
-      .content li {
-          margin-bottom: 0.5em;
+      .article-content li {
+        margin: 0.3em 0;
+        line-height: 1.6;
       }
       
-      .content li p {
-          margin: 0.5em 0;
+      /* ==================== 代码块样式 ==================== */
+      
+      .article-content pre {
+        margin: 1em 0;
+        padding: 1em;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        overflow-x: auto;
       }
       
-      /* 引用块样式 */
-      .content blockquote {
-          border-left: 4px solid rgba(255, 0, 0, 0.5);
-          padding-left: 1em;
-          margin: 1.5em 0;
-          font-style: italic;
-          color: #aaa;
+      .article-content code {
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9em;
       }
       
-      /* 表格样式 */
-      .content table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 1.5em 0;
+      .article-content p code {
+        background-color: #f5f5f5;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
       }
       
-      .content th,
-      .content td {
-          border: 1px solid rgba(128, 128, 128, 0.3);
-          padding: 0.75em;
-          text-align: left;
+      /* ==================== 引用块样式 ==================== */
+      
+      .article-content blockquote {
+        margin: 1em 0;
+        padding: 0.5em 1em;
+        border-left: 4px solid #ddd;
+        background-color: #f9f9f9;
+        color: #666;
       }
       
-      .content th {
-          background-color: rgba(128, 128, 128, 0.1);
-          font-weight: bold;
+      .article-content blockquote p {
+        margin: 0.5em 0;
       }
       
-      /* 图片样式 */
-      .content img {
-          max-width: 100%;
-          height: auto;
-          display: block;
-          margin: 1.5em auto;
-          border-radius: 5px;
+      /* ==================== 表格样式 ==================== */
+      
+      .article-content table {
+        margin: 1em 0;
+        border-collapse: collapse;
+        width: 100%;
       }
       
-      /* 水平线样式 */
-      .content hr {
-          border: none;
-          border-top: 2px solid rgba(255, 0, 0, 0.3);
-          margin: 2em 0;
+      .article-content th,
+      .article-content td {
+        border: 1px solid #ddd;
+        padding: 0.5em 1em;
+        text-align: left;
+      }
+      
+      .article-content th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+      }
+      
+      /* ==================== 图片样式 ==================== */
+      
+      .article-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 1em 0;
+        border-radius: 4px;
+      }
+      
+      /* ==================== 分隔线样式 ==================== */
+      
+      .article-content hr {
+        margin: 2em 0;
+        border: none;
+        border-top: 1px solid #ddd;
       }
       
       /* 链接样式 */
