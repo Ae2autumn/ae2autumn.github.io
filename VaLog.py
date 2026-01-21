@@ -114,26 +114,42 @@ class VaLogGenerator:
         }
 
     def process_body(self, body):
-        """处理正文，转换为HTML（这里接收的是已经移除了元数据的正文）"""
+        """处理正文,转换为HTML(这里接收的是已经移除了元数据的正文)"""
         if not body:
             return ""
         
         # 调试信息
-        print(f"处理正文，原始长度: {len(body)} 字符")
+        print(f"处理正文,原始长度: {len(body)} 字符")
         if len(body) > 0:
             print(f"前200字符预览: {repr(body[:200])}")
         
         try:
-            # 使用 nl2br 扩展来自动处理换行
+            # ==================== 修复点1: 预处理换行 ====================
+            # 将单个换行替换为双空格+换行(Markdown标准的强制换行语法)
+            # 但保留双换行(段落分隔)
+            processed_body = re.sub(
+                r'(?<!\n)\n(?!\n)',  # 匹配单个换行(前后都不是换行符)
+                '  \n',              # 替换为双空格+换行
+                body
+            )
+            
+            # ==================== 修复点2: 使用更稳定的扩展配置 ====================
             html_content = markdown.markdown(
-                body, 
+                processed_body, 
                 extensions=[
                     'extra',          # 包括表格、脚注等
                     'fenced_code',    # 代码块
                     'tables',         # 表格支持
                     'nl2br',          # 自动将换行转换为 <br>
                     'sane_lists',     # 更智能的列表处理
+                    'codehilite',     # 代码高亮
                 ],
+                extension_configs={
+                    'codehilite': {
+                        'linenums': False,
+                        'guess_lang': False,
+                    }
+                },
                 output_format='html5'
             )
             
@@ -150,33 +166,34 @@ class VaLogGenerator:
                 print(f"HTML前200字符预览: {repr(html_content[:200])}")
             
             # 检查是否包含必要的HTML标签
-            if '<p>' not in html_content and '</p>' not in html_content:
-                print("警告: Markdown转换后没有段落标签，尝试手动处理")
-                # 如果没有段落标签，手动处理
+            if '<p>' not in html_content and '</p>' not in html_content and body.strip():
+                print("警告: Markdown转换后没有段落标签,尝试手动处理")
+                # 如果没有段落标签,手动处理
                 paragraphs = []
                 for para in body.split('\n\n'):
                     if para.strip():
-                        # 将段落内的换行转换为 <br>
+                        # 将段落内的单换行转换为 <br>
                         para_html = para.replace('\n', '<br>\n')
                         paragraphs.append(f'<p>{para_html}</p>')
-                html_content = '\n\n'.join(paragraphs)
+                html_content = '\n'.join(paragraphs)
             
             return html_content
+            
         except Exception as e:
             print(f"Markdown转换错误: {e}")
             import traceback
             traceback.print_exc()
             
-            # 应急处理：手动处理换行
+            # ==================== 应急处理方案 ====================
             print("使用应急处理方案")
             paragraphs = []
             for para in body.split('\n\n'):
                 if para.strip():
-                    # 将段落内的换行转换为 <br>
+                    # 将段落内的单换行转换为 <br>
                     para_html = para.replace('\n', '<br>\n')
                     paragraphs.append(f'<p>{para_html}</p>')
             
-            return '\n\n'.join(paragraphs) if paragraphs else ""
+            return '\n'.join(paragraphs) if paragraphs else ""
 
     def run(self):
         print("开始运行生成器...")
