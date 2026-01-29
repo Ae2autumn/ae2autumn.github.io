@@ -104,8 +104,9 @@
       }
 
       .header {
-         margin-bottom: 30px;
+         margin-bottom: 9px;
          padding: 20px;
+         padding-bottom: 3px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease;
       }
@@ -119,7 +120,7 @@
 
       .summary {
          font-size: 1.1rem;
-         margin-bottom: 15px;
+         margin-bottom: 3px;
          color: #ccc;
          transition: color 0.5s ease;
       }
@@ -127,7 +128,7 @@
       .date {
          color: #999;
          font-size: 0.9rem;
-         margin-bottom: 10px;
+         margin-bottom: 3px;
          transition: color 0.5s ease;
       }
 
@@ -135,7 +136,7 @@
          display: flex;
          flex-wrap: wrap;
          gap: 10px;
-         margin-bottom: 20px;
+         margin-bottom: 3px;
       }
 
       .tag {
@@ -149,6 +150,7 @@
 
       .content {
          padding: 20px;
+         padding-top: 0px;
          margin-bottom: 50px;
          transition: color 0.5s ease;
       }
@@ -618,9 +620,9 @@
 
 <body class="{% if blog.theme.mode == 'light' %}light-mode{% else %}dark-mode{% endif %}">
    <div class="header">
-      <h1 class="title">{{ article.title | default('文章标题') }}</h1>
+      <h1 class="title">{{ article.title | default(文章标题) }}</h1>
       <p class="summary">{{ article.summary }}</p>
-      <div class="date">{{ article.date | default('发布日期') }}</div>
+      <div class="date">{{ article.date }}</div>
       <div class="tags">
          {% for tag in article.tags %}
          <span class="tag">{{ tag }}</span>
@@ -745,7 +747,6 @@
       
       middleBtn.addEventListener('click', (e) => {
          e.stopPropagation();
-         window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'smooth' });
          closeMenu();
       });
       
