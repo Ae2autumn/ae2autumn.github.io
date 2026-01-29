@@ -1340,7 +1340,7 @@
       // 初始化标签过滤器
       const tagFilter = new TagFilter();
       
-      // ==================== 虚拟滚动管理器 (优化版) ====================
+      // ==================== 🔥 修复: 虚拟滚动管理器 ====================
       class VirtualScroll {
         constructor() {
           this.viewport = document.getElementById('cardsViewport');
@@ -1366,11 +1366,12 @@
             isScrolling: false,
             scrollTimer: null,
             activeCardIndex: 1,
-            isTransitioning: false // 新增: 标记是否正在过渡中
+            isTransitioning: false,
+            isInitialized: false // 🔥 新增：标记是否已初始化
           };
           
           this.themeTransitionTimeout = null;
-          this.scrollAnimationFrame = null; // 新增: RAF ID
+          this.scrollAnimationFrame = null;
           
           this.bindEvents();
         }
@@ -1379,7 +1380,14 @@
           this.state.allArticles = [...articles];
           this.calculateViewportSize();
           this.updateContainerSize();
-          this.renderVisibleCards();
+          
+          // 🔥 修复: 确保正确初始化
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              this.renderVisibleCards();
+              this.state.isInitialized = true;
+            });
+          });
         }
         
         calculateViewportSize() {
@@ -1387,7 +1395,6 @@
           this.state.viewportWidth = rect.width;
         }
         
-        // 优化: 使用单次遍历计算所有位置
         updateContainerSize() {
           let totalWidth = 0;
           
@@ -1411,7 +1418,6 @@
           this.container.style.width = `${totalWidth}px`;
         }
         
-        // 修复: 改进可见范围计算逻辑
         getVisibleRange() {
           const scrollLeft = this.state.scrollLeft;
           const viewportWidth = this.state.viewportWidth;
@@ -1427,7 +1433,6 @@
             
             const cardRight = state.left + state.width;
             
-            // 卡片右边缘在视口左边缘右侧,即卡片可见
             if (cardRight > scrollLeft) {
               startIndex = Math.max(0, i - this.buffer);
               break;
@@ -1443,14 +1448,12 @@
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
-            // 卡片左边缘在视口右边缘右侧,即卡片不可见
             if (state.left > viewportRight) {
               endIndex = Math.min(this.state.allArticles.length - 1, i - 1 + this.buffer);
               break;
             }
           }
           
-          // 如果遍历到最后都没找到结束索引,说明最后的卡片也在视口内
           if (endIndex === -1) {
             endIndex = this.state.allArticles.length - 1;
           }
@@ -1459,6 +1462,12 @@
         }
         
         renderVisibleCards() {
+          // 🔥 修复: 如果没有文章，直接返回
+          if (!this.state.allArticles || this.state.allArticles.length === 0) {
+            console.warn('No articles to render');
+            return;
+          }
+          
           const { startIndex, endIndex } = this.getVisibleRange();
           
           // 移除不可见的卡片
@@ -1561,7 +1570,7 @@
         }
         
         handleCardClick(clickedIndex) {
-          if (this.state.isTransitioning) return; // 防止过渡期间点击
+          if (this.state.isTransitioning) return;
           
           if (this.state.cardStates.get(clickedIndex).isActive) {
             this.deactivateCard(clickedIndex);
@@ -1610,7 +1619,6 @@
           this.updateAllPositions();
         }
         
-        // 优化: 批量更新位置,减少重排
         updateAllPositions() {
           let currentLeft = 0;
           const updates = [];
@@ -1634,7 +1642,6 @@
           this.state.containerWidth = currentLeft;
           this.container.style.width = `${this.state.containerWidth}px`;
           
-          // 批量更新DOM
           requestAnimationFrame(() => {
             updates.forEach(i => this.updateCardPosition(i));
           });
@@ -1657,15 +1664,13 @@
           });
         }
         
-        // 修复: 改进重置逻辑,避免动画冲突
+        // 🔥 修复: 改进重置逻辑
         resetScrollToStart() {
-          // 取消任何正在进行的滚动动画
           if (this.scrollAnimationFrame) {
             cancelAnimationFrame(this.scrollAnimationFrame);
             this.scrollAnimationFrame = null;
           }
           
-          // 使用 RAF 确保在下一帧执行
           this.scrollAnimationFrame = requestAnimationFrame(() => {
             this.viewport.scrollLeft = 0;
             this.state.scrollLeft = 0;
@@ -1677,7 +1682,6 @@
           });
         }
         
-        // 优化: 使用 RAF 优化滚动处理
         handleScroll() {
           this.state.scrollLeft = this.viewport.scrollLeft;
           
@@ -1695,7 +1699,6 @@
             this.state.isScrolling = false;
           }, 150);
           
-          // 使用 RAF 进行渲染,避免频繁触发
           if (!this.scrollAnimationFrame) {
             this.scrollAnimationFrame = requestAnimationFrame(() => {
               this.renderVisibleCards();
@@ -1715,9 +1718,19 @@
           
           this.debouncedResize = debounce(() => this.handleResize(), 150);
           window.addEventListener('resize', this.debouncedResize);
+          
+          // 🔥 新增: 监听页面可见性变化
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.state.isInitialized) {
+              // 页面重新可见时，重新渲染
+              requestAnimationFrame(() => {
+                this.calculateViewportSize();
+                this.renderVisibleCards();
+              });
+            }
+          });
         }
         
-        // 优化: 改进主题过渡处理
         prepareForThemeTransition() {
           this.state.isTransitioning = true;
           
@@ -1759,7 +1772,6 @@
             cancelAnimationFrame(this.scrollAnimationFrame);
           }
           
-          // 清理所有渲染的卡片
           this.state.renderedCards.forEach(card => {
             if (card && card.parentNode) {
               card.remove();
@@ -1769,7 +1781,7 @@
           this.state.cardStates.clear();
         }
         
-        // 修复: 改进搜索模式切换逻辑
+        // 🔥 修复: 改进搜索模式切换
         setSearchMode(isSearchMode, filteredArticles = null) {
           const articles = filteredArticles || this.state.allArticles;
           
@@ -1782,31 +1794,29 @@
           this.state.renderedCards.clear();
           this.state.cardStates.clear();
           
-          // 初始化新数据
+          // 重新初始化
           this.init(articles);
           
-          // 搜索模式下展开第一张,正常模式下展开第二张
           const activeIndex = isSearchMode ? 0 : 1;
           
-          // 使用 RAF 确保 DOM 更新完成
+          // 🔥 使用多个RAF确保DOM完全更新
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              // 先取消所有激活状态
-              this.state.cardStates.forEach((state, index) => {
-                if (state.isActive && index !== activeIndex) {
-                  this.deactivateCard(index);
+              requestAnimationFrame(() => {
+                this.state.cardStates.forEach((state, index) => {
+                  if (state.isActive && index !== activeIndex) {
+                    this.deactivateCard(index);
+                  }
+                });
+                
+                this.activateCard(activeIndex);
+                
+                if (isSearchMode) {
+                  this.scrollToCard(activeIndex);
+                } else {
+                  this.resetScrollToStart();
                 }
               });
-              
-              // 激活目标卡片
-              this.activateCard(activeIndex);
-              
-              // 滚动到目标位置
-              if (isSearchMode) {
-                this.scrollToCard(activeIndex);
-              } else {
-                this.resetScrollToStart();
-              }
             });
           });
         }
@@ -1845,33 +1855,26 @@
         localStorage.setItem('theme', theme);
       }
       
-      // 主题切换防抖处理
       let themeTransitionTimeout = null;
       
       function toggleTheme() {
         const currentTheme = getCurrentTheme();
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         
-        // 清除可能存在的延迟
         if (themeTransitionTimeout) {
           clearTimeout(themeTransitionTimeout);
         }
         
-        // 批量更新：先准备所有卡片
         updateCardsColorIndices();
         
-        // 禁用所有卡片过渡效果
         if (state.virtualScroll) {
           state.virtualScroll.prepareForThemeTransition();
         }
         
-        // 添加过渡禁用类
         document.body.classList.add('theme-transitioning');
         
-        // 切换主题
         setTheme(newTheme);
         
-        // 短暂延迟后恢复
         themeTransitionTimeout = setTimeout(() => {
           document.body.classList.remove('theme-transitioning');
           
@@ -2130,24 +2133,20 @@
       
       // ==================== 事件绑定 ====================
       function bindEvents() {
-        // 搜索菜单项点击事件
         document.getElementById('searchMenuItem').addEventListener('click', () => {
           openSearchOverlay();
           closeFloatingMenu();
         });
         
-        // 菜单按钮点击事件
         document.getElementById('menuBtn').addEventListener('click', (e) => {
           e.stopPropagation();
           toggleFloatingMenu();
         });
         
-        // 搜索输入框事件
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
           if (e.key === 'Enter') performSearch();
         });
         
-        // 键盘事件
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
             const overlay = document.getElementById('searchOverlay');
@@ -2161,7 +2160,6 @@
           }
         });
         
-        // 搜索选项点击事件
         document.querySelectorAll('#searchOptions .search-option').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2175,12 +2173,10 @@
           });
         });
         
-        // 搜索遮罩点击事件
         document.getElementById('searchOverlay').addEventListener('click', (e) => {
           if (e.target === e.currentTarget) closeSearchOverlay();
         });
         
-        // 全局点击事件
         document.addEventListener('click', (e) => {
           const menu = document.getElementById('floatingMenu');
           const btn = document.getElementById('menuBtn');
@@ -2196,10 +2192,8 @@
           e.stopPropagation();
         });
         
-        // 主题切换事件
         document.getElementById('darkModeToggle').addEventListener('click', toggleTheme);
         
-        // 标题点击事件 - 修改：点击标题退出搜索模式
         document.getElementById('titleToggle').addEventListener('click', () => {
           if (state.isSearchMode) {
             exitSearchMode();
@@ -2210,14 +2204,12 @@
           }
         });
         
-        // 特殊卡片点击事件 - 修复版
         const specialCardHeader = document.querySelector('.special-card-header');
         if (specialCardHeader) {
           specialCardHeader.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
-            // 只有当有多个特殊卡片或单个卡片有标题/标签时才允许展开
             const shouldToggle = blogData.specials.length > 1 || 
                 (blogData.specials.length === 1 && 
                  (blogData.specials[0].title || 
@@ -2245,7 +2237,7 @@
         });
       }
       
-      // ==================== 页面初始化 ====================
+      // ==================== 🔥 修复: 页面初始化 ====================
       document.addEventListener('DOMContentLoaded', () => {
         // 初始化主题
         initTheme();
@@ -2253,6 +2245,12 @@
         // 初始化状态
         state.originalArticles = [...blogData.articles];
         state.currentArticles = blogData.articles;
+        
+        // 🔥 确保有文章数据
+        if (!blogData.articles || blogData.articles.length === 0) {
+          console.error('No articles found!');
+          return;
+        }
         
         // 渲染内容
         const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
@@ -2271,17 +2269,16 @@
           document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
         }
         
-        // 延迟更新卡片颜色，确保DOM已完全渲染
+        // 延迟更新卡片颜色
         setTimeout(() => {
           updateCardsColorIndices();
-          // 如果是日间模式，额外强制更新一次
           if (document.body.classList.contains('light-mode')) {
             setTimeout(forceUpdateAllCardsColor, 50);
           }
         }, 100);
       });
       
-      // 页面卸载时清理
+      // 🔥 新增: 页面卸载时清理
       window.addEventListener('beforeunload', () => {
         if (state.virtualScroll) {
           state.virtualScroll.destroy();
