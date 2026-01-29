@@ -268,198 +268,113 @@
          display: none;
       }
 
-      .rectangle-card {
-         min-width: 82px;
-         height: 100%;
+      .mobile-card {
+         min-width: 280px;
+         max-width: 320px;
+         background-color: var(--dark-card);
          border-radius: 10px;
+         padding: 20px;
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
          cursor: pointer;
-         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-         position: relative;
-         overflow: hidden;
-         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-         flex-shrink: 0;
-         will-change: transform, min-width;
-         contain: layout style;
-         background: linear-gradient(135deg, var(--primary-color), #c0392b);
-         z-index: 1;
-      }
-
-      .rectangle-card.active {
-         min-width: 279px;
-         background: linear-gradient(135deg, #c0392b, #a93226);
-         z-index: 2;
-      }
-
-      .vertical-title {
-         letter-spacing: 0.1em;
-         position: absolute;
-         top: 20px;
-         left: 13px;
-         color: white;
-         font-size: 18px;
-         font-weight: bold;
-         writing-mode: vertical-rl;
-         text-orientation: mixed;
-         transform: rotate(0deg);
-         transition: opacity var(--transition-time) ease;
-         text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-      }
-
-      .rectangle-card.active .vertical-title {
-         opacity: 0;
-      }
-
-      .card-content-expanded {
-         position: absolute;
-         top: 0;
-         left: 0;
-         width: 279px;
-         height: 100%;
-         padding: 15px;
-         color: white;
-         opacity: 0;
-         transition: opacity var(--transition-time) ease 0.2s;
+         transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
          display: flex;
          flex-direction: column;
-         overflow: hidden;
+         gap: 15px;
+         flex-shrink: 0;
+         height: auto;
+         will-change: transform;
+         contain: layout style;
       }
 
-      .rectangle-card.active .card-content-expanded {
-         opacity: 1;
+      .mobile-card:hover {
+         transform: translateY(-5px);
+         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
       }
 
       .card-tags {
          display: flex;
-         gap: 8px;
-         margin-bottom: 10px;
-         flex-shrink: 0;
          flex-wrap: wrap;
+         gap: 8px;
       }
 
       .card-tag {
-         background-color: rgba(255, 255, 255, 0.1);
-         color: white;
-         padding: 4px 8px;
-         border-radius: 4px;
+         padding: 4px 12px;
+         border-radius: 15px;
          font-size: 12px;
          font-weight: 500;
-         will-change: transform, background-color;
-         transition: transform 0.2s ease-out, background-color 0.2s ease-out;
-         contain: layout style;
-         width: auto;
-         white-space: nowrap;
-         overflow: hidden;
-         text-overflow: ellipsis;
-         max-width: 200px;
+         transition: all 0.2s ease-out;
+         will-change: background-color, color;
       }
 
-      .date-tag {
-         font-weight: 500;
-         padding-left: 6px;
-      }
-
-      .card-title-container {
-         flex-shrink: 0;
-         margin-bottom: 10px;
-         overflow: hidden;
-      }
-
-      .card-title-container h2 {
-         font-size: 22px;
+      .card-title {
+         font-size: 20px;
          font-weight: 600;
          color: white;
          margin: 0;
-         will-change: transform;
-         transition: transform 0.2s ease-out;
-         contain: layout style;
-         overflow: hidden;
-         text-overflow: ellipsis;
-         display: -webkit-box;
-         -webkit-line-clamp: 2;
-         -webkit-box-orient: vertical;
-         word-break: break-word;
+         line-height: 1.4;
+         transition: color var(--transition-time);
       }
 
-      .card-content-main {
-         flex: 1;
-         overflow-y: auto;
-         scrollbar-width: none;
-         -ms-overflow-style: none;
-         margin-bottom: 10px;
-         padding-right: 5px;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
-      }
-
-      .card-content-main::-webkit-scrollbar {
-         display: none;
-      }
-
-      .card-content-main p {
+      .card-description {
          font-size: 14px;
-         line-height: 1.5;
-         margin-bottom: 10px;
-         opacity: 0.9;
-         color: white;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
+         color: #b0b0b0;
+         line-height: 1.6;
+         margin: 0;
+         transition: color var(--transition-time);
       }
 
-      .card-footer {
-         flex-shrink: 0;
-         padding-top: 10px;
-         display: flex;
-      }
-
-      .mobile-card-btn {
-         background-color: rgba(255, 255, 255, 0.2);
-         color: white;
-         border: none;
-         width: 100%;
-         padding: 8px 16px;
-         margin-left: 12%;
-         border-radius: 5px;
-         cursor: pointer;
-         font-weight: 500;
-         font-size: 14px;
-         transition: background-color 0.2s ease-out, transform 0.2s ease-out;
-         will-change: transform, background-color;
-         contain: layout style;
-         white-space: nowrap;
-      }
-
-      .special-card {
-         background: linear-gradient(135deg, var(--primary-color), #c0392b);
-         color: white;
-         border-radius: 10px;
-         padding: 15px;
-         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-         cursor: pointer;
-         transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-         overflow: hidden;
-         flex-shrink: 0;
-         will-change: transform, background;
-         contain: layout style;
-         z-index: 1;
-         position: relative;
-      }
-
-      .special-card-header {
+      .card-meta {
          display: flex;
          justify-content: space-between;
          align-items: center;
-         margin-bottom: 0;
-         padding: 0;
+         font-size: 13px;
+         color: #888;
+         margin-top: auto;
+         padding-top: 10px;
+         border-top: 1px solid #333;
+         transition: color var(--transition-time), border-color var(--transition-time);
+      }
+
+      .special-cards-container {
+         margin-bottom: 0px;
+         padding: 0 5px;
+      }
+
+      .special-card {
+         background-color: var(--dark-card);
+         border-radius: 10px;
+         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+         margin-bottom: 15px;
+         overflow: hidden;
+         transition: all 0.3s ease;
+      }
+
+      .special-card-header {
+         padding: 15px 20px;
+         background-color: rgba(231, 76, 60, 0.1);
          cursor: pointer;
-         user-select: none;
-         -webkit-user-select: none;
-         -moz-user-select: none;
-         -ms-user-select: none;
-         will-change: transform;
-         transition: transform 0.2s ease-out;
-         contain: layout style;
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         transition: background-color 0.2s ease;
+      }
+
+      .special-card-header:hover {
+         background-color: rgba(231, 76, 60, 0.15);
+      }
+
+      .special-card-title-container {
+         display: flex;
+         align-items: center;
+         gap: 10px;
+         flex: 1;
+         min-width: 0;
+      }
+
+      .special-card-icon {
+         font-size: 20px;
+         color: var(--primary-color);
+         flex-shrink: 0;
       }
 
       .special-card-title {
@@ -467,241 +382,82 @@
          font-weight: 600;
          color: white;
          margin: 0;
-         pointer-events: none;
-         will-change: transform;
-         transition: transform 0.2s ease-out;
-         contain: layout style;
          white-space: nowrap;
          overflow: hidden;
          text-overflow: ellipsis;
+      }
+
+      .special-card-tags {
+         display: flex;
+         gap: 6px;
+         flex-wrap: wrap;
+         margin-left: 10px;
+      }
+
+      .special-card-tag {
+         padding: 3px 10px;
+         border-radius: 12px;
+         font-size: 11px;
+         font-weight: 500;
+         background-color: rgba(231, 76, 60, 0.2);
+         color: var(--primary-color);
+         white-space: nowrap;
+      }
+
+      .special-card-arrow {
+         font-size: 16px;
+         color: var(--primary-color);
+         transition: transform 0.3s ease;
+         flex-shrink: 0;
+         margin-left: 10px;
+      }
+
+      .special-card.expanded .special-card-arrow {
+         transform: rotate(180deg);
       }
 
       .special-card-content {
          max-height: 0;
-         opacity: 0;
          overflow: hidden;
-         transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-         will-change: max-height, opacity, margin, padding;
-         contain: layout style;
-         padding-top: 0;
-         margin-top: 0;
-         transform-origin: top;
+         transition: max-height 0.3s ease, padding 0.3s ease;
       }
 
       .special-card.expanded .special-card-content {
-         max-height: 320px;
-         opacity: 1;
-         margin-top: 10px;
+         max-height: 500px;
+         padding: 20px;
       }
 
-      .special-cards-container {
+      .special-card-items {
          display: flex;
          flex-direction: column;
-         gap: 15px;
-         height: auto;
-         max-height: 194px;
-         overflow-y: auto;
-         scrollbar-width: none;
-         -ms-overflow-style: none;
-         will-change: transform;
-         padding-right: 0px;
-      }
-
-      .special-cards-container::-webkit-scrollbar {
-         display: none;
+         gap: 12px;
       }
 
       .special-card-item {
-         background-color: rgba(255, 255, 255, 0.1);
+         padding: 12px;
+         background-color: rgba(255, 255, 255, 0.05);
          border-radius: 8px;
-         padding: 15px;
-         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-         display: flex;
-         flex-direction: column;
-         flex-shrink: 0;
-         height: 187px;
-         overflow: hidden;
-         cursor: auto;
-         will-change: transform, opacity;
-         transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-         contain: layout style;
-      }
-
-      .special-card-item-content {
-         display: flex;
-         flex-direction: column;
-         height: 100%;
-         overflow: hidden;
-      }
-
-      .special-card-item .card-tags {
-         margin-bottom: 8px;
-      }
-
-      .special-card-item h4 {
-         font-size: 16px;
-         font-weight: 600;
-         margin-bottom: 8px;
-         color: white;
-         flex-shrink: 0;
-         will-change: transform;
-         transition: transform 0.2s ease-out;
-         contain: layout style;
-         overflow: hidden;
-         text-overflow: ellipsis;
-         white-space: nowrap;
-      }
-
-      .special-card-item-content-main {
-         flex: 1;
-         overflow-y: auto;
-         scrollbar-width: none;
-         -ms-overflow-style: none;
-         margin-bottom: 8px;
-         padding-right: 5px;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
-      }
-
-      .special-card-item-content-main::-webkit-scrollbar {
-         display: none;
-      }
-
-      .special-card-item-content-main p {
-         font-size: 14px;
-         line-height: 1.5;
-         margin-bottom: 8px;
-         opacity: 0.9;
-         color: white;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
-      }
-
-      .special-card-item-footer {
-         flex-shrink: 0;
-         padding-top: 8px;
-         display: flex;
-         justify-content: flex-end;
-      }
-
-      .special-card-btn {
-         background-color: rgba(255, 255, 255, 0.2);
-         color: white;
-         border: none;
-         padding: 8px 16px;
-         border-radius: 5px;
          cursor: pointer;
+         transition: all 0.2s ease;
+         border-left: 3px solid var(--primary-color);
+      }
+
+      .special-card-item:hover {
+         background-color: rgba(255, 255, 255, 0.1);
+         transform: translateX(5px);
+      }
+
+      .special-card-item-title {
+         font-size: 16px;
          font-weight: 500;
-         font-size: 14px;
-         transition: background-color 0.2s ease-out, transform 0.2s ease-out;
-         will-change: transform, background-color;
-         contain: layout style;
-         white-space: nowrap;
-      }
-
-      .special-card.only-content {
-         padding: 0;
-         background: transparent;
-         box-shadow: none;
-         cursor: default;
-         border-radius: 10;
-         height: auto;
-         min-height: 0;
-      }
-
-      .special-card.only-content .special-card-header {
-         display: none;
-      }
-
-      .special-card.only-content .special-card-content {
-         max-height: none;
-         opacity: 1;
-         margin-top: 0;
-         padding: 0;
-         overflow: visible;
-         height: auto;
-         min-height: 0;
-         cursor: auto;
-      }
-
-      .special-card.only-content .special-cards-container {
-         display: block;
-         max-height: none;
-         overflow: visible;
-         gap: 0;
-         height: auto;
-         min-height: 0;
-         padding: 0;
-         margin: 0;
-      }
-
-      .special-card.only-content .special-card-item {
-         background-color: transparent;
-         padding: 0;
-         margin: 0;
-         box-shadow: none;
-         height: auto;
-         min-height: 0;
-         max-height: none;
-         border-radius: 10;
-         cursor: default;
-      }
-
-      .special-card.only-content .special-card-item-content {
-         display: block;
-         height: auto;
-         min-height: 0;
-         max-height: none;
-         overflow: visible;
-         padding: 0;
-         margin: 0;
-      }
-
-      .special-card.only-content .special-card-item-content-main {
-         overflow: visible;
-         max-height: none;
-         height: auto;
-         min-height: 0;
-         padding: 0;
-         margin: 0;
          color: white;
-         font-size: 16px;
-         line-height: 1.6;
-         opacity: 0.9;
-         font-style: italic;
-         text-align: center;
-         background: transparent;
-         border-radius: 0;
-         cursor: default;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
+         margin-bottom: 5px;
       }
 
-      .special-card.only-content .card-tags,
-      .special-card.only-content .special-card-item h4,
-      .special-card.only-content .special-card-item-footer {
-         display: none;
-      }
-
-      .special-card-item-content-simple {
-         color: white;
-         font-size: 16px;
-         line-height: 1.6;
-         opacity: 0.9;
-         font-style: italic;
-         text-align: center;
-         padding: 20px 15px;
-         background: rgba(255, 255, 255, 0.05);
-         border-radius: 8px;
-         cursor: default;
-         width: 100%;
-         box-sizing: border-box;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
+      .special-card-item-description {
+         font-size: 13px;
+         color: #b0b0b0;
+         line-height: 1.4;
       }
 
       .search-overlay {
@@ -710,1507 +466,1007 @@
          left: 0;
          width: 100%;
          height: 100%;
-         background-color: rgba(0, 0, 0, 0.8);
-         z-index: 1000;
-         display: none;
-         justify-content: center;
+         background-color: rgba(0, 0, 0, 0.85);
+         display: flex;
          align-items: center;
+         justify-content: center;
+         z-index: 1000;
          opacity: 0;
-         transition: opacity 0.3s ease;
-         backdrop-filter: blur(5px);
+         visibility: hidden;
+         transition: opacity 0.3s ease, visibility 0.3s ease;
       }
 
       .search-overlay.active {
-         display: flex;
          opacity: 1;
+         visibility: visible;
       }
 
       .search-container {
          width: 90%;
          max-width: 500px;
-         height: auto;
          background-color: var(--dark-card);
-         border-radius: 12px;
+         border-radius: 15px;
          padding: 25px;
-         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-         transform: translateY(20px);
-         opacity: 0;
-         transition: transform 0.3s ease, opacity 0.3s ease;
-         position: relative;
-         word-wrap: break-word;
-         overflow-wrap: break-word;
-         word-break: break-word;
+         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
       }
 
-      .search-overlay.active .search-container {
-         transform: translateY(0);
-         opacity: 1;
+      .search-title {
+         font-size: 20px;
+         font-weight: 600;
+         color: white;
+         margin-bottom: 15px;
+         text-align: center;
       }
 
-      .search-input-container {
+      .search-input-wrapper {
          position: relative;
-         margin-bottom: 20px;
+         margin-bottom: 15px;
       }
 
       .search-input {
          width: 100%;
-         padding: 15px 20px;
-         background-color: rgba(255, 255, 255, 0.1);
-         border: 2px solid rgba(255, 255, 255, 0.2);
-         border-radius: 8px;
+         padding: 12px 15px;
+         border: 2px solid #333;
+         border-radius: 10px;
+         background-color: #121212;
          color: white;
          font-size: 16px;
          outline: none;
-         transition: all 0.3s ease;
-         white-space: nowrap;
-         overflow: hidden;
-         text-overflow: ellipsis;
+         transition: border-color 0.3s ease;
       }
 
       .search-input:focus {
          border-color: var(--primary-color);
-         background-color: rgba(255, 255, 255, 0.15);
       }
 
       .search-input.error {
-         border-color: #ff0000 !important;
-         animation: shake 0.5s ease-in-out;
-      }
-
-      @keyframes shake {
-
-         0%,
-         100% {
-            transform: translateX(0);
-         }
-
-         25% {
-            transform: translateX(-5px);
-         }
-
-         75% {
-            transform: translateX(5px);
-         }
+         border-color: #ff4444;
       }
 
       .search-options {
          display: flex;
          gap: 10px;
-         flex-wrap: wrap;
          justify-content: center;
       }
 
       .search-option {
-         padding: 8px 16px;
-         background-color: rgba(255, 255, 255, 0.1);
+         padding: 8px 20px;
+         border: 2px solid #333;
+         border-radius: 20px;
+         background-color: transparent;
          color: white;
-         border: none;
-         border-radius: 5px;
-         cursor: pointer;
          font-size: 14px;
-         transition: all 0.2s ease;
-         white-space: nowrap;
-         overflow: hidden;
-         text-overflow: ellipsis;
+         cursor: pointer;
+         transition: all 0.3s ease;
       }
 
       .search-option:hover {
-         background-color: rgba(255, 255, 255, 0.2);
+         border-color: var(--primary-color);
+         color: var(--primary-color);
       }
 
       .search-option.active {
          background-color: var(--primary-color);
-         color: white;
-         box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-      }
-
-      .search-mode-indicator {
-         position: absolute;
-         top: 10px;
-         right: 10px;
-         background-color: var(--primary-color);
-         color: white;
-         padding: 5px 10px;
-         border-radius: 4px;
-         font-size: 12px;
-         display: none;
-         z-index: 100;
-         white-space: nowrap;
-         overflow: hidden;
-         text-overflow: ellipsis;
-      }
-
-      .light-mode {
-         background-color: var(--light-bg);
+         border-color: var(--primary-color);
          color: white;
       }
 
-      .light-mode .mobile-top-section {
-         background-color: var(--light-primary);
-      }
-
-      .light-mode .mobile-top-card {
-         background-color: white;
-         color: gray;
-      }
-
-      .light-mode .mobile-top-card h2 {
-         color: #cdcdcd;
-      }
-
-      .light-mode .floating-menu {
-         background-color: white;
-         color: gray;
-      }
-
-      .light-mode .menu-item {
-         border-bottom-color: #eee;
-         color: gray;
-      }
-
-      .light-mode .menu-item:hover {
-         color: var(--light-primary);
-      }
-
-      /* 日间模式下卡片的默认颜色 */
-      .light-mode .rectangle-card {
-        background: linear-gradient(135deg, var(--light-primary), #c0392b);
-      }
-      
-      .light-mode .rectangle-card.active {
-        background: linear-gradient(135deg, #c0392b, #a93226);
-      }
-      
-      /* 使用 data-color-index 的卡片颜色 */
-      .light-mode .rectangle-card[data-color-index="1"] {
-        background: linear-gradient(135deg, #ffb6c1, #ff69b4);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="1"].active {
-        background: linear-gradient(135deg, #ff69b4, #ff1493);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="2"] {
-        background: linear-gradient(135deg, #98fb98, #90ee90);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="2"].active {
-        background: linear-gradient(135deg, #90ee90, #7cfc00);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="3"] {
-        background: linear-gradient(135deg, #add8e6, #87ceeb);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="3"].active {
-        background: linear-gradient(135deg, #87ceeb, #6495ed);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="4"] {
-        background: linear-gradient(135deg, #fffacd, #f0e68c);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="4"].active {
-        background: linear-gradient(135deg, #f0e68c, #ffd700);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="5"] {
-        background: linear-gradient(135deg, #d3d3d3, #c0c0c0);
-      }
-      
-      .light-mode .rectangle-card[data-color-index="5"].active {
-        background: linear-gradient(135deg, #c0c0c0, #a9a9a9);
-      }
-      
-      /* 保留原来的特殊卡片和搜索相关样式（不要修改这些） */
-      .light-mode .special-card {
-        background: linear-gradient(135deg, #d8bfd8, #dda0dd);
-      }
-      
-      .light-mode .special-card.expanded {
-        background: linear-gradient(135deg, #dda0dd, #eeb1ee);
-      }
-
-      .light-mode .special-card-item {
-         background-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .light-mode .special-card-item h4 {
-         color: white;
-      }
-
-      .light-mode .card-tag {
-         background-color: rgba(0, 0, 0, 0.1);
-         color: white;
-      }
-
-      .light-mode .date-tag {
-         background-color: rgba(0, 0, 0, 0.15) !important;
-         border-left-color: var(--light-primary);
-      }
-
-      .light-mode .vertical-title {
-         color: white;
-         text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-      }
-
-      .light-mode .rectangle-card.active .card-content-expanded h2 {
-         color: white;
-      }
-
-      .light-mode .special-card-title {
-         color: white;
-      }
-
-      .light-mode .search-overlay {
-         background-color: rgba(0, 0, 0, 0.5);
-      }
-
-      .light-mode .search-container {
-         background-color: white;
-         color: #333;
-      }
-
-      .light-mode .search-input {
-         background-color: rgba(0, 0, 0, 0.05);
-         border-color: rgba(0, 0, 0, 0.1);
-         color: #333;
-      }
-
-      .light-mode .search-input:focus {
-         border-color: var(--light-primary);
-         background-color: rgba(0, 0, 0, 0.08);
-      }
-
-      .light-mode .search-input.error {
-         border-color: #ff0000 !important;
-      }
-
-      .light-mode .search-option {
-         background-color: rgba(0, 0, 0, 0.05);
-         color: #333;
-      }
-
-      .light-mode .search-option:hover {
-         background-color: rgba(0, 0, 0, 0.1);
-      }
-
-      .light-mode .search-option.active {
-         background-color: var(--light-primary);
-         color: white;
-         box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-      }
-
-      .menu-btn:active,
-      .close-menu:active,
-      .mobile-card-btn:active,
-      .special-card-btn:active {
-         transform: scale(0.95);
-      }
-
-      .card-tag:hover {
-         transform: translateY(-1px);
-         background-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .card-title-container h2:hover {
-         transform: translateX(2px);
-      }
-
-      .special-card-item:hover {
-         transform: translateY(-2px);
-         opacity: 0.95;
-      }
-
-      .special-card-title:hover {
-         transform: translateX(2px);
-      }
-
-      .mobile-top-section,
-      .mobile-top-card,
-      .special-card,
-      .special-card-content,
-      .rectangle-card,
-      .search-overlay,
-      .search-container {
-         backface-visibility: hidden;
-         -webkit-backface-visibility: hidden;
-         perspective: 1000;
-         -webkit-perspective: 1000;
-      }
-
-      .mobile-cards-wrapper,
-      .special-cards-container,
-      .card-content-main,
-      .special-card-item-content-main {
-         scroll-behavior: smooth;
-         -webkit-overflow-scrolling: touch;
-      }
-
-      /* ==================== 虚拟滚动相关样式 ==================== */
-      .mobile-cards-wrapper {
-         flex: 1;
+      .article-page {
+         height: 100%;
          display: flex;
          flex-direction: column;
-         min-height: 0;
          overflow: hidden;
-         position: relative;
       }
 
-      .cards-viewport {
-         flex: 1;
-         position: relative;
-         overflow-x: auto;
-         overflow-y: hidden;
-         -ms-overflow-style: none;
-         scrollbar-width: none;
-         will-change: transform;
-         backface-visibility: hidden;
-         -webkit-backface-visibility: hidden;
-         transform: translateZ(0);
-         -webkit-transform: translateZ(0);
-         contain: layout style paint;
-         z-index: 1;
-      }
-
-      .cards-viewport::-webkit-scrollbar {
-         display: none;
-      }
-
-      .cards-container {
-         position: relative;
-         height: 100%;
-         will-change: transform;
-         contain: layout style;
-      }
-
-      .rectangle-card {
-         position: absolute;
-         top: 0;
-         height: 100%;
-         min-width: 82px;
+      .article-header {
+         background-color: var(--dark-card);
+         padding: 20px;
          border-radius: 10px;
+         margin-bottom: 15px;
+         flex-shrink: 0;
+      }
+
+      .article-back-btn {
+         display: inline-flex;
+         align-items: center;
+         gap: 8px;
+         padding: 10px 20px;
+         background-color: var(--primary-color);
+         color: white;
+         border: none;
+         border-radius: 8px;
+         font-size: 14px;
          cursor: pointer;
-         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-         overflow: hidden;
-         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-         will-change: transform, min-width, left;
-         contain: layout style;
-         background: linear-gradient(135deg, var(--primary-color), #c0392b);
-         z-index: 1;
+         transition: all 0.2s ease;
+         margin-bottom: 15px;
       }
 
-      .rectangle-card.active {
-         min-width: 279px;
-         background: linear-gradient(135deg, #c0392b, #a93226);
-         z-index: 2;
+      .article-back-btn:hover {
+         background-color: #c0392b;
+         transform: translateX(-3px);
       }
 
-
-      /* 响应式调整 */
-      @media (max-width: 480px) {
-         .rectangle-card {
-            min-width: 70px;
-         }
-         
-         .rectangle-card.active {
-            min-width: 250px;
-         }
-         
-         .card-content-expanded {
-            width: 250px;
-         }
+      .article-title-display {
+         font-size: 24px;
+         font-weight: 700;
+         color: white;
+         margin-bottom: 10px;
+         line-height: 1.3;
       }
 
-      @media (max-width: 360px) {
-         .rectangle-card {
-            min-width: 65px;
-         }
-         
-         .rectangle-card.active {
-            min-width: 220px;
-         }
-         
-         .card-content-expanded {
-            width: 220px;
-         }
+      .article-meta-display {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 15px;
+         font-size: 14px;
+         color: #888;
+      }
+
+      .article-content-wrapper {
+         flex: 1;
+         min-height: 0;
+         overflow-y: auto;
+         background-color: var(--dark-card);
+         border-radius: 10px;
+         padding: 20px;
+      }
+
+      .article-content {
+         color: white;
+         line-height: 1.8;
+         font-size: 16px;
+      }
+
+      .article-content h1,
+      .article-content h2,
+      .article-content h3 {
+         margin-top: 25px;
+         margin-bottom: 15px;
+         color: white;
+      }
+
+      .article-content p {
+         margin-bottom: 15px;
+      }
+
+      .article-content a {
+         color: var(--primary-color);
+         text-decoration: none;
+      }
+
+      .article-content a:hover {
+         text-decoration: underline;
+      }
+
+      body.light-mode {
+         background-color: var(--light-bg);
+         color: #333;
+      }
+
+      body.light-mode .mobile-top-section,
+      body.light-mode .mobile-card,
+      body.light-mode .floating-menu,
+      body.light-mode .special-card,
+      body.light-mode .search-container,
+      body.light-mode .article-header,
+      body.light-mode .article-content-wrapper {
+         background-color: white;
+         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      body.light-mode .mobile-top-card,
+      body.light-mode .search-input {
+         background-color: #f8f9fa;
+      }
+
+      body.light-mode .mobile-title,
+      body.light-mode .card-title,
+      body.light-mode .menu-item,
+      body.light-mode .search-title,
+      body.light-mode .search-input,
+      body.light-mode .search-option,
+      body.light-mode .article-title-display,
+      body.light-mode .article-content,
+      body.light-mode .special-card-title,
+      body.light-mode .special-card-item-title {
+         color: #333;
+      }
+
+      body.light-mode .card-description,
+      body.light-mode .card-meta,
+      body.light-mode .article-meta-display,
+      body.light-mode .special-card-item-description {
+         color: #666;
+      }
+
+      body.light-mode .menu-item,
+      body.light-mode .card-meta {
+         border-color: #e0e0e0;
+      }
+
+      body.light-mode .search-input,
+      body.light-mode .search-option {
+         border-color: #ddd;
+      }
+
+      body.light-mode .avatar {
+         background-color: var(--light-primary);
+      }
+
+      body.light-mode .menu-btn {
+         color: #333;
       }
    </style>
 </head>
 
-<body class="dark">
-   <div class="container">
-      <div class="mobile-layout">
-         <div class="mobile-top-section expanded" id="mobileTopSection">
+<body>
+   <div class="container" id="mainContainer">
+      <div class="mobile-layout" id="mobileLayout">
+         <!-- 顶部区域 -->
+         <div class="mobile-top-section collapsed" id="mobileTopSection">
             <div class="mobile-top-bar">
-               <div class="avatar" role="img" aria-label="Avatar">
-                  <img src="https://avatars.githubusercontent.com/u/195545824?v=4" alt="avatar"
-                                                                                                                                          style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+               <div class="avatar" id="avatar"></div>
+               <div class="mobile-title-container" id="titleToggle">
+                  <span class="mobile-title" id="mobileTitle">Ae1autumn</span>
                </div>
-               <div class="mobile-title-container" id="titleToggle" tabindex="0" role="button"
-                                                                                                                                       aria-label="Toggle Title">
-                  <div class="mobile-title">Ae1autumn</div>
-               </div>
-               <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"
-                                                                                                                                       aria-controls="floatingMenu">≡</button>
+               <button class="menu-btn" id="menuBtn" aria-label="打开菜单" aria-expanded="false">
+                  <i class="fas fa-bars"></i>
+               </button>
             </div>
-            <div class="mobile-top-card">
-               <p>I was only temporary to you</p>
-            </div>
-
-            <div class="floating-menu" id="floatingMenu" role="menu" aria-hidden="true">
-               <div class="menu-items" id="menuItems">
-                  <div class="menu-item" id="searchMenuItem" role="menuitem" tabindex="0">搜索</div>
-                  <div class="menu-item" id="darkModeToggle" role="menuitem" tabindex="0">日间模式</div>
-               </div>
+            <div class="mobile-top-card" id="mobileTopCard">
+               I was only temporary to you
             </div>
          </div>
 
+         <!-- 特殊卡片区域 -->
+         <div class="special-cards-container" id="specialCardsContainer"></div>
+
+         <!-- 文章列表区域 -->
          <div class="article-list-section" id="articleListSection">
             <div class="mobile-cards-container">
-               <div class="mobile-cards-wrapper" id="mobileCardsWrapper">
-                  <!-- 虚拟滚动容器 -->
-                  <div class="cards-viewport" id="cardsViewport">
-                     <div class="cards-container" id="cardsContainer"></div>
-                     <!-- 移除了scroll-hint -->
-                  </div>
-               </div>
+               <div class="mobile-cards-wrapper" id="mobileCardsWrapper"></div>
             </div>
          </div>
-
-         <section class="special-card" id="specialCard" aria-labelledby="specialCardTitle" aria-expanded="false">
-            <div class="special-card-header">
-               <h3 id="specialCardTitle" class="special-card-title">特别项目</h3>
-            </div>
-            <div class="special-card-content" id="specialCardContent">
-               <div class="special-cards-container" id="specialCardsContainer">
-               </div>
-            </div>
-         </section>
       </div>
    </div>
 
+   <!-- 浮动菜单 -->
+   <div class="floating-menu" id="floatingMenu" aria-hidden="true">
+      <div class="menu-items" id="menuItems">
+         <div class="menu-item" id="searchMenuItem">
+            <i class="fas fa-search"></i> 搜索
+         </div>
+         <div class="menu-item" id="darkModeToggle">
+            <i class="fas fa-moon"></i> <span id="themeToggleText">日间</span>
+         </div>
+      </div>
+   </div>
+
+   <!-- 搜索遮罩层 -->
    <div class="search-overlay" id="searchOverlay">
       <div class="search-container">
-         <div class="search-input-container">
-            <input type="text" class="search-input" id="searchInput" placeholder="Enter确认,点击标题退出" autocomplete="off">
+         <div class="search-title">搜索文章</div>
+         <div class="search-input-wrapper">
+            <input type="text" class="search-input" id="searchInput" placeholder="Enter确认,点击标题退出">
          </div>
          <div class="search-options" id="searchOptions">
             <button class="search-option active" data-type="title">标题</button>
             <button class="search-option" data-type="tag">标签</button>
-            <button class="search-option" data-type="content">简介</button>
+            <button class="search-option" data-type="all">全部</button>
          </div>
       </div>
    </div>
 
    <script>
-      // ==================== 数据注入点 (由生成引擎替换) ====================
+      // ==================== 博客数据 ====================
       const blogData = {
-        articles: [],
-        specials: [{"id": "0", "title": "", "date": "", "tags": [], "content": ["", "", "运行天数: 28 天", ""], "url": "", "verticalTitle": "Special"}]
+         articles: [
+            { title: "文章1", description: "这是第一篇文章的描述", date: "2024-01-15", tags: ["技术", "前端"], content: "文章1的完整内容..." },
+            { title: "文章2", description: "这是第二篇文章的描述", date: "2024-01-20", tags: ["生活"], content: "文章2的完整内容..." },
+            { title: "文章3", description: "这是第三篇文章的描述", date: "2024-01-25", tags: ["技术", "后端"], content: "文章3的完整内容..." }
+         ],
+         specials: [
+            {
+               title: "特殊专栏",
+               icon: "fas fa-star",
+               tags: ["推荐"],
+               items: [
+                  { title: "特殊文章1", description: "特殊文章描述1", articleIndex: 0 },
+                  { title: "特殊文章2", description: "特殊文章描述2", articleIndex: 1 }
+               ]
+            }
+         ],
+         menuLinks: [
+            { title: "关于", url: "https://example.com/about" },
+            { title: "友链", url: "https://example.com/links" }
+         ]
       };
-      const menuItemsData = [{"tag": "about", "display": "关于"}];
+
       const blogConfig = {
-        themeColor: " #e74c3c ",
-        runDate: " 2026.01.01 "
+         themeColor: "#e74c3c"
       };
-      
-      // ==================== 辅助函数 ====================
-      function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
-      
-      function debounce(func, delay) {
-        let timeoutId;
-        return (...args) => {
-          clearTimeout(timeoutId);
-          timeoutId = setTimeout(() => func.apply(this, args), delay);
-        };
-      }
-      
-      function sortArticlesByDateDesc(articles) {
-        return articles.sort((a, b) => new Date(b.date) - new Date(a.date));
-      }
-      
-      function filterArticles(articles, keyword, type) {
-        if (!keyword.trim()) return articles;
-        
-        keyword = keyword.trim().toLowerCase();
-        
-        return articles.filter(article => {
-          if (type === 'title') {
-            return article.title.toLowerCase().includes(keyword);
-          } 
-          else if (type === 'tag') {
-            const keywords = keyword.split(' ').filter(k => k.trim() !== '');
-            if (keywords.length === 0) return true;
-            
-            const filteredTags = article.tags ? article.tags.filter(tag => 
-              tag && !['top', 'special', '项目'].includes(tag.toLowerCase().trim())
-            ) : [];
-            
-            return keywords.some(k => 
-              filteredTags.some(tag => tag.toLowerCase().includes(k))
-            );
-          } 
-          else if (type === 'content') {
-            return article.content.some(c => c.toLowerCase().includes(keyword));
-          }
-          return true;
-        });
-      }
-      
-      // ==================== 更新卡片颜色索引函数 ====================
-      function updateCardsColorIndices() {
-        const isLightMode = document.body.classList.contains('light-mode');
-        const cards = document.querySelectorAll('.rectangle-card');
-        
-        cards.forEach((card, index) => {
-          const cardIndex = parseInt(card.getAttribute('data-index') || index);
-          const colorIndex = (cardIndex % 5) + 1;
-          
-          // 总是设置颜色索引
-          card.setAttribute('data-color-index', colorIndex);
-          
-          // 如果是暗色模式，移除可能存在的旧的颜色样式
-          if (!isLightMode) {
-            card.style.background = '';
-          }
-        });
-      }
-      
-      // ==================== 强制更新所有卡片颜色 ====================
-      function forceUpdateAllCardsColor() {
-        const isLightMode = document.body.classList.contains('light-mode');
-        
-        // 获取所有卡片
-        const cards = document.querySelectorAll('.rectangle-card');
-        
-        cards.forEach((card, index) => {
-          const cardIndex = parseInt(card.getAttribute('data-index') || index);
-          const colorIndex = (cardIndex % 5) + 1;
-          
-          // 确保 data-color-index 属性存在
-          if (!card.hasAttribute('data-color-index')) {
-            card.setAttribute('data-color-index', colorIndex);
-          }
-          
-          // 如果是日间模式，强制重新计算样式
-          if (isLightMode) {
-            // 强制样式重新计算
-            card.style.display = 'none';
-            card.offsetHeight; // 触发重排
-            card.style.display = '';
-          }
-        });
-      }
-      
-      // ==================== 标签过滤器 ====================
-      class TagFilter {
-        constructor() {
-          this.internalTags = new Set( ['top', 'special', '项目'] );
-        }
-        
-        filterTags(tags) {
-          if (!tags || !Array.isArray(tags)) {
-            return [];
-          }
-          return tags.filter(tag => tag && !this.internalTags.has(tag.toLowerCase().trim()));
-        }
-        
-        shouldDisplayByTag(tags) {
-          if (!tags || !Array.isArray(tags)) return true;
-          return tags.some(tag => !this.internalTags.has(tag.toLowerCase().trim()));
-        }
-        
-        getFirstDisplayableTag(tags) {
-          if (!tags || !Array.isArray(tags)) return null;
-          for (let tag of tags) {
-            if (tag && !this.internalTags.has(tag.toLowerCase().trim())) {
-              return tag;
-            }
-          }
-          return null;
-        }
-      }
-      
-      // 初始化标签过滤器
-      const tagFilter = new TagFilter();
-      
-      // ==================== 虚拟滚动管理器 ====================
-      class VirtualScroll {
-        constructor() {
-          this.viewport = document.getElementById('cardsViewport');
-          this.container = document.getElementById('cardsContainer');
-          
-          // 卡片尺寸配置
-          this.cardWidth = {
-            collapsed: 82,
-            expanded: 279
-          };
-          
-          this.buffer = 2;
-          
-          this.state = {
-            allArticles: [],
-            visibleArticles: [],
-            renderedCards: new Map(),
-            cardStates: new Map(),
-            scrollLeft: 0,
-            viewportWidth: 0,
-            containerWidth: 0,
-            isScrolling: false,
-            scrollTimer: null,
-            activeCardIndex: 1
-          };
-          
-          this.themeTransitionTimeout = null;
-          
-          this.bindEvents();
-        }
-        
-        init(articles) {
-          this.state.allArticles = [...articles];
-          this.calculateViewportSize();
-          this.updateContainerSize();
-          this.renderVisibleCards();
-        }
-        
-        calculateViewportSize() {
-          const rect = this.viewport.getBoundingClientRect();
-          this.state.viewportWidth = rect.width;
-        }
-        
-        updateContainerSize() {
-          let totalWidth = 0;
-          const gap = 15;
-          
-          this.state.allArticles.forEach((article, index) => {
-            const isActive = index === this.state.activeCardIndex;
-            const width = isActive ? this.cardWidth.expanded : this.cardWidth.collapsed;
-            
-            this.state.cardStates.set(index, {
-              isActive,
-              width,
-              left: totalWidth
-            });
-            
-            totalWidth += width + gap;
-          });
-          
-          totalWidth -= gap;
-          this.state.containerWidth = totalWidth;
-          this.container.style.width = `${totalWidth}px`;
-        }
-        
-        getVisibleRange() {
-          const scrollLeft = this.state.scrollLeft;
-          const viewportWidth = this.state.viewportWidth;
-          
-          let startIndex = -1;
-          let endIndex = -1;
-          let currentLeft = 0;
-          
-          for (let i = 0; i < this.state.allArticles.length; i++) {
-            const state = this.state.cardStates.get(i);
-            if (!state) continue;
-            
-            if (currentLeft + state.width > scrollLeft) {
-              startIndex = Math.max(0, i - this.buffer);
-              break;
-            }
-            currentLeft += state.width + 15;
-          }
-          
-          if (startIndex === -1) {
-            startIndex = 0;
-            currentLeft = 0;
-          }
-          
-          let viewportRight = scrollLeft + viewportWidth;
-          for (let i = startIndex; i < this.state.allArticles.length; i++) {
-            const state = this.state.cardStates.get(i);
-            if (!state) continue;
-            
-            if (currentLeft > viewportRight) {
-              endIndex = Math.min(this.state.allArticles.length - 1, i + this.buffer);
-              break;
-            }
-            
-            if (i === this.state.allArticles.length - 1) {
-              endIndex = this.state.allArticles.length - 1;
-            }
-            
-            currentLeft += state.width + 15;
-          }
-          
-          return { startIndex, endIndex };
-        }
-        
-        renderVisibleCards() {
-          const { startIndex, endIndex } = this.getVisibleRange();
-          
-          for (const [index, card] of this.state.renderedCards) {
-            if (index < startIndex || index > endIndex) {
-              card.remove();
-              this.state.renderedCards.delete(index);
-            }
-          }
-          
-          for (let i = startIndex; i <= endIndex; i++) {
-            if (!this.state.renderedCards.has(i)) {
-              const card = this.createCardElement(i);
-              if (card) {
-                this.container.appendChild(card);
-                this.state.renderedCards.set(i, card);
-              }
-            }
-            
-            this.updateCardPosition(i);
-          }
-        }
-        
-        createCardElement(index) {
-          const article = this.state.allArticles[index];
-          const cardState = this.state.cardStates.get(index);
-          
-          if (!article || !cardState) return null;
-          
-          const card = document.createElement('article');
-          card.className = `rectangle-card ${cardState.isActive ? 'active' : ''}`;
-          card.id = `card${index + 1}`;
-          card.setAttribute('role', 'article');
-          card.setAttribute('data-index', index);
-          
-          // 设置颜色索引 (1-5 循环)
-          const colorIndex = (index % 5) + 1;
-          card.setAttribute('data-color-index', colorIndex);
-          
-          const filteredTags = tagFilter.filterTags(article.tags);
-          const firstDisplayableTag = tagFilter.getFirstDisplayableTag(article.tags);
-          const vTitle = article.verticalTitle || firstDisplayableTag || 'Blog';
-          
-          let tagsHTML = '';
-          if (article.date) {
-            tagsHTML += `<span class="card-tag date-tag">${article.date}</span>`;
-          }
-          if (filteredTags && Array.isArray(filteredTags)) {
-            tagsHTML += filteredTags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join('');
-          }
-          
-          let contentHTML = '';
-          if (article.content && Array.isArray(article.content)) {
-            contentHTML = article.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-          }
-          
-          card.innerHTML = `
-            <div class="vertical-title">${escapeHtml(vTitle)}</div>
-            <div class="card-content-expanded">
-              <div class="card-tags">
-                ${tagsHTML}
-              </div>
-              <div class="card-title-container">
-                <h2 id="card${index + 1}Title">${escapeHtml(article.title)}</h2>
-              </div>
-              <div class="card-content-main">
-                ${contentHTML}
-              </div>
-              <div class="card-footer">
-                <button class="mobile-card-btn" onclick="window.location.href='${escapeHtml(article.url)}'">Read</button>
-              </div>
-            </div>
-          `;
-          
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.mobile-card-btn')) return;
-            this.handleCardClick(index);
-          });
-          
-          return card;
-        }
-        
-        updateCardPosition(index) {
-          const card = this.state.renderedCards.get(index);
-          const cardState = this.state.cardStates.get(index);
-          
-          if (card && cardState) {
-            card.style.left = `${cardState.left}px`;
-            card.style.width = `${cardState.width}px`;
-          }
-        }
-        
-        handleCardClick(clickedIndex) {
-          if (this.state.cardStates.get(clickedIndex).isActive) {
-            this.deactivateCard(clickedIndex);
-          } else {
-            this.state.cardStates.forEach((state, index) => {
-              if (state.isActive) {
-                this.deactivateCard(index);
-              }
-            });
-            
-            this.activateCard(clickedIndex);
-          }
-          
-          this.scrollToCard(clickedIndex);
-        }
-        
-        activateCard(index) {
-          const cardState = this.state.cardStates.get(index);
-          if (!cardState) return;
-          
-          cardState.isActive = true;
-          cardState.width = this.cardWidth.expanded;
-          
-          this.state.activeCardIndex = index;
-          
-          const card = this.state.renderedCards.get(index);
-          if (card) {
-            card.classList.add('active');
-          }
-          
-          this.updateAllPositions();
-        }
-        
-        deactivateCard(index) {
-          const cardState = this.state.cardStates.get(index);
-          if (!cardState) return;
-          
-          cardState.isActive = false;
-          cardState.width = this.cardWidth.collapsed;
-          
-          const card = this.state.renderedCards.get(index);
-          if (card) {
-            card.classList.remove('active');
-          }
-          
-          this.updateAllPositions();
-        }
-        
-        updateAllPositions() {
-          let currentLeft = 0;
-          const gap = 15;
-          
-          for (let i = 0; i < this.state.allArticles.length; i++) {
-            const cardState = this.state.cardStates.get(i);
-            if (!cardState) continue;
-            
-            cardState.left = currentLeft;
-            currentLeft += cardState.width + gap;
-            
-            if (this.state.renderedCards.has(i)) {
-              this.updateCardPosition(i);
-            }
-          }
-          
-          this.state.containerWidth = currentLeft - gap;
-          this.container.style.width = `${this.state.containerWidth}px`;
-        }
-        
-        scrollToCard(index) {
-          const cardState = this.state.cardStates.get(index);
-          if (!cardState) return;
-          
-          const viewportWidth = this.state.viewportWidth;
-          const cardLeft = cardState.left;
-          const cardWidth = cardState.width;
-          
-          let targetScroll = cardLeft - (viewportWidth - cardWidth) / 2;
-          targetScroll = Math.max(0, Math.min(targetScroll, this.state.containerWidth - viewportWidth));
-          
-          // 使用平滑滚动效果
-          this.viewport.scrollTo({
-            left: targetScroll,
-            behavior: 'smooth'
-          });
-        }
-        
-        // 重置滚动到起始位置（用于退出搜索模式）
-        resetScrollToStart() {
-          // 立即重置滚动位置到最左边，不使用平滑效果
-          this.viewport.scrollLeft = 0;
-          this.state.scrollLeft = 0;
-          this.renderVisibleCards();
-        }
-        
-        handleScroll() {
-          this.state.scrollLeft = this.viewport.scrollLeft;
-          
-          this.viewport.classList.add('scrolling');
-          this.state.isScrolling = true;
-          
-          if (this.state.scrollTimer) {
-            clearTimeout(this.state.scrollTimer);
-          }
-          
-          this.state.scrollTimer = setTimeout(() => {
-            this.viewport.classList.remove('scrolling');
-            this.state.isScrolling = false;
-          }, 150);
-          
-          this.renderVisibleCards();
-        }
-        
-        handleResize() {
-          this.calculateViewportSize();
-          this.renderVisibleCards();
-        }
-        
-        bindEvents() {
-          this.viewport.addEventListener('scroll', () => this.handleScroll());
-          
-          this.debouncedResize = debounce(() => this.handleResize(), 150);
-          window.addEventListener('resize', this.debouncedResize);
-        }
-        
-        // 主题切换时禁用卡片过渡
-        prepareForThemeTransition() {
-          if (this.themeTransitionTimeout) {
-            clearTimeout(this.themeTransitionTimeout);
-          }
-          
-          const cards = this.container.querySelectorAll('.rectangle-card');
-          cards.forEach(card => {
-            card.style.transition = 'none';
-          });
-        }
-        
-        restoreAfterThemeTransition() {
-          const cards = this.container.querySelectorAll('.rectangle-card');
-          
-          this.themeTransitionTimeout = setTimeout(() => {
-            cards.forEach(card => {
-              card.style.transition = '';
-            });
-            this.themeTransitionTimeout = null;
-          }, 50);
-        }
-        
-        destroy() {
-          this.viewport.removeEventListener('scroll', () => this.handleScroll());
-          window.removeEventListener('resize', this.debouncedResize);
-          if (this.state.scrollTimer) {
-            clearTimeout(this.state.scrollTimer);
-          }
-          if (this.themeTransitionTimeout) {
-            clearTimeout(this.themeTransitionTimeout);
-          }
-        }
-        
-        // 修改setSearchMode方法，处理退出搜索模式时的滚动重置
-        setSearchMode(isSearchMode, filteredArticles = null) {
-          const articles = filteredArticles || this.state.allArticles;
-          this.init(articles);
-          
-          // 搜索模式下只展开第一张卡片，正常模式下只展开第二张卡片
-          const activeIndex = isSearchMode ? 0 : 1;
-          
-          setTimeout(() => {
-            // 先取消所有卡片的激活状态
-            this.state.cardStates.forEach((state, index) => {
-              if (state.isActive) {
-                this.deactivateCard(index);
-              }
-            });
-            
-            // 激活指定卡片
-            this.activateCard(activeIndex);
-            
-            if (isSearchMode) {
-              // 进入搜索模式：滚动到第一张卡片
-              this.scrollToCard(activeIndex);
-            } else {
-              // 退出搜索模式：重置滚动到起始位置
-              this.resetScrollToStart();
-            }
-          }, 100);
-        }
-      }
-      
+
       // ==================== 状态管理 ====================
       const state = {
-        isSearchMode: false,
-        originalArticles: [],
-        currentArticles: [],
-        searchType: 'title',
-        virtualScroll: null
+         currentView: 'home', // 'home' 或 'article'
+         currentArticleIndex: null,
+         isSearchMode: false,
+         searchType: 'title',
+         currentArticles: [],
+         originalArticles: [],
+         virtualScroll: null
       };
-      
-      // ==================== 主题管理 ====================
-      function getCurrentTheme() {
-        return document.body.classList.contains('light-mode') ? 'light' : 'dark';
+
+      // ==================== 工具函数 ====================
+      function sortArticlesByDateDesc(articles) {
+         return articles.sort((a, b) => new Date(b.date) - new Date(a.date));
       }
-      
-      function setTheme(theme) {
-        const isLight = theme === 'light';
-        
-        if (isLight) {
-          document.body.classList.add('light-mode');
-          document.body.classList.remove('dark-mode');
-        } else {
-          document.body.classList.add('dark-mode');
-          document.body.classList.remove('light-mode');
-        }
-        
-        const themeBtn = document.getElementById('darkModeToggle');
-        if (themeBtn) {
-          themeBtn.textContent = isLight ? '夜间模式' : '日间模式';
-        }
-        
-        localStorage.setItem('theme', theme);
+
+      function filterArticles(articles, keyword, searchType) {
+         const lowerKeyword = keyword.toLowerCase();
+         return articles.filter(article => {
+            if (searchType === 'title') {
+               return article.title.toLowerCase().includes(lowerKeyword);
+            } else if (searchType === 'tag') {
+               return article.tags && article.tags.some(tag => tag.toLowerCase().includes(lowerKeyword));
+            } else {
+               const titleMatch = article.title.toLowerCase().includes(lowerKeyword);
+               const tagMatch = article.tags && article.tags.some(tag => tag.toLowerCase().includes(lowerKeyword));
+               const descMatch = article.description && article.description.toLowerCase().includes(lowerKeyword);
+               return titleMatch || tagMatch || descMatch;
+            }
+         });
       }
-      
-      // 主题切换防抖处理
-      let themeTransitionTimeout = null;
-      
-      function toggleTheme() {
-        const currentTheme = getCurrentTheme();
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
-        // 清除可能存在的延迟
-        if (themeTransitionTimeout) {
-          clearTimeout(themeTransitionTimeout);
-        }
-        
-        // 批量更新：先准备所有卡片
-        updateCardsColorIndices();
-        
-        // 禁用所有卡片过渡效果
-        if (state.virtualScroll) {
-          state.virtualScroll.prepareForThemeTransition();
-        }
-        
-        // 添加过渡禁用类
-        document.body.classList.add('theme-transitioning');
-        
-        // 切换主题
-        setTheme(newTheme);
-        
-        // 短暂延迟后恢复
-        themeTransitionTimeout = setTimeout(() => {
-          document.body.classList.remove('theme-transitioning');
-          
-          if (state.virtualScroll) {
-            state.virtualScroll.restoreAfterThemeTransition();
-          }
-          
-          closeFloatingMenu();
-          themeTransitionTimeout = null;
-        }, 50);
+
+      function getCardColor(index, isDark) {
+         const darkColors = [
+            { bg: 'rgba(231, 76, 60, 0.1)', text: '#e74c3c' },
+            { bg: 'rgba(52, 152, 219, 0.1)', text: '#3498db' },
+            { bg: 'rgba(46, 204, 113, 0.1)', text: '#2ecc71' },
+            { bg: 'rgba(241, 196, 15, 0.1)', text: '#f1c40f' },
+            { bg: 'rgba(155, 89, 182, 0.1)', text: '#9b59b6' }
+         ];
+         
+         const lightColors = [
+            { bg: 'rgba(231, 76, 60, 0.08)', text: '#c0392b' },
+            { bg: 'rgba(52, 152, 219, 0.08)', text: '#2980b9' },
+            { bg: 'rgba(46, 204, 113, 0.08)', text: '#27ae60' },
+            { bg: 'rgba(241, 196, 15, 0.08)', text: '#f39c12' },
+            { bg: 'rgba(155, 89, 182, 0.08)', text: '#8e44ad' }
+         ];
+         
+         const colors = isDark ? darkColors : lightColors;
+         return colors[index % colors.length];
       }
-      
+
+      function updateCardsColorIndices() {
+         const cards = document.querySelectorAll('.mobile-card');
+         const isDark = !document.body.classList.contains('light-mode');
+         
+         cards.forEach((card, index) => {
+            const color = getCardColor(index, isDark);
+            const tags = card.querySelectorAll('.card-tag');
+            tags.forEach(tag => {
+               tag.style.backgroundColor = color.bg;
+               tag.style.color = color.text;
+            });
+         });
+      }
+
+      function forceUpdateAllCardsColor() {
+         updateCardsColorIndices();
+      }
+
+      // ==================== 主题切换 ====================
+      let themeTransitionTimeout;
+
       function initTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        
-        if (savedTheme === 'light' || savedTheme === 'dark') {
-          setTheme(savedTheme);
-        } else {
-          const initialTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
-          setTheme(initialTheme);
-        }
+         const savedTheme = localStorage.getItem('theme');
+         if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            updateThemeToggleText();
+         }
       }
-      
+
+      function toggleTheme() {
+         document.body.classList.add('theme-transitioning');
+         
+         document.body.classList.toggle('light-mode');
+         const isLight = document.body.classList.contains('light-mode');
+         localStorage.setItem('theme', isLight ? 'light' : 'dark');
+         
+         updateThemeToggleText();
+         
+         if (themeTransitionTimeout) {
+            clearTimeout(themeTransitionTimeout);
+         }
+         
+         themeTransitionTimeout = setTimeout(() => {
+            document.body.classList.remove('theme-transitioning');
+            forceUpdateAllCardsColor();
+         }, 300);
+         
+         setTimeout(() => {
+            forceUpdateAllCardsColor();
+         }, 50);
+      }
+
+      function updateThemeToggleText() {
+         const toggleText = document.getElementById('themeToggleText');
+         const isLight = document.body.classList.contains('light-mode');
+         toggleText.textContent = isLight ? '夜间' : '日间';
+      }
+
       // ==================== 渲染函数 ====================
-      function renderArticles(articles = blogData.articles, isSearchMode = false) {
-        if (state.virtualScroll) {
-          state.virtualScroll.setSearchMode(isSearchMode, articles);
-        } else {
-          state.virtualScroll = new VirtualScroll();
-          state.virtualScroll.init(articles);
-        }
-      }
-      
-      function shouldShowOnlyContent(special) {
-        const hasTitle = special.title && special.title.trim() !== '';
-        const hasTags = special.tags && special.tags.length > 0;
-        const hasContent = special.content && special.content.length > 0;
-        return hasContent && !hasTitle && !hasTags;
-      }
-      
-      function renderSpecialCards() {
-        const container = document.getElementById('specialCardsContainer');
-        const specialSection = document.getElementById('specialCard');
-        container.innerHTML = '';
-        
-        if (!blogData.specials || blogData.specials.length === 0) {
-          specialSection.style.display = 'none';
-          return;
-        }
-        
-        if (blogData.specials.length === 1 && shouldShowOnlyContent(blogData.specials[0])) {
-          specialSection.classList.add('only-content');
-          specialSection.querySelector('.special-card-header').style.cursor = 'default';
-          specialSection.classList.add('expanded');
-          specialSection.setAttribute('aria-expanded', 'true');
-          
-          const item = document.createElement('div');
-          item.className = 'special-card-item-content-simple';
-          
-          let contentHTML = '';
-          if (blogData.specials[0].content && Array.isArray(blogData.specials[0].content)) {
-            contentHTML = blogData.specials[0].content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-          }
-          item.innerHTML = contentHTML;
-          
-          container.appendChild(item);
-        } else {
-          specialSection.classList.remove('only-content');
-          specialSection.querySelector('.special-card-header').style.cursor = 'pointer';
-          
-          blogData.specials.forEach(special => {
-            const item = document.createElement('div');
-            item.className = 'special-card-item';
+      function renderArticles(articles, isSearchResult) {
+         const wrapper = document.getElementById('mobileCardsWrapper');
+         if (!wrapper) return;
+         
+         wrapper.innerHTML = '';
+         
+         if (articles.length === 0) {
+            wrapper.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">没有找到文章</div>';
+            return;
+         }
+         
+         const isDark = !document.body.classList.contains('light-mode');
+         
+         articles.forEach((article, index) => {
+            const card = document.createElement('div');
+            card.className = 'mobile-card';
+            card.dataset.index = blogData.articles.indexOf(article);
             
-            const filteredTags = tagFilter.filterTags(special.tags);
+            const color = getCardColor(index, isDark);
             
-            let tagsHTML = '';
-            if (filteredTags && Array.isArray(filteredTags)) {
-              tagsHTML = filteredTags.map(t => `<span class="card-tag">${escapeHtml(t)}</span>`).join('');
-            }
+            const tagsHTML = article.tags && article.tags.length > 0
+               ? `<div class="card-tags">
+                     ${article.tags.map(tag => `
+                        <span class="card-tag" style="background-color: ${color.bg}; color: ${color.text};">
+                           ${tag}
+                        </span>
+                     `).join('')}
+                  </div>`
+               : '';
             
-            let contentHTML = '';
-            if (special.content && Array.isArray(special.content)) {
-              contentHTML = special.content.map(p => `<p>${escapeHtml(p)}</p>`).join('');
-            }
-            
-            let buttonHTML = '';
-            if (special.url) {
-              buttonHTML = `
-                <div class="special-card-item-footer">
-                  <button class="special-card-btn" onclick="window.open('${escapeHtml(special.url)}', '_blank')">Visit</button>
-                </div>
-              `;
-            }
-            
-            item.innerHTML = `
-              <div class="special-card-item-content">
-                ${filteredTags.length > 0 ? `
-                <div class="card-tags">
-                  ${tagsHTML}
-                </div>
-                ` : ''}
-                ${special.title ? `<h4>${escapeHtml(special.title)}</h4>` : ''}
-                <div class="special-card-item-content-main">
-                  ${contentHTML}
-                </div>
-                ${buttonHTML}
-              </div>
+            card.innerHTML = `
+               ${tagsHTML}
+               <h3 class="card-title">${article.title}</h3>
+               <p class="card-description">${article.description || ''}</p>
+               <div class="card-meta">
+                  <span><i class="far fa-calendar"></i> ${article.date}</span>
+               </div>
             `;
             
-            container.appendChild(item);
-          });
-        }
+            card.addEventListener('click', () => {
+               const articleIndex = parseInt(card.dataset.index);
+               navigateToArticle(articleIndex);
+            });
+            
+            wrapper.appendChild(card);
+         });
       }
-      
-      function renderDynamicMenuItems() {
-        const menuContainer = document.getElementById('menuItems');
-        const searchBtn = document.getElementById('searchMenuItem');
-        const themeBtn = document.getElementById('darkModeToggle');
-        
-        while (menuContainer.firstChild) {
-          menuContainer.removeChild(menuContainer.firstChild);
-        }
-        
-        menuContainer.appendChild(searchBtn);
-        
-        if (menuItemsData && Array.isArray(menuItemsData)) {
-          menuItemsData.forEach(item => {
-            if (item.url) {
-              const link = document.createElement('a');
-              link.className = 'menu-item';
-              link.href = item.url;
-              link.textContent = item.display;
-              link.onclick = () => closeFloatingMenu();
-              menuContainer.appendChild(link);
-            } else if (item.tag) {
-              const matchedArticle = blogData.articles.find(article => 
-                article.tags && article.tags.includes(item.tag)
-              );
-              
-              if (matchedArticle && matchedArticle.url) {
-                const link = document.createElement('a');
-                link.className = 'menu-item';
-                link.href = matchedArticle.url;
-                link.textContent = item.display || item.tag;
-                link.onclick = () => closeFloatingMenu();
-                menuContainer.appendChild(link);
-              }
+
+      function renderSpecialCards() {
+         const container = document.getElementById('specialCardsContainer');
+         if (!container) return;
+         
+         container.innerHTML = '';
+         
+         if (!blogData.specials || blogData.specials.length === 0) {
+            container.style.display = 'none';
+            return;
+         }
+         
+         container.style.display = 'block';
+         
+         blogData.specials.forEach((special, specialIndex) => {
+            const hasMultipleSpecials = blogData.specials.length > 1;
+            const hasTitleOrTags = special.title || (special.tags && special.tags.length > 0);
+            const shouldExpand = hasMultipleSpecials || hasTitleOrTags;
+            
+            const card = document.createElement('div');
+            card.className = 'special-card';
+            card.id = specialIndex === 0 ? 'specialCard' : `specialCard${specialIndex}`;
+            
+            if (!shouldExpand && special.items && special.items.length === 1) {
+               card.classList.add('expanded');
             }
-          });
-        }
-        
-        menuContainer.appendChild(themeBtn);
+            
+            const tagsHTML = special.tags && special.tags.length > 0
+               ? `<div class="special-card-tags">
+                     ${special.tags.map(tag => `<span class="special-card-tag">${tag}</span>`).join('')}
+                  </div>`
+               : '';
+            
+            const headerHTML = shouldExpand
+               ? `<div class="special-card-header">
+                     <div class="special-card-title-container">
+                        ${special.icon ? `<i class="${special.icon} special-card-icon"></i>` : ''}
+                        ${special.title ? `<h3 class="special-card-title">${special.title}</h3>` : ''}
+                        ${tagsHTML}
+                     </div>
+                     <i class="fas fa-chevron-down special-card-arrow"></i>
+                  </div>`
+               : '';
+            
+            const itemsHTML = special.items && special.items.length > 0
+               ? special.items.map(item => `
+                     <div class="special-card-item" data-article-index="${item.articleIndex}">
+                        <div class="special-card-item-title">${item.title}</div>
+                        ${item.description ? `<div class="special-card-item-description">${item.description}</div>` : ''}
+                     </div>
+                  `).join('')
+               : '';
+            
+            card.innerHTML = `
+               ${headerHTML}
+               <div class="special-card-content">
+                  <div class="special-card-items">
+                     ${itemsHTML}
+                  </div>
+               </div>
+            `;
+            
+            container.appendChild(card);
+            
+            const items = card.querySelectorAll('.special-card-item');
+            items.forEach(item => {
+               item.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  const articleIndex = parseInt(item.dataset.articleIndex);
+                  navigateToArticle(articleIndex);
+               });
+            });
+         });
       }
-      
+
+      function renderDynamicMenuItems() {
+         const menuContainer = document.getElementById('menuItems');
+         if (!menuContainer) return;
+         
+         if (blogData.menuLinks && blogData.menuLinks.length > 0) {
+            blogData.menuLinks.forEach(link => {
+               const menuItem = document.createElement('a');
+               menuItem.className = 'menu-item';
+               menuItem.href = link.url;
+               menuItem.target = '_blank';
+               menuItem.rel = 'noopener noreferrer';
+               menuItem.innerHTML = `<i class="fas fa-link"></i> ${link.title}`;
+               menuContainer.appendChild(menuItem);
+            });
+         }
+      }
+
+      // ==================== 页面导航 ====================
+      function navigateToArticle(articleIndex) {
+         state.currentView = 'article';
+         state.currentArticleIndex = articleIndex;
+         
+         // 保存当前主视图的 HTML,以便返回时恢复
+         const mobileLayout = document.getElementById('mobileLayout');
+         if (mobileLayout) {
+            state.savedHomeHTML = mobileLayout.innerHTML;
+         }
+         
+         renderArticlePage(articleIndex);
+         
+         history.pushState({ view: 'article', articleIndex }, '', `#article-${articleIndex}`);
+      }
+
+      function renderArticlePage(articleIndex) {
+         const article = blogData.articles[articleIndex];
+         if (!article) return;
+         
+         const container = document.getElementById('mainContainer');
+         container.innerHTML = `
+            <div class="article-page">
+               <div class="article-header">
+                  <button class="article-back-btn" id="articleBackBtn">
+                     <i class="fas fa-arrow-left"></i> 返回
+                  </button>
+                  <h1 class="article-title-display">${article.title}</h1>
+                  <div class="article-meta-display">
+                     <span><i class="far fa-calendar"></i> ${article.date}</span>
+                     ${article.tags ? `<span><i class="fas fa-tags"></i> ${article.tags.join(', ')}</span>` : ''}
+                  </div>
+               </div>
+               <div class="article-content-wrapper">
+                  <div class="article-content">
+                     ${article.content}
+                  </div>
+               </div>
+            </div>
+         `;
+         
+         setupArticlePage();
+      }
+
+      function setupArticlePage() {
+         const backBtn = document.getElementById('articleBackBtn');
+         if (backBtn) {
+            backBtn.addEventListener('click', (e) => {
+               e.preventDefault();
+               navigateToHome();
+            });
+         }
+      }
+
+      function navigateToHome() {
+         state.currentView = 'home';
+         state.currentArticleIndex = null;
+         
+         // 恢复首页视图
+         const container = document.getElementById('mainContainer');
+         if (state.savedHomeHTML) {
+            container.innerHTML = `<div class="mobile-layout" id="mobileLayout">${state.savedHomeHTML}</div>`;
+         } else {
+            // 如果没有保存的 HTML,重新渲染整个首页
+            renderHomePage();
+         }
+         
+         // 重新绑定事件
+         bindEvents();
+         bindMenuEvents();
+         
+         // 更新 URL
+         history.pushState({ view: 'home' }, '', '#');
+      }
+
+      function renderHomePage() {
+         const container = document.getElementById('mainContainer');
+         container.innerHTML = `
+            <div class="mobile-layout" id="mobileLayout">
+               <div class="mobile-top-section collapsed" id="mobileTopSection">
+                  <div class="mobile-top-bar">
+                     <div class="avatar" id="avatar"></div>
+                     <div class="mobile-title-container" id="titleToggle">
+                        <span class="mobile-title" id="mobileTitle">Ae1autumn</span>
+                     </div>
+                     <button class="menu-btn" id="menuBtn" aria-label="打开菜单" aria-expanded="false">
+                        <i class="fas fa-bars"></i>
+                     </button>
+                  </div>
+                  <div class="mobile-top-card" id="mobileTopCard">
+                     I was only temporary to you
+                  </div>
+               </div>
+               <div class="special-cards-container" id="specialCardsContainer"></div>
+               <div class="article-list-section" id="articleListSection">
+                  <div class="mobile-cards-container">
+                     <div class="mobile-cards-wrapper" id="mobileCardsWrapper"></div>
+                  </div>
+               </div>
+            </div>
+         `;
+         
+         // 重新渲染内容
+         const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
+         renderArticles(sortedArticles, false);
+         renderSpecialCards();
+         renderDynamicMenuItems();
+         
+         // 延迟更新卡片颜色
+         setTimeout(() => {
+            updateCardsColorIndices();
+            if (document.body.classList.contains('light-mode')) {
+               setTimeout(forceUpdateAllCardsColor, 50);
+            }
+         }, 100);
+      }
+
+      // ==================== 浏览器历史管理 ====================
+      window.addEventListener('popstate', (e) => {
+         if (e.state) {
+            if (e.state.view === 'article') {
+               renderArticlePage(e.state.articleIndex);
+            } else {
+               navigateToHome();
+            }
+         } else {
+            navigateToHome();
+         }
+      });
+
       // ==================== 搜索功能 ====================
       function enterSearchMode(filteredArticles) {
-        state.isSearchMode = true;
-        state.currentArticles = filteredArticles;
-        const sortedArticles = sortArticlesByDateDesc([...filteredArticles]);
-        renderArticles(sortedArticles, true);
-        closeSearchOverlay();
+         state.isSearchMode = true;
+         state.currentArticles = filteredArticles;
+         const sortedArticles = sortArticlesByDateDesc([...filteredArticles]);
+         renderArticles(sortedArticles, true);
+         closeSearchOverlay();
       }
-      
+
       function exitSearchMode() {
-        state.isSearchMode = false;
-        state.currentArticles = [];
-        const originalSorted = sortArticlesByDateDesc([...blogData.articles]);
-        renderArticles(originalSorted, false);
-        closeSearchOverlay();
+         state.isSearchMode = false;
+         state.currentArticles = [];
+         const originalSorted = sortArticlesByDateDesc([...blogData.articles]);
+         renderArticles(originalSorted, false);
+         closeSearchOverlay();
       }
-      
+
       function performSearch() {
-        const input = document.getElementById('searchInput');
-        const keyword = input.value.trim();
-        const searchType = state.searchType;
-        
-        if (!keyword) {
-          showSearchError('未输入');
-          return;
-        }
-        
-        let filtered = filterArticles(blogData.articles, keyword, searchType);
-        
-        if (filtered.length === 0) {
-          showSearchError(`没有符合"${keyword}"的文章`);
-          return;
-        }
-        
-        enterSearchMode(filtered);
+         const input = document.getElementById('searchInput');
+         const keyword = input.value.trim();
+         const searchType = state.searchType;
+         
+         if (!keyword) {
+            showSearchError('未输入');
+            return;
+         }
+         
+         let filtered = filterArticles(blogData.articles, keyword, searchType);
+         
+         if (filtered.length === 0) {
+            showSearchError(`没有符合"${keyword}"的文章`);
+            return;
+         }
+         
+         enterSearchMode(filtered);
       }
-      
+
       function showSearchError(message) {
-        const input = document.getElementById('searchInput');
-        input.value = '';
-        input.placeholder = message;
-        input.classList.add('error');
-        
-        const restoreOnNextInput = () => {
-          input.classList.remove('error');
-          input.placeholder = 'Enter确认,点击标题退出';
-          input.removeEventListener('input', restoreOnNextInput);
-        };
-        
-        input.addEventListener('input', restoreOnNextInput);
+         const input = document.getElementById('searchInput');
+         input.value = '';
+         input.placeholder = message;
+         input.classList.add('error');
+         
+         const restoreOnNextInput = () => {
+            input.classList.remove('error');
+            input.placeholder = 'Enter确认,点击标题退出';
+            input.removeEventListener('input', restoreOnNextInput);
+         };
+         
+         input.addEventListener('input', restoreOnNextInput);
       }
-      
+
       // ==================== UI 交互控制 ====================
       function openSearchOverlay() {
-        const overlay = document.getElementById('searchOverlay');
-        const input = document.getElementById('searchInput');
-        
-        input.value = '';
-        input.placeholder = 'Enter确认,点击标题退出';
-        input.classList.remove('error');
-        
-        overlay.classList.add('active');
-        input.focus();
+         const overlay = document.getElementById('searchOverlay');
+         const input = document.getElementById('searchInput');
+         
+         input.value = '';
+         input.placeholder = 'Enter确认,点击标题退出';
+         input.classList.remove('error');
+         
+         overlay.classList.add('active');
+         input.focus();
       }
-      
+
       function closeSearchOverlay() {
-        document.getElementById('searchOverlay').classList.remove('active');
+         document.getElementById('searchOverlay').classList.remove('active');
       }
-      
+
       function openFloatingMenu() {
-        const menu = document.getElementById('floatingMenu');
-        menu.classList.remove('closing');
-        menu.classList.add('active');
-        document.getElementById('menuBtn').setAttribute('aria-expanded', 'true');
-        menu.setAttribute('aria-hidden', 'false');
+         const menu = document.getElementById('floatingMenu');
+         menu.classList.remove('closing');
+         menu.classList.add('active');
+         document.getElementById('menuBtn').setAttribute('aria-expanded', 'true');
+         menu.setAttribute('aria-hidden', 'false');
       }
-      
+
       function closeFloatingMenu() {
-        const menu = document.getElementById('floatingMenu');
-        if (menu.classList.contains('active')) {
-          menu.classList.add('closing');
-          menu.classList.remove('active');
-          
-          setTimeout(() => {
-            menu.classList.remove('closing');
-            menu.setAttribute('aria-hidden', 'true');
-            document.getElementById('menuBtn').setAttribute('aria-expanded', 'false');
-          }, 250);
-        }
-      }
-      
-      function toggleFloatingMenu() {
-        const menu = document.getElementById('floatingMenu');
-        
-        if (menu.classList.contains('active') || menu.classList.contains('closing')) {
-          closeFloatingMenu();
-        } else {
-          openFloatingMenu();
-        }
-      }
-      
-      // ==================== 事件绑定 ====================
-      function bindEvents() {
-        // 搜索菜单项点击事件
-        document.getElementById('searchMenuItem').addEventListener('click', () => {
-          openSearchOverlay();
-          closeFloatingMenu();
-        });
-        
-        // 菜单按钮点击事件
-        document.getElementById('menuBtn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          toggleFloatingMenu();
-        });
-        
-        // 搜索输入框事件
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') performSearch();
-        });
-        
-        // 键盘事件
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            const overlay = document.getElementById('searchOverlay');
-            if (overlay.classList.contains('active')) {
-              closeSearchOverlay();
-            }
-            const floatingMenu = document.getElementById('floatingMenu');
-            if (floatingMenu.classList.contains('active')) {
-              closeFloatingMenu();
-            }
-          }
-        });
-        
-        // 搜索选项点击事件
-        document.querySelectorAll('#searchOptions .search-option').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('#searchOptions .search-option').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            state.searchType = btn.dataset.type;
+         const menu = document.getElementById('floatingMenu');
+         if (menu.classList.contains('active')) {
+            menu.classList.add('closing');
+            menu.classList.remove('active');
             
             setTimeout(() => {
-              document.getElementById('searchInput').focus();
-            }, 10);
-          });
-        });
-        
-        // 搜索遮罩点击事件
-        document.getElementById('searchOverlay').addEventListener('click', (e) => {
-          if (e.target === e.currentTarget) closeSearchOverlay();
-        });
-        
-        // 全局点击事件
-        document.addEventListener('click', (e) => {
-          const menu = document.getElementById('floatingMenu');
-          const btn = document.getElementById('menuBtn');
-          
-          if (!menu.contains(e.target) && !btn.contains(e.target) && 
-              (menu.classList.contains('active') || menu.classList.contains('closing'))) {
+               menu.classList.remove('closing');
+               menu.setAttribute('aria-hidden', 'true');
+               document.getElementById('menuBtn').setAttribute('aria-expanded', 'false');
+            }, 250);
+         }
+      }
+
+      function toggleFloatingMenu() {
+         const menu = document.getElementById('floatingMenu');
+         
+         if (menu.classList.contains('active') || menu.classList.contains('closing')) {
             closeFloatingMenu();
-          }
-        });
-        
-        const floatingMenu = document.getElementById('floatingMenu');
-        floatingMenu.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
-        
-        // 主题切换事件
-        document.getElementById('darkModeToggle').addEventListener('click', toggleTheme);
-        
-        // 标题点击事件 - 修改：点击标题退出搜索模式
-        document.getElementById('titleToggle').addEventListener('click', () => {
-          if (state.isSearchMode) {
-            exitSearchMode();
-          } else {
-            const topSection = document.getElementById('mobileTopSection');
-            topSection.classList.toggle('expanded');
-            topSection.classList.toggle('collapsed');
-          }
-        });
-        
-        // 特殊卡片点击事件 - 修复版
-        const specialCardHeader = document.querySelector('.special-card-header');
-        if (specialCardHeader) {
-          specialCardHeader.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // 只有当有多个特殊卡片或单个卡片有标题/标签时才允许展开
-            const shouldToggle = blogData.specials.length > 1 || 
-                (blogData.specials.length === 1 && 
-                 (blogData.specials[0].title || 
-                  (blogData.specials[0].tags && blogData.specials[0].tags.length > 0)));
-            
-            if (shouldToggle) {
-              const card = document.getElementById('specialCard');
-              card.classList.toggle('expanded');
-              card.setAttribute('aria-expanded', card.classList.contains('expanded'));
-            }
-          });
-        }
+         } else {
+            openFloatingMenu();
+         }
       }
-      
-      function bindMenuEvents() {
-        const menuContainer = document.getElementById('menuItems');
-        const menuItemElements = menuContainer.querySelectorAll('.menu-item');
-        
-        menuItemElements.forEach(item => {
-          if (item.id !== 'searchMenuItem' && item.id !== 'darkModeToggle') {
-            item.addEventListener('click', () => {
-              closeFloatingMenu();
+
+      // ==================== 事件绑定 ====================
+      function bindEvents() {
+         // 搜索菜单项点击事件
+         const searchMenuItem = document.getElementById('searchMenuItem');
+         if (searchMenuItem) {
+            searchMenuItem.addEventListener('click', () => {
+               openSearchOverlay();
+               closeFloatingMenu();
             });
-          }
-        });
+         }
+         
+         // 菜单按钮点击事件
+         const menuBtn = document.getElementById('menuBtn');
+         if (menuBtn) {
+            menuBtn.addEventListener('click', (e) => {
+               e.stopPropagation();
+               toggleFloatingMenu();
+            });
+         }
+         
+         // 搜索输入框事件
+         const searchInput = document.getElementById('searchInput');
+         if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+               if (e.key === 'Enter') performSearch();
+            });
+         }
+         
+         // 键盘事件
+         document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+               const overlay = document.getElementById('searchOverlay');
+               if (overlay && overlay.classList.contains('active')) {
+                  closeSearchOverlay();
+               }
+               const floatingMenu = document.getElementById('floatingMenu');
+               if (floatingMenu && floatingMenu.classList.contains('active')) {
+                  closeFloatingMenu();
+               }
+            }
+         });
+         
+         // 搜索选项点击事件
+         document.querySelectorAll('#searchOptions .search-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+               e.preventDefault();
+               document.querySelectorAll('#searchOptions .search-option').forEach(b => b.classList.remove('active'));
+               btn.classList.add('active');
+               state.searchType = btn.dataset.type;
+               
+               setTimeout(() => {
+                  const input = document.getElementById('searchInput');
+                  if (input) input.focus();
+               }, 10);
+            });
+         });
+         
+         // 搜索遮罩点击事件
+         const searchOverlay = document.getElementById('searchOverlay');
+         if (searchOverlay) {
+            searchOverlay.addEventListener('click', (e) => {
+               if (e.target === e.currentTarget) closeSearchOverlay();
+            });
+         }
+         
+         // 全局点击事件
+         document.addEventListener('click', (e) => {
+            const menu = document.getElementById('floatingMenu');
+            const btn = document.getElementById('menuBtn');
+            
+            if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target) && 
+                (menu.classList.contains('active') || menu.classList.contains('closing'))) {
+               closeFloatingMenu();
+            }
+         });
+         
+         const floatingMenu = document.getElementById('floatingMenu');
+         if (floatingMenu) {
+            floatingMenu.addEventListener('click', (e) => {
+               e.stopPropagation();
+            });
+         }
+         
+         // 主题切换事件
+         const darkModeToggle = document.getElementById('darkModeToggle');
+         if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', toggleTheme);
+         }
+         
+         // 标题点击事件
+         const titleToggle = document.getElementById('titleToggle');
+         if (titleToggle) {
+            titleToggle.addEventListener('click', () => {
+               if (state.isSearchMode) {
+                  exitSearchMode();
+               } else {
+                  const topSection = document.getElementById('mobileTopSection');
+                  if (topSection) {
+                     topSection.classList.toggle('expanded');
+                     topSection.classList.toggle('collapsed');
+                  }
+               }
+            });
+         }
+         
+         // 特殊卡片点击事件
+         const specialCardHeader = document.querySelector('.special-card-header');
+         if (specialCardHeader) {
+            specialCardHeader.addEventListener('click', (e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               
+               const shouldToggle = blogData.specials.length > 1 || 
+                   (blogData.specials.length === 1 && 
+                    (blogData.specials[0].title || 
+                     (blogData.specials[0].tags && blogData.specials[0].tags.length > 0)));
+               
+               if (shouldToggle) {
+                  const card = document.getElementById('specialCard');
+                  if (card) {
+                     card.classList.toggle('expanded');
+                     card.setAttribute('aria-expanded', card.classList.contains('expanded'));
+                  }
+               }
+            });
+         }
       }
-      
+
+      function bindMenuEvents() {
+         const menuContainer = document.getElementById('menuItems');
+         if (!menuContainer) return;
+         
+         const menuItemElements = menuContainer.querySelectorAll('.menu-item');
+         
+         menuItemElements.forEach(item => {
+            if (item.id !== 'searchMenuItem' && item.id !== 'darkModeToggle') {
+               item.addEventListener('click', () => {
+                  closeFloatingMenu();
+               });
+            }
+         });
+      }
+
       // ==================== 页面初始化 ====================
       document.addEventListener('DOMContentLoaded', () => {
-        // 初始化主题
-        initTheme();
-        
-        // 初始化状态
-        state.originalArticles = [...blogData.articles];
-        state.currentArticles = blogData.articles;
-        
-        // 渲染内容
-        const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
-        renderArticles(sortedArticles, false);
-        renderSpecialCards();
-        
-        // 渲染动态菜单项
-        renderDynamicMenuItems();
-        
-        // 绑定事件
-        bindEvents();
-        bindMenuEvents();
-        
-        // 设置主题颜色
-        if (blogConfig.themeColor) {
-          document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
-        }
-        
-        // 延迟更新卡片颜色，确保DOM已完全渲染
-        setTimeout(() => {
-          updateCardsColorIndices();
-          // 如果是日间模式，额外强制更新一次
-          if (document.body.classList.contains('light-mode')) {
-            setTimeout(forceUpdateAllCardsColor, 50);
-          }
-        }, 100);
+         // 初始化主题
+         initTheme();
+         
+         // 初始化状态
+         state.originalArticles = [...blogData.articles];
+         state.currentArticles = blogData.articles;
+         
+         // 渲染内容
+         const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
+         renderArticles(sortedArticles, false);
+         renderSpecialCards();
+         
+         // 渲染动态菜单项
+         renderDynamicMenuItems();
+         
+         // 绑定事件
+         bindEvents();
+         bindMenuEvents();
+         
+         // 设置主题颜色
+         if (blogConfig.themeColor) {
+            document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
+         }
+         
+         // 延迟更新卡片颜色,确保DOM已完全渲染
+         setTimeout(() => {
+            updateCardsColorIndices();
+            if (document.body.classList.contains('light-mode')) {
+               setTimeout(forceUpdateAllCardsColor, 50);
+            }
+         }, 100);
+         
+         // 处理初始 URL 状态
+         if (window.location.hash) {
+            const match = window.location.hash.match(/#article-(\d+)/);
+            if (match) {
+               const articleIndex = parseInt(match[1]);
+               navigateToArticle(articleIndex);
+            }
+         } else {
+            history.replaceState({ view: 'home' }, '', '#');
+         }
       });
-      
+
       // 页面卸载时清理
       window.addEventListener('beforeunload', () => {
-        if (state.virtualScroll) {
-          state.virtualScroll.destroy();
-        }
-        if (themeTransitionTimeout) {
-          clearTimeout(themeTransitionTimeout);
-        }
+         if (state.virtualScroll) {
+            state.virtualScroll.destroy();
+         }
+         if (themeTransitionTimeout) {
+            clearTimeout(themeTransitionTimeout);
+         }
       });
-   
    </script>
-   
 </body>
 
 </html>
