@@ -1340,7 +1340,7 @@
       // 初始化标签过滤器
       const tagFilter = new TagFilter();
       
-      // ==================== 🔥 修复: 虚拟滚动管理器 ====================
+      // ==================== 虚拟滚动管理器 ====================
       class VirtualScroll {
         constructor() {
           this.viewport = document.getElementById('cardsViewport');
@@ -1351,9 +1351,8 @@
             collapsed: 82,
             expanded: 279
           };
-          this.gap = 15; // 卡片间距
           
-          this.buffer = 2; // 缓冲区卡片数量
+          this.buffer = 2;
           
           this.state = {
             allArticles: [],
@@ -1365,13 +1364,10 @@
             containerWidth: 0,
             isScrolling: false,
             scrollTimer: null,
-            activeCardIndex: 1,
-            isTransitioning: false,
-            isInitialized: false // 🔥 新增：标记是否已初始化
+            activeCardIndex: 1
           };
           
           this.themeTransitionTimeout = null;
-          this.scrollAnimationFrame = null;
           
           this.bindEvents();
         }
@@ -1380,14 +1376,7 @@
           this.state.allArticles = [...articles];
           this.calculateViewportSize();
           this.updateContainerSize();
-          
-          // 🔥 修复: 确保正确初始化
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              this.renderVisibleCards();
-              this.state.isInitialized = true;
-            });
-          });
+          this.renderVisibleCards();
         }
         
         calculateViewportSize() {
@@ -1397,6 +1386,7 @@
         
         updateContainerSize() {
           let totalWidth = 0;
+          const gap = 15;
           
           this.state.allArticles.forEach((article, index) => {
             const isActive = index === this.state.activeCardIndex;
@@ -1408,12 +1398,10 @@
               left: totalWidth
             });
             
-            totalWidth += width;
-            if (index < this.state.allArticles.length - 1) {
-              totalWidth += this.gap;
-            }
+            totalWidth += width + gap;
           });
           
+          totalWidth -= gap;
           this.state.containerWidth = totalWidth;
           this.container.style.width = `${totalWidth}px`;
         }
@@ -1421,72 +1409,57 @@
         getVisibleRange() {
           const scrollLeft = this.state.scrollLeft;
           const viewportWidth = this.state.viewportWidth;
-          const viewportRight = scrollLeft + viewportWidth;
           
           let startIndex = -1;
           let endIndex = -1;
+          let currentLeft = 0;
           
-          // 找到起始索引
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
-            const cardRight = state.left + state.width;
-            
-            if (cardRight > scrollLeft) {
+            if (currentLeft + state.width > scrollLeft) {
               startIndex = Math.max(0, i - this.buffer);
               break;
             }
+            currentLeft += state.width + 15;
           }
           
           if (startIndex === -1) {
-            return { startIndex: 0, endIndex: Math.min(this.buffer * 2, this.state.allArticles.length - 1) };
+            startIndex = 0;
+            currentLeft = 0;
           }
           
-          // 找到结束索引
+          let viewportRight = scrollLeft + viewportWidth;
           for (let i = startIndex; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
             
-            if (state.left > viewportRight) {
-              endIndex = Math.min(this.state.allArticles.length - 1, i - 1 + this.buffer);
+            if (currentLeft > viewportRight) {
+              endIndex = Math.min(this.state.allArticles.length - 1, i + this.buffer);
               break;
             }
-          }
-          
-          if (endIndex === -1) {
-            endIndex = this.state.allArticles.length - 1;
+            
+            if (i === this.state.allArticles.length - 1) {
+              endIndex = this.state.allArticles.length - 1;
+            }
+            
+            currentLeft += state.width + 15;
           }
           
           return { startIndex, endIndex };
         }
         
         renderVisibleCards() {
-          // 🔥 修复: 如果没有文章，直接返回
-          if (!this.state.allArticles || this.state.allArticles.length === 0) {
-            console.warn('No articles to render');
-            return;
-          }
-          
           const { startIndex, endIndex } = this.getVisibleRange();
           
-          // 移除不可见的卡片
-          const toRemove = [];
           for (const [index, card] of this.state.renderedCards) {
             if (index < startIndex || index > endIndex) {
-              toRemove.push(index);
+              card.remove();
+              this.state.renderedCards.delete(index);
             }
           }
           
-          toRemove.forEach(index => {
-            const card = this.state.renderedCards.get(index);
-            if (card && card.parentNode) {
-              card.remove();
-            }
-            this.state.renderedCards.delete(index);
-          });
-          
-          // 渲染可见的卡片
           for (let i = startIndex; i <= endIndex; i++) {
             if (!this.state.renderedCards.has(i)) {
               const card = this.createCardElement(i);
@@ -1570,8 +1543,6 @@
         }
         
         handleCardClick(clickedIndex) {
-          if (this.state.isTransitioning) return;
-          
           if (this.state.cardStates.get(clickedIndex).isActive) {
             this.deactivateCard(clickedIndex);
           } else {
@@ -1621,30 +1592,22 @@
         
         updateAllPositions() {
           let currentLeft = 0;
-          const updates = [];
+          const gap = 15;
           
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const cardState = this.state.cardStates.get(i);
             if (!cardState) continue;
             
             cardState.left = currentLeft;
-            currentLeft += cardState.width;
-            
-            if (i < this.state.allArticles.length - 1) {
-              currentLeft += this.gap;
-            }
+            currentLeft += cardState.width + gap;
             
             if (this.state.renderedCards.has(i)) {
-              updates.push(i);
+              this.updateCardPosition(i);
             }
           }
           
-          this.state.containerWidth = currentLeft;
+          this.state.containerWidth = currentLeft - gap;
           this.container.style.width = `${this.state.containerWidth}px`;
-          
-          requestAnimationFrame(() => {
-            updates.forEach(i => this.updateCardPosition(i));
-          });
         }
         
         scrollToCard(index) {
@@ -1658,40 +1621,29 @@
           let targetScroll = cardLeft - (viewportWidth - cardWidth) / 2;
           targetScroll = Math.max(0, Math.min(targetScroll, this.state.containerWidth - viewportWidth));
           
+          // 使用平滑滚动效果
           this.viewport.scrollTo({
             left: targetScroll,
             behavior: 'smooth'
           });
         }
         
-        // 🔥 修复: 改进重置逻辑
+        // 重置滚动到起始位置（用于退出搜索模式）
         resetScrollToStart() {
-          if (this.scrollAnimationFrame) {
-            cancelAnimationFrame(this.scrollAnimationFrame);
-            this.scrollAnimationFrame = null;
-          }
-          
-          this.scrollAnimationFrame = requestAnimationFrame(() => {
-            this.viewport.scrollLeft = 0;
-            this.state.scrollLeft = 0;
-            
-            requestAnimationFrame(() => {
-              this.renderVisibleCards();
-              this.scrollAnimationFrame = null;
-            });
-          });
+          // 立即重置滚动位置到最左边，不使用平滑效果
+          this.viewport.scrollLeft = 0;
+          this.state.scrollLeft = 0;
+          this.renderVisibleCards();
         }
         
         handleScroll() {
           this.state.scrollLeft = this.viewport.scrollLeft;
           
+          this.viewport.classList.add('scrolling');
+          this.state.isScrolling = true;
+          
           if (this.state.scrollTimer) {
             clearTimeout(this.state.scrollTimer);
-          }
-          
-          if (!this.state.isScrolling) {
-            this.state.isScrolling = true;
-            this.viewport.classList.add('scrolling');
           }
           
           this.state.scrollTimer = setTimeout(() => {
@@ -1699,41 +1651,23 @@
             this.state.isScrolling = false;
           }, 150);
           
-          if (!this.scrollAnimationFrame) {
-            this.scrollAnimationFrame = requestAnimationFrame(() => {
-              this.renderVisibleCards();
-              this.scrollAnimationFrame = null;
-            });
-          }
+          this.renderVisibleCards();
         }
         
         handleResize() {
           this.calculateViewportSize();
-          this.updateContainerSize();
           this.renderVisibleCards();
         }
         
         bindEvents() {
-          this.viewport.addEventListener('scroll', () => this.handleScroll(), { passive: true });
+          this.viewport.addEventListener('scroll', () => this.handleScroll());
           
           this.debouncedResize = debounce(() => this.handleResize(), 150);
           window.addEventListener('resize', this.debouncedResize);
-          
-          // 🔥 新增: 监听页面可见性变化
-          document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.state.isInitialized) {
-              // 页面重新可见时，重新渲染
-              requestAnimationFrame(() => {
-                this.calculateViewportSize();
-                this.renderVisibleCards();
-              });
-            }
-          });
         }
         
+        // 主题切换时禁用卡片过渡
         prepareForThemeTransition() {
-          this.state.isTransitioning = true;
-          
           if (this.themeTransitionTimeout) {
             clearTimeout(this.themeTransitionTimeout);
           }
@@ -1748,77 +1682,51 @@
           const cards = this.container.querySelectorAll('.rectangle-card');
           
           this.themeTransitionTimeout = setTimeout(() => {
-            requestAnimationFrame(() => {
-              cards.forEach(card => {
-                card.style.transition = '';
-              });
-              this.state.isTransitioning = false;
-              this.themeTransitionTimeout = null;
+            cards.forEach(card => {
+              card.style.transition = '';
             });
+            this.themeTransitionTimeout = null;
           }, 50);
         }
         
         destroy() {
           this.viewport.removeEventListener('scroll', () => this.handleScroll());
           window.removeEventListener('resize', this.debouncedResize);
-          
           if (this.state.scrollTimer) {
             clearTimeout(this.state.scrollTimer);
           }
           if (this.themeTransitionTimeout) {
             clearTimeout(this.themeTransitionTimeout);
           }
-          if (this.scrollAnimationFrame) {
-            cancelAnimationFrame(this.scrollAnimationFrame);
-          }
-          
-          this.state.renderedCards.forEach(card => {
-            if (card && card.parentNode) {
-              card.remove();
-            }
-          });
-          this.state.renderedCards.clear();
-          this.state.cardStates.clear();
         }
         
-        // 🔥 修复: 改进搜索模式切换
+        // 修改setSearchMode方法，处理退出搜索模式时的滚动重置
         setSearchMode(isSearchMode, filteredArticles = null) {
           const articles = filteredArticles || this.state.allArticles;
-          
-          // 清理旧状态
-          this.state.renderedCards.forEach(card => {
-            if (card && card.parentNode) {
-              card.remove();
-            }
-          });
-          this.state.renderedCards.clear();
-          this.state.cardStates.clear();
-          
-          // 重新初始化
           this.init(articles);
           
+          // 搜索模式下只展开第一张卡片，正常模式下只展开第二张卡片
           const activeIndex = isSearchMode ? 0 : 1;
           
-          // 🔥 使用多个RAF确保DOM完全更新
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                this.state.cardStates.forEach((state, index) => {
-                  if (state.isActive && index !== activeIndex) {
-                    this.deactivateCard(index);
-                  }
-                });
-                
-                this.activateCard(activeIndex);
-                
-                if (isSearchMode) {
-                  this.scrollToCard(activeIndex);
-                } else {
-                  this.resetScrollToStart();
-                }
-              });
+          setTimeout(() => {
+            // 先取消所有卡片的激活状态
+            this.state.cardStates.forEach((state, index) => {
+              if (state.isActive) {
+                this.deactivateCard(index);
+              }
             });
-          });
+            
+            // 激活指定卡片
+            this.activateCard(activeIndex);
+            
+            if (isSearchMode) {
+              // 进入搜索模式：滚动到第一张卡片
+              this.scrollToCard(activeIndex);
+            } else {
+              // 退出搜索模式：重置滚动到起始位置
+              this.resetScrollToStart();
+            }
+          }, 100);
         }
       }
       
@@ -1855,26 +1763,33 @@
         localStorage.setItem('theme', theme);
       }
       
+      // 主题切换防抖处理
       let themeTransitionTimeout = null;
       
       function toggleTheme() {
         const currentTheme = getCurrentTheme();
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         
+        // 清除可能存在的延迟
         if (themeTransitionTimeout) {
           clearTimeout(themeTransitionTimeout);
         }
         
+        // 批量更新：先准备所有卡片
         updateCardsColorIndices();
         
+        // 禁用所有卡片过渡效果
         if (state.virtualScroll) {
           state.virtualScroll.prepareForThemeTransition();
         }
         
+        // 添加过渡禁用类
         document.body.classList.add('theme-transitioning');
         
+        // 切换主题
         setTheme(newTheme);
         
+        // 短暂延迟后恢复
         themeTransitionTimeout = setTimeout(() => {
           document.body.classList.remove('theme-transitioning');
           
@@ -2133,20 +2048,24 @@
       
       // ==================== 事件绑定 ====================
       function bindEvents() {
+        // 搜索菜单项点击事件
         document.getElementById('searchMenuItem').addEventListener('click', () => {
           openSearchOverlay();
           closeFloatingMenu();
         });
         
+        // 菜单按钮点击事件
         document.getElementById('menuBtn').addEventListener('click', (e) => {
           e.stopPropagation();
           toggleFloatingMenu();
         });
         
+        // 搜索输入框事件
         document.getElementById('searchInput').addEventListener('keypress', (e) => {
           if (e.key === 'Enter') performSearch();
         });
         
+        // 键盘事件
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
             const overlay = document.getElementById('searchOverlay');
@@ -2160,6 +2079,7 @@
           }
         });
         
+        // 搜索选项点击事件
         document.querySelectorAll('#searchOptions .search-option').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2173,10 +2093,12 @@
           });
         });
         
+        // 搜索遮罩点击事件
         document.getElementById('searchOverlay').addEventListener('click', (e) => {
           if (e.target === e.currentTarget) closeSearchOverlay();
         });
         
+        // 全局点击事件
         document.addEventListener('click', (e) => {
           const menu = document.getElementById('floatingMenu');
           const btn = document.getElementById('menuBtn');
@@ -2192,8 +2114,10 @@
           e.stopPropagation();
         });
         
+        // 主题切换事件
         document.getElementById('darkModeToggle').addEventListener('click', toggleTheme);
         
+        // 标题点击事件 - 修改：点击标题退出搜索模式
         document.getElementById('titleToggle').addEventListener('click', () => {
           if (state.isSearchMode) {
             exitSearchMode();
@@ -2204,12 +2128,14 @@
           }
         });
         
+        // 特殊卡片点击事件 - 修复版
         const specialCardHeader = document.querySelector('.special-card-header');
         if (specialCardHeader) {
           specialCardHeader.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
+            // 只有当有多个特殊卡片或单个卡片有标题/标签时才允许展开
             const shouldToggle = blogData.specials.length > 1 || 
                 (blogData.specials.length === 1 && 
                  (blogData.specials[0].title || 
@@ -2237,7 +2163,7 @@
         });
       }
       
-      // ==================== 🔥 修复: 页面初始化 ====================
+      // ==================== 页面初始化 ====================
       document.addEventListener('DOMContentLoaded', () => {
         // 初始化主题
         initTheme();
@@ -2245,12 +2171,6 @@
         // 初始化状态
         state.originalArticles = [...blogData.articles];
         state.currentArticles = blogData.articles;
-        
-        // 🔥 确保有文章数据
-        if (!blogData.articles || blogData.articles.length === 0) {
-          console.error('No articles found!');
-          return;
-        }
         
         // 渲染内容
         const sortedArticles = sortArticlesByDateDesc([...blogData.articles]);
@@ -2269,16 +2189,17 @@
           document.documentElement.style.setProperty('--primary-color', blogConfig.themeColor);
         }
         
-        // 延迟更新卡片颜色
+        // 延迟更新卡片颜色，确保DOM已完全渲染
         setTimeout(() => {
           updateCardsColorIndices();
+          // 如果是日间模式，额外强制更新一次
           if (document.body.classList.contains('light-mode')) {
             setTimeout(forceUpdateAllCardsColor, 50);
           }
         }, 100);
       });
       
-      // 🔥 新增: 页面卸载时清理
+      // 页面卸载时清理
       window.addEventListener('beforeunload', () => {
         if (state.virtualScroll) {
           state.virtualScroll.destroy();
