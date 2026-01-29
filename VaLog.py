@@ -108,18 +108,18 @@ class VaLogGenerator:
         提取元数据并从正文中完全移除
         
         元数据格式:
-        - 第一行: !vml-<span>摘要内容</span>
-        - 第二行: !vml-<span>垂直标题</span>
+        - 第一行: !vml-<span></span>
+        - 第二行: !vml-<span></span>
         """
         if not body:
             return {
-                "summary": ["暂无简介"],
+                "summary": 暂无简介,
                 "vertical_title": "",
                 "body": ""
             }
         
         lines = body.split('\n')
-        summary = ["暂无简介"]
+        summary = 暂无简介
         vertical_title = ""
         content_start_index = 0  # 正文开始的行索引
         
