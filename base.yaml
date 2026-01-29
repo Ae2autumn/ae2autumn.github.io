@@ -19,24 +19,18 @@ articles:
   - 暂无简介
   url: article/10.html
   verticalTitle: '01.29'
-- id: '8'
-  title: '01.29'
-  date: '2026-01-29'
+specials:
+- id: '0'
+  title: ''
+  date: ''
   tags: []
   content:
-  - 暂无简介
-  url: article/8.html
-  verticalTitle: '01.29'
-specials:
-- id: '9'
-  title: Project
-  date: '2026-01-29'
-  tags:
-  - special
-  content:
-  - 暂无简介
-  url: article/9.html
-  verticalTitle: Project
+  - ''
+  - ''
+  - '运行天数: 28 天'
+  - ''
+  url: ''
+  verticalTitle: Special
 floating_menu:
 - tag: about
   display: 关于
