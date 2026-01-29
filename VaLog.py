@@ -1,6 +1,8 @@
 import os, re, json, yaml, requests, markdown
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
+from bleach import clean
+from bleach_whitelist import markdown_tags, markdown_attrs
 
 # ==================== 路径配置 ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +21,19 @@ DEFAULT_HOME_TEMPLATE = "home.html"
 # 创建必要的目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
 os.makedirs(OMD_DIR, exist_ok=True)
+
+# 安全过滤HTML内容
+def sanitize_html(html):
+    """安全过滤HTML内容"""
+    allowed_tags = markdown_tags + ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+    allowed_attrs = markdown_attrs.copy()
+    
+    return clean(
+        html,
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        strip=True
+    )
 
 class VaLogGenerator:
     def __init__(self):
@@ -70,18 +85,46 @@ class VaLogGenerator:
             lstrip_blocks=True
         )
         print("Jinja2环境初始化完成")
+        
+        # 初始化Markdown转换器
+        self.md = markdown.Markdown(
+            extensions=[
+                'extra',          # 包括表格、脚注等
+                'fenced_code',    # 代码块
+                'tables',         # 表格支持
+                'nl2br',          # 自动将换行转换为 <br>
+                'sane_lists',     # 更智能的列表处理
+                'codehilite',     # 代码高亮
+                'attr_list',      # 支持属性列表
+                'toc',            # 目录生成
+            ],
+            extension_configs={
+                'codehilite': {
+                    'linenums': True,    # 启用行号
+                    'guess_lang': False, # 禁用自动检测语言
+                    'pygments_style': 'github'  # 使用GitHub风格
+                },
+                'toc': {
+                    'permalink': True,  # 添加锚点链接
+                    'baselevel': 2       # 标题级别从H2开始
+                }
+            },
+            output_format='html5',
+            tab_length=4  # 统一缩进为4空格
+        )
+        print("Markdown转换器初始化完成")
 
     def extract_metadata_and_body(self, body):
         """准确提取元数据并在渲染前将其从正文中彻底移除"""
         if not body:
             return {
-                "summary": ["暂无简介"],
+                "summary": "",
                 "vertical_title": "",
                 "body": ""
             }
             
         lines = body.split('\n')
-        summary = ["暂无简介"]
+        summary = ""
         vertical_title = ""
         
         # 定义需要跳过的行索引
@@ -118,11 +161,6 @@ class VaLogGenerator:
         if not body:
             return ""
         
-        # 调试信息
-        print(f"处理正文，原始长度: {len(body)} 字符")
-        if len(body) > 0:
-            print(f"前200字符预览: {repr(body[:200])}")
-        
         try:
             # 使用 nl2br 扩展来自动处理换行
             html_content = markdown.markdown(
@@ -133,7 +171,21 @@ class VaLogGenerator:
                     'tables',         # 表格支持
                     'nl2br',          # 自动将换行转换为 <br>
                     'sane_lists',     # 更智能的列表处理
+                    'codehilite',     # 代码高亮
+                    'attr_list',      # 属性列表支持
+                    'toc',            # 目录生成
                 ],
+                extension_configs={
+                    'codehilite': {
+                        'linenums': True,    # 启用行号
+                        'guess_lang': False, # 禁用自动检测语言
+                        'pygments_style': 'github'  # 使用GitHub风格
+                    },
+                    'toc': {
+                        'permalink': True,  # 添加锚点链接
+                        'baselevel': 2       # 标题级别从H2开始
+                    }
+                },
                 output_format='html5'
             )
             
@@ -144,24 +196,16 @@ class VaLogGenerator:
                 html_content
             )
             
-            # 调试转换结果
-            print(f"转换后HTML长度: {len(html_content)} 字符")
-            if len(html_content) > 0:
-                print(f"HTML前200字符预览: {repr(html_content[:200])}")
-            
-            # 检查是否包含必要的HTML标签
-            if '<p>' not in html_content and '</p>' not in html_content:
-                print("警告: Markdown转换后没有段落标签，尝试手动处理")
-                # 如果没有段落标签，手动处理
-                paragraphs = []
-                for para in body.split('\n\n'):
-                    if para.strip():
-                        # 将段落内的换行转换为 <br>
-                        para_html = para.replace('\n', '<br>\n')
-                        paragraphs.append(f'<p>{para_html}</p>')
-                html_content = '\n\n'.join(paragraphs)
+            # 添加表格样式包装器
+            html_content = re.sub(
+                r'(<table[^>]*>.*?</table>)',
+                r'<div class="table-wrapper">\1</div>',
+                html_content,
+                flags=re.DOTALL
+            )
             
             return html_content
+            
         except Exception as e:
             print(f"Markdown转换错误: {e}")
             import traceback
@@ -172,7 +216,6 @@ class VaLogGenerator:
             paragraphs = []
             for para in body.split('\n\n'):
                 if para.strip():
-                    # 将段落内的换行转换为 <br>
                     para_html = para.replace('\n', '<br>\n')
                     paragraphs.append(f'<p>{para_html}</p>')
             
@@ -290,6 +333,32 @@ class VaLogGenerator:
         }}
         .content p {{
             margin-bottom: 1.5em;
+        }}
+        .table-wrapper {{
+            overflow-x: auto;
+            margin: 20px 0;
+        }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }}
+        th, td {{
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }}
+        th {{
+            background-color: #f8f9fa;
+        }}
+        pre {{
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }}
+        code {{
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
         }}
     </style>
 </head>
