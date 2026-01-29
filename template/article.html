@@ -5,89 +5,15 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>{{ article.title }} - {{ blog.name }}</title>
-   <link rel="icon" href="{{ blog.favicon }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-   <noscript>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-   </noscript>
+   <!-- 使用同步加载确保图标可用 -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <link rel="icon" href="{{ blog.favicon }}">
    <style>
+      /* ==================== 基础样式 ==================== */
       * {
          margin: 0;
          padding: 0;
          box-sizing: border-box;
-      }
-
-      body.dark-mode {
-         background-color: #121212;
-         color: #ffffff;
-      }
-      
-      body.dark-mode .header {
-         border-bottom-color: #333;
-      }
-      
-      body.dark-mode .title {
-         color: #fff;
-      }
-      
-      body.dark-mode .summary {
-         color: #ccc;
-      }
-      
-      body.dark-mode .date {
-         color: #999;
-      }
-      
-      body.dark-mode .tag {
-         background-color: #333;
-         color: #fff;
-      }
-      
-      body.dark-mode h1,
-      body.dark-mode h2,
-      body.dark-mode h3,
-      body.dark-mode h4,
-      body.dark-mode h5,
-      body.dark-mode h6 {
-         border-bottom-color: #333;
-         color: #fff;
-      }
-      
-      body.dark-mode .comments {
-         border-top-color: #333;
-      }
-      
-      body.dark-mode .floating-btn {
-         background-color: #000;
-         color: #fff;
-         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
-      }
-      
-      body.dark-mode .side-menu {
-         background-color: #111;
-         border-color: #333;
-      }
-      
-      body.dark-mode .menu-left {
-         background-color: #111;
-      }
-      
-      body.dark-mode .chapter-item {
-         border-bottom-color: #222;
-         color: #ccc;
-      }
-      
-      body.dark-mode .chapter-item.h2-item {
-         color: #888;
-      }
-      
-      body.dark-mode .menu-right {
-         background-color: #222;
-      }
-      
-      body.dark-mode .close-btn {
-         background-color: #222;
-         color: #fff;
-         border-top-color: #333;
       }
 
       body {
@@ -103,6 +29,90 @@
          transition: background-color 0.5s ease, color 0.5s ease;
       }
 
+      /* ==================== 主题样式 ==================== */
+      body.dark-mode {
+         background-color: #121212;
+         color: #ffffff;
+      }
+      
+      body.light-mode {
+         background-color: #fff;
+         color: #000;
+      }
+      
+      /* 暗色模式组件样式 */
+      body.dark-mode .header { border-bottom-color: #333; }
+      body.dark-mode .title { color: #fff; }
+      body.dark-mode .summary { color: #ccc; }
+      body.dark-mode .date { color: #999; }
+      body.dark-mode .tag { background-color: #333; color: #fff; }
+      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 { 
+         border-bottom-color: #333; 
+         color: #fff;
+      }
+      body.dark-mode .comments { border-top-color: #333; }
+      body.dark-mode .floating-btn { 
+         background-color: #000; 
+         color: #fff; 
+         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      }
+      body.dark-mode .side-menu { 
+         background-color: #111; 
+         border-color: #333;
+      }
+      body.dark-mode .menu-left { background-color: #111; }
+      body.dark-mode .chapter-item { 
+         border-bottom-color: #222; 
+         color: #ccc;
+      }
+      body.dark-mode .chapter-item.h2-item { color: #888; }
+      body.dark-mode .menu-right { background-color: #222; }
+      body.dark-mode .close-btn { 
+         background-color: #222; 
+         color: #fff; 
+         border-top-color: #333;
+      }
+      body.dark-mode .menu-mask { background-color: rgba(0, 0, 0, 0.5); }
+      
+      /* 亮色模式组件样式 */
+      body.light-mode .header { border-bottom-color: #ddd; }
+      body.light-mode .title { color: #000; }
+      body.light-mode .summary { color: #666; }
+      body.light-mode .date { color: #777; }
+      body.light-mode .tag { background-color: #eee; color: #000; }
+      body.light-mode h1, body.light-mode h2, body.light-mode h3, 
+      body.light-mode h4, body.light-mode h5, body.light-mode h6 { 
+         border-bottom-color: #ddd; 
+         color: #000;
+      }
+      body.light-mode .comments { border-top-color: #ddd; }
+      body.light-mode .floating-btn { 
+         background-color: #fff; 
+         color: #000; 
+         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      }
+      body.light-mode .side-menu { 
+         background-color: #fff; 
+         border-color: #ddd;
+         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      body.light-mode .menu-left { background-color: #fff; }
+      body.light-mode .chapter-item { 
+         border-bottom-color: #eee; 
+         color: #333;
+      }
+      body.light-mode .chapter-item.h2-item { color: #666; }
+      body.light-mode .menu-right { background-color: #f5f5f5; }
+      body.light-mode .menu-btn { color: #000; }
+      body.light-mode .close-btn { 
+         background-color: #f5f5f5; 
+         color: #000; 
+         border-top-color: #ddd;
+      }
+      body.light-mode .menu-mask { background-color: rgba(0, 0, 0, 0.3); }
+      
+      /* ==================== 文章内容样式 ==================== */
       .header {
          margin-bottom: 9px;
          padding: 20px;
@@ -155,26 +165,152 @@
          transition: color 0.5s ease;
       }
 
+      /* ==================== Markdown内容样式 ==================== */
+      /* 段落间距优化 */
       .content p {
-         margin-bottom: 20px;
+         margin-top: 0;
+         margin-bottom: 0.8em;
+         line-height: 1.8;
       }
-
-      .content strong {
-         color: #f00;
-      }
-
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-         margin: 30px 0 15px;
+      
+      /* 标题样式 */
+      .content h1, .content h2, .content h3, 
+      .content h4, .content h5, .content h6 {
+         margin: 1.5em 0 0.5em;
          padding-bottom: 10px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease, color 0.5s ease;
       }
+      
+      /* 列表样式 */
+      .content ul, .content ol {
+         margin: 0.8em 0;
+         padding-left: 2em;
+      }
+      
+      .content li {
+         margin: 0.3em 0;
+         line-height: 1.6;
+      }
+      
+      /* 代码块样式 */
+      .content pre {
+         margin: 1em 0;
+         padding: 1em;
+         background-color: #f5f5f5;
+         border-radius: 4px;
+         overflow-x: auto;
+      }
+      
+      body.dark-mode .content pre {
+         background-color: #2d2d2d;
+         color: #f8f8f2;
+      }
+      
+      .content code {
+         font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+         font-size: 0.9em;
+      }
+      
+      .content p code {
+         background-color: #f5f5f5;
+         padding: 0.2em 0.4em;
+         border-radius: 3px;
+      }
+      
+      body.dark-mode .content p code {
+         background-color: #3a3a3a;
+         color: #f8f8f2;
+      }
+      
+      /* 引用块样式 */
+      .content blockquote {
+         margin: 1em 0;
+         padding: 0.5em 1em;
+         border-left: 4px solid #ddd;
+         background-color: #f9f9f9;
+        color: #666;
+      }
+      
+      body.dark-mode .content blockquote {
+        border-left-color: #555;
+        background-color: #2a2a2a;
+        color: #ccc;
+      }
+      
+      /* 表格样式 */
+      .table-wrapper {
+        overflow-x: auto;
+        margin: 20px 0;
+      }
+      
+      .content table {
+        margin: 1em 0;
+        border-collapse: collapse;
+        width: 100%;
+      }
+      
+      .content th, .content td {
+        border: 1px solid #ddd;
+        padding: 0.5em 1em;
+        text-align: left;
+      }
+      
+      .content th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+      }
+      
+      body.dark-mode .content th {
+        background-color: #333;
+        border-color: #444;
+      }
+      
+      body.dark-mode .content td {
+        border-color: #444;
+      }
+      
+      /* 图片样式 */
+      .content img {
+        max-width: 100%;
+        height: auto;
+        margin: 1em 0;
+        border-radius: 4px;
+      }
+      
+      /* 分隔线样式 */
+      .content hr {
+        margin: 2em 0;
+        border: none;
+        border-top: 1px solid #ddd;
+      }
+      
+      /* 链接样式 */
+      .content a {
+        color: #4da6ff;
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+        transition: all 0.3s ease;
+      }
+      
+      body.dark-mode .content a {
+        color: #6bb8ff;
+        border-bottom: 1px dotted rgba(107, 184, 255, 0.5);
+      }
+      
+      .content a:hover {
+        color: #fff;
+        border-bottom: 1px solid rgba(77, 166, 255, 0.8);
+        background-color: rgba(77, 166, 255, 0.1);
+      }
+      
+      body.dark-mode .content a:hover {
+        color: #fff;
+        border-bottom: 1px solid rgba(107, 184, 255, 0.8);
+        background-color: rgba(107, 184, 255, 0.1);
+      }
 
+      /* ==================== 侧边菜单样式 ==================== */
       .comments {
          margin-top: 50px;
          padding: 20px;
@@ -227,15 +363,8 @@
       }
 
       @keyframes menuAppear {
-         0% {
-            transform: scale(0.1);
-            opacity: 0;
-         }
-
-         100% {
-            transform: scale(1);
-            opacity: 1;
-         }
+         0% { transform: scale(0.1); opacity: 0; }
+         100% { transform: scale(1); opacity: 1; }
       }
 
       .menu-left {
@@ -246,9 +375,7 @@
          transition: background-color 0.5s ease;
       }
 
-      .menu-left::-webkit-scrollbar {
-         display: none;
-      }
+      .menu-left::-webkit-scrollbar { display: none; }
 
       .chapter-item {
          padding: 10px 0;
@@ -258,27 +385,16 @@
          transition: all 0.2s;
       }
 
-      .chapter-item.h1-item {
-         padding-left: 0;
-      }
-
-      .chapter-item.h2-item {
-         padding-left: 20px;
+      .chapter-item.h1-item { padding-left: 0; }
+      .chapter-item.h2-item { 
+         padding-left: 20px; 
          color: #888;
          font-size: 0.9em;
       }
 
-      .chapter-item:hover {
-         color: #f00;
-      }
-
-      .chapter-item.h1-item:hover {
-         padding-left: 5px;
-      }
-
-      .chapter-item.h2-item:hover {
-         padding-left: 25px;
-      }
+      .chapter-item:hover { color: #f00; }
+      .chapter-item.h1-item:hover { padding-left: 5px; }
+      .chapter-item.h2-item:hover { padding-left: 25px; }
 
       .menu-right {
          width: 50px;
@@ -335,9 +451,7 @@
          margin-left: 1px;
       }
 
-      .close-btn:hover {
-         background-color: #d00;
-      }
+      .close-btn:hover { background-color: #d00; }
 
       .menu-mask {
          position: fixed;
@@ -351,276 +465,13 @@
          transition: background-color 0.5s ease;
       }
 
-      .menu-mask.active {
-         display: block;
-      }
-      
-      /* ==================== 文章页内容样式 ==================== */
-      
-      /* 文章标题样式 */
-      .article-header h1,
-      .article-title h1 {
-        margin-bottom: 0.5rem;  /* 减小标题下边距 */
-        line-height: 1.3;
-      }
-      
-      /* 文章元信息(日期、标签等) */
-      .article-meta {
-        margin-bottom: 1.5rem;  /* 元信息和正文之间适中的间距 */
-      }
-      
-      /* 文章正文容器 */
-      .article-content,
-      .content {
-        line-height: 1.8;       /* 舒适的行高 */
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-      }
-      
-      /* ==================== 段落间距优化 ==================== */
-      
-      /* 段落基础样式 */
-      .article-content p,
-      .content p {
-        margin-top: 0;
-        margin-bottom: 0.8em;   /* 段落间距适中 */
-        line-height: 1.8;
-      }
-      
-      /* 第一个段落取消上边距 */
-      .article-content > p:first-child,
-      .content > p:first-child {
-        margin-top: 0;
-      }
-      
-      /* 最后一个段落取消下边距 */
-      .article-content > p:last-child,
-      .content > p:last-child {
-        margin-bottom: 0;
-      }
-      
-      /* ==================== 标题样式 ==================== */
-      
-      .article-content h1,
-      .article-content h2,
-      .article-content h3,
-      .article-content h4,
-      .article-content h5,
-      .article-content h6 {
-        margin-top: 1.5em;
-        margin-bottom: 0.5em;
-        line-height: 1.3;
-        font-weight: 600;
-      }
-      
-      /* 第一个标题取消上边距 */
-      .article-content > h1:first-child,
-      .article-content > h2:first-child,
-      .article-content > h3:first-child {
-        margin-top: 0;
-      }
-      
-      /* ==================== 列表样式 ==================== */
-      
-      .article-content ul,
-      .article-content ol {
-        margin: 0.8em 0;
-        padding-left: 2em;
-      }
-      
-      .article-content li {
-        margin: 0.3em 0;
-        line-height: 1.6;
-      }
-      
-      /* ==================== 代码块样式 ==================== */
-      
-      .article-content pre {
-        margin: 1em 0;
-        padding: 1em;
-        background-color: #f5f5f5;
-        border-radius: 4px;
-        overflow-x: auto;
-      }
-      
-      .article-content code {
-        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        font-size: 0.9em;
-      }
-      
-      .article-content p code {
-        background-color: #f5f5f5;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
-      }
-      
-      /* ==================== 引用块样式 ==================== */
-      
-      .article-content blockquote {
-        margin: 1em 0;
-        padding: 0.5em 1em;
-        border-left: 4px solid #ddd;
-        background-color: #f9f9f9;
-        color: #666;
-      }
-      
-      .article-content blockquote p {
-        margin: 0.5em 0;
-      }
-      
-      /* ==================== 表格样式 ==================== */
-      
-      .article-content table {
-        margin: 1em 0;
-        border-collapse: collapse;
-        width: 100%;
-      }
-      
-      .article-content th,
-      .article-content td {
-        border: 1px solid #ddd;
-        padding: 0.5em 1em;
-        text-align: left;
-      }
-      
-      .article-content th {
-        background-color: #f5f5f5;
-        font-weight: 600;
-      }
-      
-      /* ==================== 图片样式 ==================== */
-      
-      .article-content img {
-        max-width: 100%;
-        height: auto;
-        margin: 1em 0;
-        border-radius: 4px;
-      }
-      
-      /* ==================== 分隔线样式 ==================== */
-      
-      .article-content hr {
-        margin: 2em 0;
-        border: none;
-        border-top: 1px solid #ddd;
-      }
-      
-      /* 链接样式 */
-      .content a {
-          color: rgba(255, 0, 0, 0.8);
-          text-decoration: none;
-          border-bottom: 1px dotted rgba(255, 0, 0, 0.5);
-          transition: all 0.3s ease;
-      }
-      
-      .content a:hover {
-          color: #fff;
-          border-bottom: 1px solid rgba(255, 0, 0, 0.8);
-          background-color: rgba(255, 0, 0, 0.1);
-      }
-
-      body.light-mode {
-         background-color: #fff;
-         color: #000;
-      }
-
-      body.light-mode .header {
-         border-bottom-color: #ddd;
-      }
-
-      body.light-mode .title {
-         color: #000;
-      }
-
-      body.light-mode .summary {
-         color: #666;
-      }
-
-      body.light-mode .date {
-         color: #777;
-      }
-
-      body.light-mode .tag {
-         background-color: #eee;
-         color: #000;
-      }
-
-      body.light-mode h1,
-      body.light-mode h2,
-      body.light-mode h3,
-      body.light-mode h4,
-      body.light-mode h5,
-      body.light-mode h6 {
-         border-bottom-color: #ddd;
-         color: #000;
-      }
-
-      body.light-mode .comments {
-         border-top-color: #ddd;
-      }
-
-      body.light-mode .floating-btn {
-         background-color: #fff;
-         color: #000;
-         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
-      }
-
-      body.light-mode .side-menu {
-         background-color: #fff;
-         border-color: #ddd;
-         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      }
-
-      body.light-mode .menu-left {
-         background-color: #fff;
-      }
-
-      body.light-mode .chapter-item {
-         border-bottom-color: #eee;
-         color: #333;
-      }
-
-      body.light-mode .chapter-item.h2-item {
-         color: #666;
-      }
-
-      body.light-mode .chapter-item:hover {
-         color: #f00;
-      }
-
-      body.light-mode .menu-right {
-         background-color: #f5f5f5;
-      }
-
-      body.light-mode .menu-btn {
-         color: #000;
-      }
-
-      body.light-mode .menu-btn:hover {
-         color: #f00;
-         background-color: rgba(255, 0, 0, 0.1);
-      }
-
-      body.light-mode .close-btn {
-         background-color: #f5f5f5;
-         color: #000;
-         border-top-color: #ddd;
-      }
-
-      body.light-mode .close-btn:hover {
-         background-color: #d00;
-         color: #fff;
-      }
-
-      body.light-mode .menu-mask {
-         background-color: rgba(0, 0, 0, 0.3);
-      }
+      .menu-mask.active { display: block; }
    </style>
 </head>
 
 <body class="{% if blog.theme.mode == 'light' %}light-mode{% else %}dark-mode{% endif %}">
    <div class="header">
-      <h1 class="title">{{ article.title | default(文章标题) }}</h1>
+      <h1 class="title">{{ article.title | default('文章标题') }}</h1>
       <p class="summary">{{ article.summary }}</p>
       <div class="date">{{ article.date }}</div>
       <div class="tags">
@@ -665,8 +516,13 @@
       const toTopBtn = document.getElementById('toTopBtn');
       const chapterList = document.getElementById('chapterList');
       
-      document.querySelectorAll('h1, h2').forEach((el, index) => {
-         el.id = `heading-${index}`;
+      // 改进的标题ID生成
+      document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+         const id = el.textContent.toLowerCase()
+                     .replace(/[^\w\s]/g, '')
+                     .replace(/\s+/g, '-')
+                     .substring(0, 50);
+         el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
       });
       
       function applyTheme() {
@@ -674,19 +530,21 @@
         const savedTheme = localStorage.getItem('theme');
         
         if (savedTheme) {
-          // 使用用户保存的主题
           if (savedTheme === 'light') {
             document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
           } else {
+            document.body.classList.add('dark-mode');
             document.body.classList.remove('light-mode');
           }
         } else {
           // 使用服务器配置的主题
           const configTheme = "{{ blog.theme.mode }}";
-          const theme = configTheme || 'dark';
-          if (theme === 'light') {
+          if (configTheme === 'light') {
             document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
           } else {
+            document.body.classList.add('dark-mode');
             document.body.classList.remove('light-mode');
           }
         }
@@ -694,24 +552,29 @@
       
       applyTheme();
       
-      const h1Elements = Array.from(document.querySelectorAll('h1')).slice(1);
-      const h2Elements = Array.from(document.querySelectorAll('h2'));
-      const allHeadings = [...h1Elements, ...h2Elements].sort((a, b) => a.offsetTop - b.offsetTop);
+      // 生成章节导航
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+                          .filter(h => h.id && h.textContent.trim() !== '');
       
-      allHeadings.forEach((heading) => {
+      headings.forEach(heading => {
          const listItem = document.createElement('div');
-         const isH2 = heading.tagName === 'H2';
-         listItem.className = isH2 ? 'chapter-item h2-item' : 'chapter-item h1-item';
+         const level = parseInt(heading.tagName.substring(1));
+         const isH2 = level === 2;
+         
+         listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
          listItem.textContent = heading.textContent;
          listItem.dataset.id = heading.id;
+         
          listItem.addEventListener('click', (e) => {
             e.stopPropagation();
             heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
             closeMenu();
          });
+         
          chapterList.appendChild(listItem);
       });
       
+      // 菜单交互功能
       menuToggle.addEventListener('click', (e) => {
          e.stopPropagation();
          sideMenu.classList.add('active');
@@ -756,6 +619,7 @@
          closeMenu();
       });
       
+      // 滚动进度指示器
       function updateProgress() {
          const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
          const scrollPosition = window.scrollY;
