@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="开发中的项目,提供介绍,下载等">
+    <title>Project</title>
+    <link rel="icon" href="" type="image/png">
+    <style>
+        :root {
+            --primary-color: #ff3333;
+            --bg-color: #0d0d0d;
+            --text-color: #ffffff;
+            --container-bg: rgba(20, 20, 20, 0.8);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* 标题区域样式 */
+        .header-container {
+            background: var(--container-bg);
+            border-radius: 16px;
+            padding: 0;
+            margin-bottom: 40px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            box-shadow: 0 8px 32px rgba(255, 51, 51, 0.1);
+        }
+        
+        .header-top {
+            padding: 30px 40px;
+            border-bottom: 1px solid rgba(255, 51, 51, 0.3);
+            text-align: center;
+        }
+        
+        .main-title {
+            color: var(--primary-color);
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            color: #cccccc;
+            font-size: 16px;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+        
+        .intro-section {
+            padding: 30px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+        
+        .intro-card {
+            background: rgba(30, 30, 30, 0.6);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid rgba(255, 51, 51, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .intro-card:hover {
+            border-color: rgba(255, 51, 51, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(255, 51, 51, 0.15);
+        }
+        
+        .intro-title {
+            color: var(--primary-color);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .intro-title::before {
+            content: "•";
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .intro-content {
+            color: #eeeeee;
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0.9;
+            text-align: center;
+        }
+        
+        /* 项目网格样式 */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-container {
+                border-radius: 12px;
+            }
+            
+            .header-top, .intro-section {
+                padding: 20px;
+            }
+            
+            .main-title {
+                font-size: 28px;
+            }
+            
+            .intro-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .project-card {
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            min-height: 230px;
+            isolation: isolate;
+        }
+        
+        .background-image {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            filter: brightness(0.7);
+            transition: transform 0.5s ease, filter 0.3s ease, opacity 0.5s ease;
+        }
+        
+        .project-card:hover .background-image {
+            transform: scale(1.03);
+            filter: brightness(0.65);
+        }
+        
+        .content-overlay {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 30px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            will-change: transform;
+        }
+        
+        .tag-date-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .tag {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .date {
+            color: #cccccc;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+            transition: all 0.5s ease;
+        }
+        
+        .description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #eeeeee;
+            margin-bottom: 20px;
+            transition: all 0.5s ease;
+        }
+        
+        .read-more {
+            margin-top: auto;
+            align-self: flex-start;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 16px;
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .read-more:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* 彩蛋效果样式 */
+        .easter-egg {
+            animation: glitch 0.5s ease;
+        }
+        
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        
+        .hidden-counter {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题容器 -->
+        <div class="header-container">
+            <div class="header-top">
+                <h1 class="main-title">Ae1autumn-Project</h1>
+                <p class="subtitle">开发中的项目</p>
+            </div>
+            <div class="intro-section">
+                <div class="intro-card">
+                    <p class="intro-content">
+                        Ae1autumn的项目页,提供项目介绍,内容下载等
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="projects-grid">
+            <!-- 项目卡片1 -->
+            <div class="project-card" id="rland-card">
+                <img src="./rl.png" 
+                     alt="R_Land" class="background-image" id="rland-bg">
+                <div class="content-overlay">
+                    <div class="tag-date-container">
+                        <span class="tag">Beta-0.3.9.1-1(Preview)</span>
+                        <span class="tag" style="background-color:#ffd00e;">施工中</span>
+                        <span class="date">2025.07.11</span>
+                    </div>
+                    <h2 class="title" id="rland-title">R_Land</h2>
+                    <p class="description" id="rland-desc">
+                        幻影之中,你又能否寻到霓虹
+                    </p>
+                    <a href="./rl.html" class="read-more" id="rland-button">Visit</a>
+                </div>
+            </div>
+            
+            <!-- 项目卡片2 -->
+            <div class="project-card">
+                <img src="./hy.png" 
+                     alt="幻屿" class="background-image">
+                <div class="content-overlay">
+                    <div class="tag-date-container">
+                        <span class="tag">Dev-0</span>
+                        <span class="tag" style="background-color:#6f0000">已停止开发</span>
+                        <span class="date">2024.02.03</span>
+                    </div>
+                    <h2 class="title">幻屿</h2>
+                    <p class="description">
+                        我们是否曾存在过于这个世界
+                    </p>
+                    <a href="./hy.html" class="read-more">Visit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的访问计数器 -->
+    <div class="hidden-counter" id="visit-counter"></div>
+
+   <script>
+       // 彩蛋功能
+       document.addEventListener('DOMContentLoaded', function() {
+           // 初始化访问计数器
+           const storageKey = 'ae1autumn_visit_count';
+           const easterEggTrigger = 5; // 触发彩蛋的访问次数
+           
+           // 获取当前访问次数
+           let visitCount = localStorage.getItem(storageKey);
+           visitCount = visitCount ? parseInt(visitCount) : 0;
+           
+           // 增加访问次数
+           visitCount++;
+           localStorage.setItem(storageKey, visitCount.toString());
+           
+           // 检查是否触发彩蛋
+           if (visitCount >= easterEggTrigger) {
+               applyEasterEgg();
+           }
+           
+           function applyEasterEgg() {
+               // 获取需要修改的元素
+               const card = document.getElementById('rland-card');
+               const title = document.getElementById('rland-title');
+               const description = document.getElementById('rland-desc');
+               const background = document.getElementById('rland-bg');
+               const button = document.getElementById('rland-button');
+               
+               // 添加动画效果
+               card.classList.add('easter-egg');
+               
+               // 设置变化后的内容
+               const newTitle = 'V-Ash';
+               const newDescription = '你相信抉择的力量吗?';
+               const newBackgroundUrl = './rl1.png';
+               const newButtonText = 'Remian'; // 修正变量名，更清晰
+               
+               // 渐变过渡效果
+               setTimeout(() => {
+                   // 先淡出
+                   title.style.opacity = '0';
+                   description.style.opacity = '0';
+                   background.style.opacity = '0';
+                   button.style.opacity = '0'; // 添加按钮淡出
+                   
+                   // 延迟更新内容
+                   setTimeout(() => {
+                       // 更新内容
+                       title.textContent = newTitle;
+                       description.textContent = newDescription;
+                       background.src = newBackgroundUrl;
+                       background.alt = newTitle;
+                       button.textContent = newButtonText; // 修正这行
+                       
+                       // 淡入新内容
+                       title.style.opacity = '1';
+                       description.style.opacity = '1';
+                       background.style.opacity = '1';
+                       button.style.opacity = '1'; // 添加按钮淡入
+                       
+                       // 可选：添加特殊样式
+                       title.style.color = '#ff6824';
+                       description.style.fontStyle = 'italic';
+                       
+                       // 可以给按钮也加个特殊样式
+                       button.style.borderColor = '#ff6824';
+                       button.style.color = '#fff';
+                       
+                       // 可选：更新标签
+                       const tags = document.querySelectorAll('#rland-card .tag');
+                       if (tags.length > 0) {
+                           tags[0].textContent = '抉择';
+                           tags[0].style.backgroundColor = '#ff6824';
+                       }
+                       
+                   }, 300);
+                   
+               }, 500);
+               
+               // 移除动画类
+               setTimeout(() => {
+                   card.classList.remove('easter-egg');
+               }, 1000);
+           }
+       });
+   </script>
+</body>
+</html>
