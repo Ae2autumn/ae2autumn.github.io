@@ -19,7 +19,18 @@ articles:
   content: 暂无简介
   url: article/11.html
   verticalTitle: '01.29'
-specials: []
+specials:
+- id: '0'
+  title: ''
+  date: ''
+  tags: []
+  content:
+  - ''
+  - ''
+  - '运行天数: 28 天'
+  - ''
+  url: ''
+  verticalTitle: Special
 floating_menu:
 - tag: about
   display: 关于
