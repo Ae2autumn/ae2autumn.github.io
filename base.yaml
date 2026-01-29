@@ -9,61 +9,19 @@ blog:
     primary_color: '#e74c3c'
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
-articles:
-- id: '8'
-  title: '01.29'
-  date: '2026-01-29'
-  tags: []
-  content:
-  - 暂无简介
-  url: article/8.html
-  verticalTitle: '01.29'
-- id: '6'
-  title: gvjgchj
-  date: '2026-01-05'
-  tags:
-  - 普通
-  content:
-  - 暂无简介
-  url: article/6.html
-  verticalTitle: gvjgchj
-- id: '5'
-  title: yuuhh
-  date: '2026-01-05'
-  tags:
-  - 普通
-  - 日常
-  content:
-  - 暂无简介
-  url: article/5.html
-  verticalTitle: yuuhh
-- id: '4'
-  title: yyh
-  date: '2026-01-05'
-  tags: []
-  content:
-  - 暂无简介
-  url: article/4.html
-  verticalTitle: yyh
-- id: '3'
-  title: Tek It
-  date: '2026-01-05'
-  tags:
-  - 普通
-  content:
-  - 暂无简介
-  url: article/3.html
-  verticalTitle: Tek It
+articles: []
 specials:
-- id: '2'
-  title: R_Land
-  date: '2026-01-04'
-  tags:
-  - top
+- id: '0'
+  title: ''
+  date: ''
+  tags: []
   content:
-  - 暂无简介
-  url: article/2.html
-  verticalTitle: R_Land
+  - ''
+  - ''
+  - '运行天数: 28 天'
+  - ''
+  url: ''
+  verticalTitle: Special
 floating_menu:
 - tag: about
   display: 关于
