@@ -20,17 +20,14 @@ articles:
   url: article/11.html
   verticalTitle: '01.29'
 specials:
-- id: '0'
-  title: ''
-  date: ''
-  tags: []
-  content:
-  - ''
-  - ''
-  - '运行天数: 30 天'
-  - ''
-  url: ''
-  verticalTitle: Special
+- id: '12'
+  title: SB
+  date: '2026-01-31'
+  tags:
+  - special
+  content: 暂无简介
+  url: article/12.html
+  verticalTitle: SB
 floating_menu:
 - tag: about
   display: 关于
