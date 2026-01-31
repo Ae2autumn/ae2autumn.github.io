@@ -10,6 +10,14 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '13'
+  title: SDB
+  date: '2026-01-31'
+  tags:
+  - 普通
+  content: 暂无简介
+  url: article/13.html
+  verticalTitle: SDB
 - id: '11'
   title: '01.29'
   date: '2026-01-29'
