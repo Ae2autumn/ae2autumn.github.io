@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>阿白,生日快乐!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .sections-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .section {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform: translateX(100%);
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .section.active {
+            transform: translateX(0);
+        }
+        
+        .section.next {
+            transform: translateX(100%);
+        }
+        
+        .section.prev {
+            transform: translateX(-100%);
+        }
+        
+        /* 背景漂浮元素 */
+        .floating-bg {
+            position: absolute;
+            bottom: -50px;
+            font-size: 30px;
+            opacity: 0.7;
+            z-index: 0;
+            animation: floatUp linear infinite;
+            pointer-events: none;
+        }
+        
+        .floating-heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 40px;
+            color: #ff4757;
+            z-index: 0;
+            animation: floatUpRotate linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(calc(-100vh - 50px)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes floatUpRotate {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(calc(-100vh - 50px)) rotate(var(--rotate-end, 720deg));
+                opacity: 0;
+            }
+        }
+        
+        /* 第一部分：生日祝福卡片 */
+        .birthday-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .birthday-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .birthday-card h1 {
+            color: #ff6b81;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+        }
+        
+        .blessing-line {
+            font-size: 1.3em;
+            line-height: 1.8;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        
+        .blessing-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .continue-btn {
+            background: linear-gradient(45deg, #ff6b81, #ff4757);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+            box-shadow: 0 5px 15px rgba(255, 107, 129, 0.4);
+        }
+        
+        .continue-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .continue-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(255, 107, 129, 0.6);
+        }
+        
+        /* 第二部分：生日愿望 */
+        .wish-container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .wish-title {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .wish-input {
+            width: 100%;
+            height: 200px;
+            padding: 20px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            resize: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        .wish-input:focus {
+            outline: none;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+        }
+        
+        .wish-continue-btn {
+            display: none;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+            transition: all 0.3s;
+        }
+        
+        .wish-continue-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.6);
+        }
+        
+        /* 模态框样式 - 修复位置问题 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        
+        .modal {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal h2 {
+            color: #ff6b81;
+            margin-bottom: 20px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn.yes {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .modal-btn.no {
+            background: #f44336;
+            color: white;
+        }
+        
+        .modal-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 第三部分：照片墙 - 双列横向瀑布流 */
+        .photo-section {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .photo-wall-container {
+            width: 100%;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .photo-row {
+            display: flex;
+            height: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .photo-scroll-left {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            height: 100%;
+            animation: scrollLeft 7s linear infinite;
+        }
+        
+        .photo-scroll-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            height: 100%;
+            animation: scrollRight 7s linear infinite;
+        }
+        
+        @keyframes scrollLeft {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+        
+        @keyframes scrollRight {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(50%);
+            }
+        }
+        
+        .photo-item {
+            width: 250px;
+            height: 100%;
+            margin: 0 15px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .photo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .photo-item:nth-child(1) .photo-placeholder {
+            background: linear-gradient(45deg, #ff6b81, #ff4757);
+        }
+        
+        .photo-item:nth-child(2) .photo-placeholder {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+        
+        .photo-item:nth-child(3) .photo-placeholder {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+        
+        .photo-item:nth-child(4) .photo-placeholder {
+            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+        }
+        
+        .photo-item:nth-child(5) .photo-placeholder {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        
+        .photo-item:nth-child(6) .photo-placeholder {
+            background: linear-gradient(45deg, #009688, #00796B);
+        }
+        
+        /* 第四部分：生日礼物 */
+        .gift-container {
+            text-align: center;
+            color: white;
+        }
+        
+        .gift-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .gift-hint {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .gift-selection {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .gift-box {
+            font-size: 100px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .gift-box:hover {
+            transform: scale(1.2) rotate(10deg);
+        }
+        
+        .gift-box.selected {
+            animation: giftShake 0.5s ease-in-out;
+        }
+        
+        @keyframes giftShake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        
+        .gift-result {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 500px;
+            font-size: 1.2em;
+        }
+        
+        .gift-result-stored {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 500px;
+            font-size: 1.2em;
+        }
+        
+        .skip-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        
+        .skip-btn:hover {
+            background: white;
+            color: #764ba2;
+        }
+        
+        /* 第五部分：终局祝福 - 修改为可点击 */
+        .final-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 50px 40px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .final-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+        
+        .final-card h1 {
+            color: #ff6b81;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+        
+        .final-blessing {
+            font-size: 1.3em;
+            line-height: 1.8;
+            margin: 20px 0;
+        }
+        
+        .click-hint {
+            margin-top: 30px;
+            font-size: 1.1em;
+            color: #ff6b81;
+            opacity: 0.8;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
+        /* 第六部分：空白页面 */
+        .blank-page {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 50px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .blank-page h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .birthday-card, .final-card, .blank-page {
+                padding: 30px 20px;
+            }
+            
+            .gift-selection {
+                gap: 30px;
+            }
+            
+            .gift-box {
+                font-size: 80px;
+            }
+            
+            .photo-item {
+                width: 200px;
+            }
+            
+            .wish-title, .gift-title {
+                font-size: 2em;
+            }
+            
+            .modal {
+                padding: 30px 20px;
+            }
+            
+            .final-card h1 {
+                font-size: 2em;
+            }
+            
+            .final-blessing {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Base64模态框 -->
+    <div class="modal-overlay" id="base64Modal">
+        <div class="modal">
+            <h2>✨ 你的愿望已编码 ✨</h2>
+            <p>尽管愿望说出来就不灵了,但是你愿意告诉我吗?</p>
+            <textarea id="base64Text" readonly style="width: 100%; height: 100px; margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: monospace; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text;"></textarea>
+            <p>是否复制到剪贴板？</p>
+            <div class="modal-buttons">
+                <button class="modal-btn yes" id="copyBtn">是，复制</button>
+                <button class="modal-btn no" id="noCopyBtn">否，继续</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sections-container">
+        <!-- 第一部分：生日祝福卡片 -->
+        <section id="section1" class="section active">
+            <div class="birthday-card" id="birthdayCard">
+                <h1>🎂 生日快乐！ 🎂</h1>
+                <div id="blessingLines">
+                    <div class="blessing-line">愿你的今天充满欢笑与快乐</div>
+                    <div class="blessing-line">愿你的愿望都能一一实现</div>
+                    <div class="blessing-line">愿未来的每一天都充满阳光</div>
+                    <div class="blessing-line">愿你永远保持这颗纯真的心</div>
+                    <div class="blessing-line">生日快乐，我最亲爱的朋友！</div>
+                </div>
+                <button class="continue-btn" id="continueBtn1">继续 →</button>
+            </div>
+        </section>
+        
+        <!-- 第二部分：生日愿望 -->
+        <section id="section2" class="section">
+            <div class="wish-container">
+                <h1 class="wish-title">许个愿吧</h1>
+                <textarea class="wish-input" id="wishInput" placeholder="在这里写下你的生日愿望..."></textarea>
+                <button class="wish-continue-btn" id="wishContinueBtn">继续 →</button>
+            </div>
+        </section>
+        
+        <!-- 第三部分：过往时光 -->
+        <section id="section3" class="section">
+            <div class="photo-section">
+                <h1 class="wish-title">📸 过往时光 📸</h1>
+                <div class="photo-wall-container">
+                    <div class="photo-row">
+                        <div class="photo-scroll-left" id="scrollLeft">
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎈 美好回忆 🎈</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">✨ 欢乐时刻 ✨</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎂 生日庆祝 🎂</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎁 惊喜瞬间 🎁</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🥳 派对时光 🥳</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎉 美好祝福 🎉</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="photo-row">
+                        <div class="photo-scroll-right" id="scrollRight">
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🌅 日出时刻 🌅</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎨 创意时光 🎨</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🍰 甜蜜分享 🍰</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🎵 音乐旋律 🎵</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">🌠 星空夜晚 🌠</div>
+                            </div>
+                            <div class="photo-item">
+                                <div class="photo-placeholder">💖 珍贵时刻 💖</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 第四部分：生日礼物 -->
+        <section id="section4" class="section">
+            <div class="gift-container">
+                <h1 class="gift-title">🎁 选择你的惊喜 🎁</h1>
+                
+                <div id="giftSelectionArea">
+                    <!-- 这里会动态渲染礼物选择或已选结果 -->
+                </div>
+                
+                <button class="continue-btn" id="continueBtn4" style="display: none;">继续 →</button>
+            </div>
+        </section>
+        
+        <!-- 第五部分：终局祝福 - 修改为可点击 -->
+        <section id="section5" class="section">
+            <div class="final-card" id="finalCard">
+                <h1>💖 祝福 💖</h1>
+                <p class="final-blessing">愿你的每一天都如今天般灿烂</p>
+                <p class="final-blessing">愿你的每一步都走向心中的远方</p>
+                <p class="final-blessing">愿你的每个梦想都能绽放光芒</p>
+                <p class="final-blessing">愿你的生命之歌永远欢快悠扬</p>
+                <p class="final-blessing">生日快乐，愿美好常伴你左右！</p>
+                <div class="click-hint">点击继续 →</div>
+            </div>
+        </section>
+        
+        <!-- 第六部分：空白页面 -->
+        <section id="section6" class="section">
+            <div class="blank-page">
+                <h2>🎈 留给你的空间 🎈</h2>
+                <p style="font-size: 1.2em; line-height: 1.6; margin: 20px 0;">
+                    这个页面留给你，<br>
+                    可以添加你想放的内容，<br>
+                    或者保存这份特别的记忆。
+                </p>
+                <div style="margin-top: 30px; font-size: 3em;">
+                    💝
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 当前部分索引
+            let currentSection = 1;
+            const totalSections = 6;
+            const giftOptions = [
+                "送你三千万：千万要小心，千万要幸福，千万要快乐",
+                "随机满足你一个小愿望",
+                "唱首歌给你听",
+                "我们还做朋友好吗🥺",
+                "罚你必须回我一条消息"
+            ];
+            
+            // 阻止所有默认的触摸行为
+            document.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            // 阻止双指捏合缩放
+            document.addEventListener('gesturestart', function(e) {
+                e.preventDefault();
+            });
+            
+            document.addEventListener('gesturechange', function(e) {
+                e.preventDefault();
+            });
+            
+            document.addEventListener('gestureend', function(e) {
+                e.preventDefault();
+            });
+            
+            // 阻止文本选择
+            document.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+            });
+            
+            // 创建漂浮背景元素
+            function createFloatingElements() {
+                const section1 = document.getElementById('section1');
+                const section5 = document.getElementById('section5');
+                
+                // 第一部分漂浮元素
+                const symbols1 = ['🎈', '🎐', '🎉'];
+                for (let i = 0; i < 20; i++) {
+                    const element = document.createElement('div');
+                    element.className = 'floating-bg';
+                    element.textContent = symbols1[Math.floor(Math.random() * symbols1.length)];
+                    element.style.left = Math.random() * 100 + 'vw';
+                    element.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                    element.style.animationDelay = Math.random() * 5 + 's';
+                    section1.appendChild(element);
+                }
+                
+                // 第五部分漂浮心形
+                for (let i = 0; i < 15; i++) {
+                    const element = document.createElement('div');
+                    element.className = 'floating-heart';
+                    element.textContent = '♥';
+                    element.style.left = Math.random() * 100 + 'vw';
+                    element.style.animationDuration = (Math.random() * 8 + 8) + 's';
+                    element.style.animationDelay = Math.random() * 3 + 's';
+                    element.style.setProperty('--rotate-end', (Math.random() * 720 + 360) + 'deg');
+                    section5.appendChild(element);
+                }
+            }
+            
+            // 第一部分：生日祝福逐行显示
+            function showBlessingLines() {
+                const lines = document.querySelectorAll('.blessing-line');
+                lines.forEach((line, index) => {
+                    setTimeout(() => {
+                        line.classList.add('visible');
+                    }, index * 800); // 每行间隔0.8秒显示
+                });
+                
+                // 3秒后显示继续按钮
+                setTimeout(() => {
+                    document.getElementById('continueBtn1').classList.add('visible');
+                }, lines.length * 800 + 1000);
+            }
+            
+            // 切换部分
+            function goToSection(sectionNum) {
+                if (sectionNum < 1 || sectionNum > totalSections) return;
+                
+                // 获取当前和下一个部分
+                const current = document.getElementById(`section${currentSection}`);
+                const next = document.getElementById(`section${sectionNum}`);
+                
+                // 从右侧滑入新部分
+                next.classList.remove('next');
+                next.classList.add('active');
+                
+                // 当前部分向左滑出
+                if (currentSection < sectionNum) {
+                    current.classList.remove('active');
+                    current.classList.add('prev');
+                } 
+                // 从左侧滑入新部分（返回上一页）
+                else if (currentSection > sectionNum) {
+                    current.classList.remove('active');
+                    current.classList.add('next');
+                }
+                
+                // 更新当前部分索引
+                currentSection = sectionNum;
+                
+                // 特殊处理：第三部分6秒后自动跳转
+                if (sectionNum === 3) {
+                    setTimeout(() => {
+                        goToSection(4);
+                    }, 6000);
+                }
+            }
+            
+            // 初始化所有部分的位置
+            function initSections() {
+                for (let i = 1; i <= totalSections; i++) {
+                    const section = document.getElementById(`section${i}`);
+                    if (i > 1) {
+                        section.classList.add('next');
+                        section.classList.remove('active');
+                    }
+                }
+            }
+            
+            // 第二部分：生日愿望处理
+            function setupWishSection() {
+                const wishInput = document.getElementById('wishInput');
+                const wishContinueBtn = document.getElementById('wishContinueBtn');
+                
+                // 当输入内容时显示继续按钮
+                wishInput.addEventListener('input', function() {
+                    if (this.value.trim().length > 0) {
+                        wishContinueBtn.style.display = 'block';
+                        // 添加淡入效果
+                        setTimeout(() => {
+                            wishContinueBtn.style.opacity = '1';
+                            wishContinueBtn.style.transform = 'translateY(0)';
+                        }, 10);
+                    } else {
+                        wishContinueBtn.style.opacity = '0';
+                        wishContinueBtn.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            wishContinueBtn.style.display = 'none';
+                        }, 500);
+                    }
+                });
+                
+                // 点击继续按钮显示Base64模态框
+                wishContinueBtn.addEventListener('click', function() {
+                    const wishText = wishInput.value.trim();
+                    if (!wishText) {
+                        alert('请输入你的生日愿望！');
+                        return;
+                    }
+                    
+                    // 转换为Base64
+                    const base64Wish = btoa(unescape(encodeURIComponent(wishText)));
+                    
+                    // 显示Base64文本
+                    document.getElementById('base64Text').value = base64Wish;
+                    
+                    // 显示模态框
+                    document.getElementById('base64Modal').style.display = 'flex';
+                    
+                    // 阻止背景滚动
+                    document.body.style.overflow = 'hidden';
+                });
+            }
+            
+            // 复制到剪贴板
+            function copyToClipboard() {
+                const textarea = document.getElementById('base64Text');
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // 移动端支持
+                
+                try {
+                    document.execCommand('copy');
+                    alert('已复制到剪贴板！');
+                } catch (err) {
+                    console.error('复制失败:', err);
+                }
+                
+                // 隐藏模态框
+                document.getElementById('base64Modal').style.display = 'none';
+                
+                // 恢复背景滚动
+                document.body.style.overflow = 'hidden';
+                
+                // 继续到下一部分
+                setTimeout(() => {
+                    goToSection(3);
+                }, 500);
+            }
+            
+            // 第四部分：礼物选择
+            function setupGiftSection() {
+                const giftSelectionArea = document.getElementById('giftSelectionArea');
+                const continueBtn4 = document.getElementById('continueBtn4');
+                
+                // 检查localStorage中是否已选择礼物
+                const savedGift = localStorage.getItem('birthdayGiftChoice');
+                
+                if (savedGift) {
+                    // 如果已选择，直接显示结果
+                    giftSelectionArea.innerHTML = `
+                        <div class="gift-result-stored">
+                            <p>🎁 你之前得到的惊喜是：</p>
+                            <p><strong>"${savedGift}"</strong></p>
+                            <p>无法更改</p>
+                        </div>
+                    `;
+                    continueBtn4.style.display = 'block';
+                    setTimeout(() => {
+                        continueBtn4.classList.add('visible');
+                    }, 100);
+                } else {
+                    // 如果未选择，显示选择界面
+                    giftSelectionArea.innerHTML = `
+                        <p class="gift-hint">选择一个"惊喜"，只能选一个哦！</p>
+                        <div class="gift-selection">
+                            <div class="gift-box" data-gift="1">🎁</div>
+                            <div class="gift-box" data-gift="2">🎁</div>
+                        </div>
+                        <div id="giftResult" class="gift-result" style="display: none;"></div>
+                        <button class="skip-btn" id="skipBtn">人生如旷野，为何要抉择</button>
+                    `;
+                    
+                    // 添加礼物选择事件
+                    const giftBoxes = document.querySelectorAll('.gift-box');
+                    const skipBtn = document.getElementById('skipBtn');
+                    const giftResult = document.getElementById('giftResult');
+                    
+                    giftBoxes.forEach(box => {
+                        box.addEventListener('click', function() {
+                            // 移除之前的选择
+                            giftBoxes.forEach(b => b.classList.remove('selected'));
+                            
+                            // 标记选择
+                            this.classList.add('selected');
+                            
+                            // 随机选择一个礼物选项
+                            const randomOption = giftOptions[Math.floor(Math.random() * giftOptions.length)];
+                            
+                            // 显示结果
+                            giftResult.textContent = `🎁 礼物内容：${randomOption}`;
+                            giftResult.style.display = 'block';
+                            continueBtn4.style.display = 'block';
+                            setTimeout(() => {
+                                continueBtn4.classList.add('visible');
+                            }, 100);
+                            
+                            // 保存到localStorage
+                            localStorage.setItem('birthdayGiftChoice', randomOption);
+                            
+                            // 禁用其他选择
+                            giftBoxes.forEach(b => {
+                                if (b !== this) {
+                                    b.style.opacity = '0.5';
+                                    b.style.cursor = 'not-allowed';
+                                }
+                            });
+                            
+                            // 隐藏跳过按钮
+                            if (skipBtn) {
+                                skipBtn.style.display = 'none';
+                            }
+                        });
+                    });
+                    
+                    // 跳过按钮事件
+                    if (skipBtn) {
+                        skipBtn.addEventListener('click', function() {
+                            goToSection(5);
+                        });
+                    }
+                }
+            }
+            
+            // 第五部分：添加卡片点击切换功能
+            function setupFinalCardClick() {
+                const finalCard = document.getElementById('finalCard');
+                if (finalCard) {
+                    finalCard.addEventListener('click', function() {
+                        goToSection(6);
+                    });
+                }
+            }
+            
+            // 事件监听
+            document.getElementById('birthdayCard').addEventListener('click', function() {
+                // 点击卡片也可以触发继续按钮显示
+                const continueBtn = document.getElementById('continueBtn1');
+                if (!continueBtn.classList.contains('visible')) {
+                    continueBtn.classList.add('visible');
+                }
+            });
+            
+            document.getElementById('continueBtn1').addEventListener('click', function() {
+                goToSection(2);
+            });
+            
+            document.getElementById('continueBtn4').addEventListener('click', function() {
+                goToSection(5);
+            });
+            
+            // 模态框按钮事件
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            
+            document.getElementById('noCopyBtn').addEventListener('click', function() {
+                // 隐藏模态框
+                document.getElementById('base64Modal').style.display = 'none';
+                
+                // 恢复背景滚动
+                document.body.style.overflow = 'hidden';
+                
+                // 继续到下一部分
+                setTimeout(() => {
+                    goToSection(3);
+                }, 500);
+            });
+            
+            // 点击模态框外部关闭
+            document.getElementById('base64Modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+            
+            // 初始化
+            initSections();
+            createFloatingElements();
+            showBlessingLines();
+            setupWishSection();
+            setupGiftSection();
+            setupFinalCardClick();
+            
+            // 初始化照片墙的双向滚动效果
+            function initPhotoWall() {
+                // 克隆元素以实现无缝滚动
+                const scrollLeft = document.getElementById('scrollLeft');
+                const scrollRight = document.getElementById('scrollRight');
+                
+                if (scrollLeft && scrollRight) {
+                    // 克隆左滚动元素
+                    const leftClone = scrollLeft.cloneNode(true);
+                    scrollLeft.parentNode.appendChild(leftClone);
+                    
+                    // 克隆右滚动元素
+                    const rightClone = scrollRight.cloneNode(true);
+                    scrollRight.parentNode.appendChild(rightClone);
+                }
+            }
+            
+            // 初始化照片墙
+            initPhotoWall();
+            
+            // 确保页面加载时不会出现滚动条
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        });
+    </script>
+</body>
+</html>
