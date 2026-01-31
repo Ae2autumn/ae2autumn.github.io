@@ -1,6 +1,6 @@
 blog:
   avatar: "https://avatars.githubusercontent.com/u/195545824?v=4"           # 头像文件路径（相对路径）
-  name: "Ae1autumn"                         # 博客名称
+  name: "𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧"                         # 博客名称
   sname: "特别项目"                        # Special卡片标题
   description: "𝕚 𝕨𝕒𝕤 𝕥𝕖𝕞𝕡𝕠𝕣𝕒𝕣𝕪 𝟚 𝕦"                   # 博客描述
   favicon: "https://avatars.githubusercontent.com/u/195545824?v=4"         # 网站图标
