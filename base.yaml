@@ -11,12 +11,12 @@ blog:
     light_bg: '#f5f7fa'
 articles:
 - id: '14'
-  title: 为什么总有人说清醒就是傲慢
+  title: '02.02'
   date: '2026-02-02'
   tags: []
   content: 暂无简介
   url: article/14.html
-  verticalTitle: 为什么总有人说清醒就是傲慢
+  verticalTitle: '02.02'
 - id: '13'
   title: SDB
   date: '2026-01-31'
