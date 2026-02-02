@@ -13,7 +13,9 @@ articles:
 - id: '14'
   title: '02.02'
   date: '2026-02-02'
-  tags: []
+  tags:
+  - 记录
+  - 普通
   content: 暂无简介
   url: article/14.html
   verticalTitle: '02.02'
