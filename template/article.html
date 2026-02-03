@@ -470,7 +470,7 @@
    </style>
 </head>
 
-<body class="{% if blog.mode == 'light' %}light-mode{% else %}dark-mode{% endif %}">
+<body class="{% if blog.theme.mode == 'light' %}light-mode{% else %}dark-mode{% endif %}">
    <div class="header">
       <h1 class="title">{{ article.title | default('文章标题') }}</h1>
       <p class="summary">{{ article.summary }}</p>
