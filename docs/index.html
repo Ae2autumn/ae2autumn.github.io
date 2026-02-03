@@ -1206,8 +1206,8 @@
    <script>
       // ==================== 数据注入点 (由生成引擎替换) ====================
       const blogData = {
-        articles: [{"id": "14", "title": "02.02", "date": "2026-02-02", "tags": ["记录", "普通"], "content": ["暂无简介"], "url": "article/14.html", "verticalTitle": "02.02"}, {"id": "13", "title": "SDB", "date": "2026-01-31", "tags": ["普通"], "content": ["你好呀"], "url": "article/13.html", "verticalTitle": "我是傻逼"}, {"id": "11", "title": "01.29", "date": "2026-01-29", "tags": ["记录", "普通"], "content": ["暂无简介"], "url": "article/11.html", "verticalTitle": "01.29"}],
-        specials: [{"id": "12", "title": "SB", "date": "2026-01-31", "tags": ["special"], "content": ["暂无简介"], "url": "article/12.html", "verticalTitle": "SB"}]
+        articles: [{"id": "14", "title": "02.02", "date": "2026-02-02", "tags": ["记录", "普通"], "content": "暂无简介", "url": "article/14.html", "verticalTitle": "02.02"}, {"id": "13", "title": "SDB", "date": "2026-01-31", "tags": ["普通"], "content": "暂无简介", "url": "article/13.html", "verticalTitle": "SDB"}, {"id": "11", "title": "01.29", "date": "2026-01-29", "tags": ["记录", "普通"], "content": "暂无简介", "url": "article/11.html", "verticalTitle": "01.29"}],
+        specials: [{"id": "12", "title": "SB", "date": "2026-01-31", "tags": ["special"], "content": "暂无简介", "url": "article/12.html", "verticalTitle": "SB"}]
       };
       const menuItemsData = [{"tag": "about", "display": "关于"}];
       const blogConfig = {
@@ -1311,7 +1311,7 @@
       // ==================== 标签过滤器 ====================
       class TagFilter {
         constructor() {
-          this.internalTags = new Set( ['top', 'special', '项目'] );
+          this.internalTags = new Set( ["top", "special", "项目"] );
         }
         
         filterTags(tags) {

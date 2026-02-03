@@ -4,11 +4,6 @@ blog:
   sname: 特别项目
   description: 𝕚 𝕨𝕒𝕤 𝕥𝕖𝕞𝕡𝕠𝕣𝕒𝕣𝕪 𝟚 𝕦
   favicon: https://avatars.githubusercontent.com/u/195545824?v=4
-  theme:
-    mode: dark
-    primary_color: '#e74c3c'
-    dark_bg: '#121212'
-    light_bg: '#f5f7fa'
 articles:
 - id: '14'
   title: '02.02'
@@ -16,8 +11,7 @@ articles:
   tags:
   - 记录
   - 普通
-  content:
-  - 暂无简介
+  content: 暂无简介
   url: article/14.html
   verticalTitle: '02.02'
 - id: '13'
@@ -25,18 +19,16 @@ articles:
   date: '2026-01-31'
   tags:
   - 普通
-  content:
-  - 你好呀
+  content: 暂无简介
   url: article/13.html
-  verticalTitle: 我是傻逼
+  verticalTitle: SDB
 - id: '11'
   title: '01.29'
   date: '2026-01-29'
   tags:
   - 记录
   - 普通
-  content:
-  - 暂无简介
+  content: 暂无简介
   url: article/11.html
   verticalTitle: '01.29'
 specials:
@@ -45,8 +37,7 @@ specials:
   date: '2026-01-31'
   tags:
   - special
-  content:
-  - 暂无简介
+  content: 暂无简介
   url: article/12.html
   verticalTitle: SB
 floating_menu:
