@@ -16,7 +16,8 @@ articles:
   tags:
   - 记录
   - 普通
-  content: 暂无简介
+  content:
+  - 暂无简介
   url: article/14.html
   verticalTitle: '02.02'
 - id: '13'
@@ -24,16 +25,18 @@ articles:
   date: '2026-01-31'
   tags:
   - 普通
-  content: 暂无简介
+  content:
+  - 你好呀
   url: article/13.html
-  verticalTitle: SDB
+  verticalTitle: 我是傻逼
 - id: '11'
   title: '01.29'
   date: '2026-01-29'
   tags:
   - 记录
   - 普通
-  content: 暂无简介
+  content:
+  - 暂无简介
   url: article/11.html
   verticalTitle: '01.29'
 specials:
@@ -42,7 +45,8 @@ specials:
   date: '2026-01-31'
   tags:
   - special
-  content: 暂无简介
+  content:
+  - 暂无简介
   url: article/12.html
   verticalTitle: SB
 floating_menu:
