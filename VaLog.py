@@ -1,6 +1,19 @@
-import os, re, json, yaml, requests, markdown
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+VaLog - 基于 GitHub Issues 的静态博客生成器（三端一致性增强版）
+作者：你 ❤️
+功能：将公开仓库的 Issues 转换为静态 HTML 博客，支持增量更新与自动修复
+"""
+
+import os
+import re
+import json
+import yaml
+import requests
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
+import markdown
 
 # ==================== 路径配置 ====================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,101 +25,73 @@ OMD_DIR = os.path.join(BASE_DIR, "O-MD")
 OMD_JSON = os.path.join(OMD_DIR, "articles.json")
 BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 
-# 默认模板文件名
 DEFAULT_ARTICLE_TEMPLATE = "article.html"
 DEFAULT_HOME_TEMPLATE = "home.html"
 
-# 创建必要的目录
+# 创建输出目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
 os.makedirs(OMD_DIR, exist_ok=True)
 
+
 class VaLogGenerator:
     def __init__(self):
-        print("初始化VaLog生成器...")
-        
-        # 加载配置文件
-        if not os.path.exists(CONFIG_PATH):
-            print(f"警告: 配置文件不存在: {CONFIG_PATH}")
-            self.config = {}
-        else:
-            try:
-                with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-                    self.config = yaml.safe_load(f) or {}
-                print(f"配置文件加载成功: {CONFIG_PATH}")
-            except Exception as e:
-                print(f"配置文件加载失败: {e}")
-                self.config = {}
-        
-        # 从配置中读取模板文件名，如果没有配置则使用默认值
-        self.article_template_name = self.config.get('templates', {}).get('VaLog-default-article', DEFAULT_ARTICLE_TEMPLATE)
-        self.home_template_name = self.config.get('templates', {}).get('VaLog-default-index', DEFAULT_HOME_TEMPLATE)
-        
-        print(f"文章模板: {self.article_template_name}")
-        print(f"首页模板: {self.home_template_name}")
-        
+        print("=" * 50)
+        print("🚀 VaLog Generator 初始化中...")
+
+        # 加载配置
+        self.config = {}
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                self.config = yaml.safe_load(f) or {}
+
+        self.article_template_name = self.config.get('templates', {}).get(
+            'VaLog-default-article', DEFAULT_ARTICLE_TEMPLATE
+        )
+        self.home_template_name = self.config.get('templates', {}).get(
+            'VaLog-default-index', DEFAULT_HOME_TEMPLATE
+        )
+
         # 加载缓存
         self.cache = {}
         if os.path.exists(OMD_JSON):
             try:
                 with open(OMD_JSON, 'r', encoding='utf-8') as f:
                     self.cache = json.load(f)
-                print(f"缓存加载成功，条目数: {len(self.cache)}")
             except Exception as e:
-                print(f"缓存加载失败: {e}")
+                print(f"⚠️ 缓存加载失败: {e}")
                 self.cache = {}
-        else:
-            print("无缓存文件，将创建新缓存")
-        
-        # 创建模板环境
-        if not os.path.exists(TEMPLATE_DIR):
-            print(f"错误: 模板目录不存在: {TEMPLATE_DIR}")
-            raise FileNotFoundError(f"模板目录不存在: {TEMPLATE_DIR}")
-        
-        print(f"模板目录: {TEMPLATE_DIR}")
+
+        # Jinja2 模板引擎
         self.env = Environment(
             loader=FileSystemLoader(TEMPLATE_DIR),
             autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True
         )
-        print("Jinja2环境初始化完成")
 
     def extract_metadata_and_body(self, body):
-        """准确提取元数据并在渲染前将其从正文中彻底移除"""
+        """提取元数据（返回 summary 为字符串）"""
         if not body:
-            return {
-                "summary": ["暂无简介"],
-                "vertical_title": "",
-                "body": ""
-            }
-            
+            return {"summary": "暂无简介", "vertical_title": "", "body": ""}
+
         lines = body.split('\n')
-        summary = ["暂无简介"]
+        summary = "暂无简介"
         vertical_title = ""
-        
-        # 定义需要跳过的行索引
         meta_indices = []
-        
-        # 1. 检查第一行是否为摘要元数据
-        if len(lines) > 0 and lines[0].strip().startswith('!vml-'):
-            match = re.search(r'<span[^>]*>(.*?)</span>', lines[0])
-            if match:
-                summary = [match.group(1).strip()]
-                meta_indices.append(0) # 记录该行需要被移除
-        
-        # 2. 检查第二行是否为垂直标题元数据
-        if len(lines) > 1 and lines[1].strip().startswith('!vml-'):
-            match = re.search(r'<span[^>]*>(.*?)</span>', lines[1])
-            if match:
-                vertical_title = match.group(1).strip()
-                meta_indices.append(1) # 记录该行需要被移除
-        
-        # 3. 过滤正文：只排除那些被确认为元数据的行
-        content_lines = [
-            line for i, line in enumerate(lines) 
-            if i not in meta_indices
-        ]
-        
+
+        for i in range(min(len(lines), 5)):
+            line = lines[i].strip()
+            if line.startswith('!vml-'):
+                match = re.search(r'<span[^>]*>(.*?)</span>', line)
+                if match:
+                    content = match.group(1).strip()
+                    if 'summary' in line:
+                        summary = content
+                    elif 'title' in line:
+                        vertical_title = content
+                    meta_indices.append(i)
+
+        content_lines = [l for i, l in enumerate(lines) if i not in meta_indices]
         return {
             "summary": summary,
             "vertical_title": vertical_title,
@@ -114,301 +99,180 @@ class VaLogGenerator:
         }
 
     def process_body(self, body):
-        """处理正文,转换为HTML(这里接收的是已经移除了元数据的正文)"""
+        """Markdown → HTML"""
         if not body:
             return ""
-        
-        # 调试信息
-        print(f"处理正文,原始长度: {len(body)} 字符")
-        if len(body) > 0:
-            print(f"前200字符预览: {repr(body[:200])}")
-        
-        try:
-            # ==================== 修复点1: 预处理换行 ====================
-            # 将单个换行替换为双空格+换行(Markdown标准的强制换行语法)
-            # 但保留双换行(段落分隔)
-            processed_body = re.sub(
-                r'(?<!\n)\n(?!\n)',  # 匹配单个换行(前后都不是换行符)
-                '  \n',              # 替换为双空格+换行
-                body
-            )
-            
-            # ==================== 修复点2: 使用更稳定的扩展配置 ====================
-            html_content = markdown.markdown(
-                processed_body, 
-                extensions=[
-                    'extra',          # 包括表格、脚注等
-                    'fenced_code',    # 代码块
-                    'tables',         # 表格支持
-                    'nl2br',          # 自动将换行转换为 <br>
-                    'sane_lists',     # 更智能的列表处理
-                    'codehilite',     # 代码高亮
-                ],
-                extension_configs={
-                    'codehilite': {
-                        'linenums': False,
-                        'guess_lang': False,
-                    }
-                },
-                output_format='html5'
-            )
-            
-            # 确保代码块有正确的CSS类
-            html_content = re.sub(
-                r'<pre><code(?!\s*class=)',
-                '<pre><code class="language-plaintext"',
-                html_content
-            )
-            
-            # 调试转换结果
-            print(f"转换后HTML长度: {len(html_content)} 字符")
-            if len(html_content) > 0:
-                print(f"HTML前200字符预览: {repr(html_content[:200])}")
-            
-            # 检查是否包含必要的HTML标签
-            if '<p>' not in html_content and '</p>' not in html_content and body.strip():
-                print("警告: Markdown转换后没有段落标签,尝试手动处理")
-                # 如果没有段落标签,手动处理
-                paragraphs = []
-                for para in body.split('\n\n'):
-                    if para.strip():
-                        # 将段落内的单换行转换为 <br>
-                        para_html = para.replace('\n', '<br>\n')
-                        paragraphs.append(f'<p>{para_html}</p>')
-                html_content = '\n'.join(paragraphs)
-            
-            return html_content
-            
-        except Exception as e:
-            print(f"Markdown转换错误: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # ==================== 应急处理方案 ====================
-            print("使用应急处理方案")
-            paragraphs = []
-            for para in body.split('\n\n'):
-                if para.strip():
-                    # 将段落内的单换行转换为 <br>
-                    para_html = para.replace('\n', '<br>\n')
-                    paragraphs.append(f'<p>{para_html}</p>')
-            
-            return '\n'.join(paragraphs) if paragraphs else ""
+
+        html_content = markdown.markdown(
+            body,
+            extensions=[
+                'extra',
+                'fenced_code',
+                'tables',
+                'nl2br',
+                'sane_lists',
+                'codehilite'
+            ],
+            extension_configs={
+                'codehilite': {
+                    'linenums': False,
+                    'guess_lang': False,
+                    'pygments_style': 'github'
+                }
+            },
+            output_format='html5'
+        )
+
+        html_content = re.sub(
+            r'<pre><code(?!\s*class=)',
+            '<pre><code class="language-plaintext"',
+            html_content
+        )
+        html_content = re.sub(
+            r'(<table[^>]*>.*?</table>)',
+            r'<div class="table-wrapper">\1</div>',
+            html_content,
+            flags=re.DOTALL
+        )
+
+        return html_content
 
     def run(self):
-        print("开始运行生成器...")
-        
-        # 获取环境变量
         repo = os.getenv("REPO")
         token = os.getenv("GITHUB_TOKEN")
-        
-        if not repo:
-            print("错误: REPO环境变量未设置")
+        if not repo or not token:
+            print("❌ 错误: 请设置环境变量 REPO (如 user/repo) 和 GITHUB_TOKEN")
             return
-        
-        if not token:
-            print("错误: GITHUB_TOKEN环境变量未设置")
-            return
-        
-        print(f"GitHub仓库: {repo}")
-        print(f"Token长度: {len(token)}")
-        
-        # 设置请求头
-        headers = {
-            "Authorization": f"token {token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        
-        # 获取GitHub Issues
-        print("获取GitHub Issues...")
+
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+
+        # 获取 Issues
         try:
             url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page=100"
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            issues = response.json()
-            print(f"获取到 {len(issues)} 个issue")
-        except requests.exceptions.RequestException as e:
-            print(f"GitHub API请求失败: {e}")
-            return
+            resp = requests.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            issues = [i for i in resp.json() if not i.get("pull_request")]
+            print(f"✅ 成功获取 {len(issues)} 篇公开文章")
         except Exception as e:
-            print(f"处理Issues时出错: {e}")
+            print(f"❌ GitHub API 请求失败: {e}")
             return
-        
-        # 过滤掉Pull Request
-        issues = [i for i in issues if not i.get("pull_request")]
-        print(f"过滤后文章数量: {len(issues)}")
-        
+
+        remote_ids = {str(i['number']) for i in issues}
+
+        # === 🔄 三端一致性校验（Issues + 缓存 + docs）===
+        to_process = set()
+        to_delete = set()
+
+        # 获取本地存在的 ID（缓存 + HTML 文件）
+        local_cache_ids = set(self.cache.keys())
+        local_html_ids = {
+            f.replace('.html', '') 
+            for f in os.listdir(ARTICLE_DIR) 
+            if f.endswith('.html')
+        }
+        all_local_ids = local_cache_ids | local_html_ids
+
+        # 处理远程存在的文章
+        for issue in issues:
+            iid = str(issue['number'])
+            updated_at = issue['updated_at']
+            html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{iid}.html"))
+            in_cache = iid in self.cache
+            cache_time_matches = in_cache and self.cache[iid] == updated_at
+
+            if in_cache and cache_time_matches and not html_exists:
+                print(f"⚠️ HTML 丢失，将重建: #{iid}")
+                to_process.add(iid)
+            elif not in_cache:
+                print(f"🆕 新文章或缓存丢失: #{iid}")
+                to_process.add(iid)
+            elif not cache_time_matches:
+                print(f"🔄 内容已更新: #{iid}")
+                to_process.add(iid)
+
+        # 处理远程不存在的文章（彻底清理）
+        for local_id in all_local_ids:
+            if local_id not in remote_ids:
+                to_delete.add(local_id)
+
+        # 执行删除
+        for cid in to_delete:
+            print(f"🗑️ 删除已移除文章: #{cid}")
+            for path in [
+                os.path.join(ARTICLE_DIR, f"{cid}.html"),
+                os.path.join(OMD_DIR, f"{cid}.md")
+            ]:
+                if os.path.exists(path):
+                    os.remove(path)
+            if cid in self.cache:
+                del self.cache[cid]
+
+        # === 开始处理需要生成的文章 ===
         all_articles = []
         specials = []
-        new_cache = {}
-
-        blog_cfg = self.config.get('blog', {})
-        theme_cfg = self.config.get('theme', {})
-        special_cfg = self.config.get('special', {})
-        
-        # 获取特殊标签配置
-        special_top_enabled = special_cfg.get('top', True)
         special_tags = self.config.get('special_tags', [])
-        
-        print("开始处理文章...")
-        for i, issue in enumerate(issues, 1):
-            try:
-                iid = str(issue['number'])
-                updated_at = issue['updated_at']
-                body = issue.get('body', '') or ''
-                tags = [label['name'] for label in issue.get('labels', [])]
-                
-                print(f"\n处理文章 {i}/{len(issues)}: #{iid} - {issue['title']}")
-                print(f"  标签: {tags}")
-                
-                # 提取元数据和正文（这里会分离元数据和正文）
-                metadata = self.extract_metadata_and_body(body)
-                
-                # 垂直标题优先级：元数据中的垂直标题 > 文章标题 > "Blog"
-                vertical_title = metadata["vertical_title"] or issue['title'] or "ABlog"
-                
-                # 检查是否需要更新
-                need_update = iid not in self.cache or self.cache[iid] != updated_at
-                
-                # 处理正文内容
-                processed_content = self.process_body(metadata["body"])
-                
+
+        for issue in issues:
+            iid = str(issue['number'])
+            tags = [label['name'] for label in issue.get('labels', [])]
+            is_special = 'special' in tags or 'top' in tags or any(t in tags for t in special_tags)
+
+            # 构建列表项所需数据（即使跳过生成也要构建）
+            metadata = self.extract_metadata_and_body(issue.get('body', ''))
+            v_title = metadata["vertical_title"] or issue['title'] or "Blog"
+            list_item = {
+                "id": iid,
+                "title": issue['title'],
+                "date": issue['created_at'][:10],
+                "tags": tags,
+                "content": metadata["summary"],
+                "url": f"article/{iid}.html",
+                "verticalTitle": v_title
+            }
+
+            if iid in to_process:
+                print(f"📝 处理文章: #{iid} - {issue['title']}")
+                processed_html = self.process_body(metadata["body"])
+
                 article_data = {
                     "id": iid,
                     "title": issue['title'],
-                    "date": issue['created_at'][:10] if issue.get('created_at') else "",
+                    "date": issue['created_at'][:10],
                     "tags": tags,
-                    "content": processed_content,  # 使用处理后的HTML内容
-                    "raw_content": metadata["body"],  # 保留原始内容用于调试
+                    "content": processed_html,
                     "url": f"article/{iid}.html",
-                    "verticalTitle": vertical_title,
+                    "verticalTitle": v_title,
                     "summary": metadata["summary"]
                 }
-                
-                if need_update:
-                    print(f"  需要更新: {need_update}")
-                    
-                    # 获取文章模板
-                    try:
-                        tmpl = self.env.get_template(self.article_template_name)
-                    except Exception as e:
-                        print(f"  模板加载失败: {e}")
-                        # 使用简单模板作为备选
-                        article_html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>{article_data['title']}</title>
-    <style>
-        .content {{
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.8;
-        }}
-        .content p {{
-            margin-bottom: 1.5em;
-        }}
-    </style>
-</head>
-<body>
-    <h1>{article_data['title']}</h1>
-    <p>日期: {article_data['date']}</p>
-    <p>标签: {', '.join(article_data['tags'])}</p>
-    <div class="content">{processed_content}</div>
-</body>
-</html>"""
-                    else:
-                        # 渲染文章页面
-                        article_html = tmpl.render(
-                            article=article_data, 
-                            blog={**blog_cfg, "theme": theme_cfg}
-                        )
-                    
-                    # 保存文章HTML
-                    article_path = os.path.join(ARTICLE_DIR, f"{iid}.html")
-                    with open(article_path, "w", encoding="utf-8") as f:
-                        f.write(article_html)
-                    print(f"  已生成: {article_path}")
-                    
-                    # 备份原始Markdown（包含元数据）
-                    md_path = os.path.join(OMD_DIR, f"{iid}.md")
-                    with open(md_path, "w", encoding="utf-8") as f:
-                        f.write(body)
-                    print(f"  已备份: {md_path}")
-                
-                # 检查是否为特殊文章
-                is_special = False
 
-                if 'special' in tags:
-                    is_special = True
-                    print(f"  标记为特殊文章 (special标签)")
-                
-                # 检查配置的特殊标签
-                elif special_top_enabled and 'top' in tags:
-                    is_special = True
-                    print(f"  标记为特殊文章 (top标签)")
-                
-                # 检查其他特殊标签
-                for tag in special_tags:
-                    if tag in tags:
-                        is_special = True
-                        print(f"  标记为特殊文章 ({tag}标签)")
-                        break
-                
-                # 对于文章列表，使用摘要
-                list_article_data = {
-                    "id": iid,
-                    "title": issue['title'],
-                    "date": issue['created_at'][:10] if issue.get('created_at') else "",
-                    "tags": tags,
-                    "content": metadata["summary"],  # 列表使用摘要
-                    "url": f"article/{iid}.html",
-                    "verticalTitle": vertical_title
-                }
-                
-                if is_special:
-                    # 如果是特殊文章，只添加到specials列表
-                    specials.append(list_article_data)
-                else:
-                    # 如果不是特殊文章，添加到all_articles列表
-                    all_articles.append(list_article_data)
-                
+                # 渲染 HTML
+                tmpl = self.env.get_template(self.article_template_name)
+                with open(os.path.join(ARTICLE_DIR, f"{iid}.html"), "w", encoding="utf-8") as f:
+                    f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
+
+                # 保存原始 Markdown
+                with open(os.path.join(OMD_DIR, f"{iid}.md"), "w", encoding="utf-8") as f:
+                    f.write(issue.get('body', ''))
+
                 # 更新缓存
-                new_cache[iid] = updated_at
-                    
-            except Exception as e:
-                print(f"  处理文章时出错: {e}")
-                import traceback
-                traceback.print_exc()
-                continue
-        
-        print(f"\n普通文章: {len(all_articles)} 篇")
-        print(f"特殊文章: {len(specials)} 篇")
-        print(f"文章处理完成，总计: {len(all_articles) + len(specials)} 篇")
-        
-        # 保存缓存
-        try:
-            with open(OMD_JSON, 'w', encoding='utf-8') as f:
-                json.dump(new_cache, f, indent=2, ensure_ascii=False)
-            print(f"缓存已保存: {OMD_JSON}")
-        except Exception as e:
-            print(f"缓存保存失败: {e}")
-        
-        # 如果special数组为空，使用配置信息填充
-        if not specials and special_cfg.get('view'):
-            view = special_cfg.get('view', {})
-            
-            # 计算运行天数
-            run_date_str = view.get('Total_time', '2026.01.01')
+                self.cache[iid] = issue['updated_at']
+
+            # 添加到对应列表
+            if is_special:
+                specials.append(list_item)
+            else:
+                all_articles.append(list_item)
+
+        # 特殊卡片保底
+        if not specials and self.config.get('special', {}).get('view'):
+            view = self.config['special']['view']
+            run_date_str = view.get('Total_time', '2023.01.01')
             try:
                 run_date = datetime.strptime(run_date_str, '%Y.%m.%d')
-                days_running = (datetime.now() - run_date).days
-                days_text = f"运行天数: {days_running} 天"
+                days_text = f"运行天数: {(datetime.now() - run_date).days} 天"
             except:
                 days_text = "运行天数: 计算中..."
-            
-            # 创建默认的特殊文章
-            default_special = {
+            specials.append({
                 "id": "0",
                 "title": "",
                 "date": "",
@@ -421,44 +285,33 @@ class VaLogGenerator:
                 ],
                 "url": "",
                 "verticalTitle": "Special"
-            }
-            specials.append(default_special)
-            print("已使用配置信息填充special数组")
-        
-        # 生成 base.yaml
-        try:
-            base_data = {
-                "blog": {**blog_cfg, "theme": theme_cfg}, 
-                "articles": all_articles, 
-                "specials": specials, 
-                "floating_menu": self.config.get('floating_menu', []),
-                "special_config": special_cfg
-            }
-            with open(BASE_YAML_OUT, 'w', encoding='utf-8') as f:
-                yaml.dump(base_data, f, allow_unicode=True, sort_keys=False)
-            print(f"base.yaml 已生成: {BASE_YAML_OUT}")
-        except Exception as e:
-            print(f"base.yaml 生成失败: {e}")
-        
+            })
+            print("ℹ️ 已从配置生成 Special 信息")
+
+        all_articles.sort(key=lambda x: x['date'], reverse=True)
+
+        # 保存状态
+        with open(OMD_JSON, 'w', encoding='utf-8') as f:
+            json.dump(self.cache, f, indent=2, ensure_ascii=False)
+
+        base_data = {
+            "blog": self.config.get('blog', {}),
+            "articles": all_articles,
+            "specials": specials,
+            "floating_menu": self.config.get('floating_menu', []),
+            "special_config": self.config.get('special', {})
+        }
+        with open(BASE_YAML_OUT, 'w', encoding='utf-8') as f:
+            yaml.dump(base_data, f, allow_unicode=True, sort_keys=False)
+
         # 生成首页
         self.generate_index(all_articles, specials)
-        
-        print("\n生成器运行完成！")
 
     def generate_index(self, articles, specials):
-        print("生成首页...")
-        
-        # 使用配置的首页模板文件名
-        home_tmpl_path = os.path.join(TEMPLATE_DIR, self.home_template_name)
-        if not os.path.exists(home_tmpl_path):
-            print(f"错误: 首页模板不存在: {home_tmpl_path}")
-            return
-        
+        print("🏠 正在生成首页...")
         try:
-            # 使用配置的首页模板文件名
             tmpl = self.env.get_template(self.home_template_name)
-            
-            context = {
+            ctx = {
                 "BLOG_NAME": self.config.get('blog', {}).get('name', 'VaLog'),
                 "SPECIAL_NAME": self.config.get('blog', {}).get('sname', 'Special'),
                 "BLOG_DESCRIPTION": self.config.get('blog', {}).get('description', ''),
@@ -470,44 +323,23 @@ class VaLogGenerator:
                 "ARTICLES_JSON": json.dumps(articles, ensure_ascii=False),
                 "SPECIALS_JSON": json.dumps(specials, ensure_ascii=False),
                 "MENU_ITEMS_JSON": json.dumps(self.config.get('floating_menu', []), ensure_ascii=False),
-                "SPECIAL_TAGS": self.config.get('special_tags', ''),
+                "SPECIAL_TAGS": json.dumps(self.config.get('special_tags', []), ensure_ascii=False),
             }
-            
-            rendered = tmpl.render(**context)
-            
-            index_path = os.path.join(DOCS_DIR, "index.html")
-            with open(index_path, "w", encoding="utf-8") as f:
-                f.write(rendered)
-            
-            print(f"首页已生成: {index_path}")
-            print(f"首页大小: {len(rendered)} 字节")
-            
+            with open(os.path.join(DOCS_DIR, "index.html"), "w", encoding="utf-8") as f:
+                f.write(tmpl.render(**ctx))
+            print("✅ 首页生成完毕！")
         except Exception as e:
-            print(f"首页生成失败: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ 首页生成错误: {e}")
 
-def main():
-    print("=" * 50)
-    print("VaLog Generator 启动")
-    print(f"工作目录: {os.getcwd()}")
-    print(f"Python版本: {os.sys.version}")
-    print("=" * 50)
-    
-    try:
-        generator = VaLogGenerator()
-        generator.run()
-        print("=" * 50)
-        print("VaLog Generator 完成")
-        print("=" * 50)
-    except Exception as e:
-        print(f"生成器运行失败: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1  # 返回错误代码
-    
-    return 0  # 成功
 
 if __name__ == "__main__":
-    exit_code = main()
-    exit(exit_code)
+    try:
+        gen = VaLogGenerator()
+        gen.run()
+    except KeyboardInterrupt:
+        print("\n🛑 用户中断")
+    except Exception as e:
+        import traceback
+        print(f"💥 发生未预期错误:")
+        traceback.print_exc()
+        exit(1)
