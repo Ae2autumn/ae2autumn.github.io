@@ -665,13 +665,10 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
      }
      applyTheme();
    
-     // === 3. 生成章节导航（跳过 .content 中的第一个标题）===
+     // === 3. 生成章节导航 ===
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
-   
-     // 跳过第一个标题（通常是文章主标题，如 "02.02"）
-     const headingsForTOC = allHeadings.slice(1);
    
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
