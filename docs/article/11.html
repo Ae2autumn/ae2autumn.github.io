@@ -587,133 +587,138 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
    </div>
 
    <script>
-      const menuToggle = document.getElementById('menuToggle');
-      const sideMenu = document.getElementById('sideMenu');
-      const menuMask = document.getElementById('menuMask');
-      const closeBtn = document.getElementById('closeBtn');
-      const toBottomBtn = document.getElementById('toBottomBtn');
-      const middleBtn = document.getElementById('middleBtn');
-      const toTopBtn = document.getElementById('toTopBtn');
-      const chapterList = document.getElementById('chapterList');
-      
-      // 改进的标题ID生成
-      document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
-         const id = el.textContent.toLowerCase()
-                     .replace(/[^\w\s]/g, '')
-                     .replace(/\s+/g, '-')
-                     .substring(0, 50);
-         el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
-      });
-      
-      function applyTheme() {
-        // 优先读取 localStorage
-        const savedTheme = localStorage.getItem('theme');
-        
-        if (savedTheme) {
-          if (savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-            document.body.classList.remove('dark-mode');
-          } else {
-            document.body.classList.add('dark-mode');
-            document.body.classList.remove('light-mode');
-          }
-        } else {
-          // 使用服务器配置的主题
-          const configTheme = "dark";
-          if (configTheme === 'light') {
-            document.body.classList.add('light-mode');
-            document.body.classList.remove('dark-mode');
-          } else {
-            document.body.classList.add('dark-mode');
-            document.body.classList.remove('light-mode');
-          }
-        }
-      }
-      
-      applyTheme();
-      
-      // 生成章节导航
-      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
-                          .filter(h => h.id && h.textContent.trim() !== '');
-      
-      headings.forEach(heading => {
-         const listItem = document.createElement('div');
-         const level = parseInt(heading.tagName.substring(1));
-         const isH2 = level === 2;
-         
-         listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
-         listItem.textContent = heading.textContent;
-         listItem.dataset.id = heading.id;
-         
-         listItem.addEventListener('click', (e) => {
-            e.stopPropagation();
-            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            closeMenu();
-         });
-         
-         chapterList.appendChild(listItem);
-      });
-      
-      // 菜单交互功能
-      menuToggle.addEventListener('click', (e) => {
+     const menuToggle = document.getElementById('menuToggle');
+     const sideMenu = document.getElementById('sideMenu');
+     const menuMask = document.getElementById('menuMask');
+     const closeBtn = document.getElementById('closeBtn');
+     const toBottomBtn = document.getElementById('toBottomBtn');
+     const middleBtn = document.getElementById('middleBtn');
+     const toTopBtn = document.getElementById('toTopBtn');
+     const chapterList = document.getElementById('chapterList');
+   
+     // === 1. 仅在 .content 内的标题生成唯一 ID ===
+     document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
+       const id = el.textContent.toLowerCase()
+                   .replace(/[^\w\s]/g, '')        // 移除特殊字符
+                   .replace(/\s+/g, '-')           // 空格转连字符
+                   .substring(0, 50);              // 截断防过长
+       el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
+     });
+   
+     // === 2. 应用主题 ===
+     function applyTheme() {
+       const savedTheme = localStorage.getItem('theme');
+       if (savedTheme) {
+         if (savedTheme === 'light') {
+           document.body.classList.add('light-mode');
+           document.body.classList.remove('dark-mode');
+         } else {
+           document.body.classList.add('dark-mode');
+           document.body.classList.remove('light-mode');
+         }
+       } else {
+         const configTheme = "dark";
+         if (configTheme === 'light') {
+           document.body.classList.add('light-mode');
+           document.body.classList.remove('dark-mode');
+         } else {
+           document.body.classList.add('dark-mode');
+           document.body.classList.remove('light-mode');
+         }
+       }
+     }
+     applyTheme();
+   
+     // === 3. 生成章节导航（跳过 .content 中的第一个标题）===
+     const allHeadings = Array.from(
+       document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
+     ).filter(h => h.id && h.textContent.trim() !== '');
+   
+     // 跳过第一个标题（通常是文章主标题，如 "02.02"）
+     const headingsForTOC = allHeadings.slice(1);
+   
+     headingsForTOC.forEach(heading => {
+       const listItem = document.createElement('div');
+       const level = parseInt(heading.tagName.substring(1));
+       const isH2 = level === 2;
+   
+       listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
+       listItem.textContent = heading.textContent;
+       listItem.dataset.id = heading.id;
+   
+       listItem.addEventListener('click', (e) => {
          e.stopPropagation();
-         sideMenu.classList.add('active');
-         menuMask.classList.add('active');
-         menuToggle.style.display = 'none';
-      });
-      
-      function closeMenu() {
-         sideMenu.classList.remove('active');
-         menuMask.classList.remove('active');
-         menuToggle.style.display = 'flex';
-      }
-      
-      closeBtn.addEventListener('click', (e) => {
-         e.stopPropagation();
+         heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
          closeMenu();
-      });
-      
-      menuMask.addEventListener('click', (e) => {
-         e.stopPropagation();
-         closeMenu();
-      });
-      
-      sideMenu.addEventListener('click', (e) => {
-         e.stopPropagation();
-      });
-      
-      toBottomBtn.addEventListener('click', (e) => {
-         e.stopPropagation();
-         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-         closeMenu();
-      });
-      
-      middleBtn.addEventListener('click', (e) => {
-         e.stopPropagation();
-         closeMenu();
-      });
-      
-      toTopBtn.addEventListener('click', (e) => {
-         e.stopPropagation();
-         window.scrollTo({ top: 0, behavior: 'smooth' });
-         closeMenu();
-      });
-      
-      // 滚动进度指示器
-      function updateProgress() {
-         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-         const scrollPosition = window.scrollY;
-         const scrollPercent = Math.min(scrollPosition / scrollHeight, 1);
-         const redValue = Math.floor(scrollPercent * 255);
-         const color = `rgb(${redValue}, 0, 0)`;
-         menuToggle.style.backgroundColor = color;
-         menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
-      }
-      
-      window.addEventListener('scroll', updateProgress, { passive: true });
-      window.addEventListener('resize', updateProgress, { passive: true });
-      updateProgress();
+       });
+   
+       chapterList.appendChild(listItem);
+     });
+   
+     // === 4. 菜单交互功能 ===
+     menuToggle.addEventListener('click', (e) => {
+       e.stopPropagation();
+       sideMenu.classList.add('active');
+       menuMask.classList.add('active');
+       menuToggle.style.display = 'none';
+     });
+   
+     function closeMenu() {
+       sideMenu.classList.remove('active');
+       menuMask.classList.remove('active');
+       menuToggle.style.display = 'flex';
+     }
+   
+     closeBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       closeMenu();
+     });
+   
+     menuMask.addEventListener('click', (e) => {
+       e.stopPropagation();
+       closeMenu();
+     });
+   
+     sideMenu.addEventListener('click', (e) => {
+       e.stopPropagation();
+     });
+   
+     toBottomBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+       closeMenu();
+     });
+   
+     middleBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       // 滚动到中间（可选：计算中间位置）
+       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+       window.scrollTo({ top: middle, behavior: 'smooth' });
+       closeMenu();
+     });
+   
+     toTopBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+       closeMenu();
+     });
+   
+     // === 5. 滚动进度指示器 ===
+     function updateProgress() {
+       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+       const scrollPosition = window.scrollY;
+       const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
+       const redValue = Math.floor(scrollPercent * 255);
+       const color = `rgb(${redValue}, 0, 0)`;
+       menuToggle.style.backgroundColor = color;
+       menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
+     }
+   
+     window.addEventListener('scroll', updateProgress, { passive: true });
+     window.addEventListener('resize', updateProgress, { passive: true });
+     updateProgress();
    </script>
+
 </body>
 
 </html>
