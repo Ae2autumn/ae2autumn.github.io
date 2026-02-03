@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-VaLog - 基于 GitHub Issues 的静态博客生成器（三端一致性增强版）
-作者：你 ❤️
-功能：将公开仓库的 Issues 转换为静态 HTML 博客，支持增量更新与自动修复
-"""
-
 import os
 import re
 import json
@@ -252,7 +244,7 @@ class VaLogGenerator:
 
                 # 保存原始 Markdown
                 with open(os.path.join(OMD_DIR, f"{iid}.md"), "w", encoding="utf-8") as f:
-                    f.write(issue.get('body', ''))
+                    f.write(issue.get('body') or "")
 
                 # 更新缓存
                 self.cache[iid] = issue['updated_at']
