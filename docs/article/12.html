@@ -553,6 +553,8 @@
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
    
+     const headingsForTOC = allHeadings.slice(0);
+   
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
        const level = parseInt(heading.tagName.substring(1));
