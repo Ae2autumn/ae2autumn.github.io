@@ -4,6 +4,11 @@ blog:
   sname: 特别项目
   description: 𝕚 𝕨𝕒𝕤 𝕥𝕖𝕞𝕡𝕠𝕣𝕒𝕣𝕪 𝟚 𝕦
   favicon: https://avatars.githubusercontent.com/u/195545824?v=4
+  theme:
+    mode: dark
+    primary_color: '#e74c3c'
+    dark_bg: '#121212'
+    light_bg: '#f5f7fa'
 articles:
 - id: '14'
   title: '02.02'
