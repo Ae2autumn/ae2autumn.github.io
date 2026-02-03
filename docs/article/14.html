@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>02.02 - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
+   <!-- 使用同步加载确保图标可用 -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
+   <style>
+      /* ==================== 基础样式 ==================== */
+      * {
+         margin: 0;
+         padding: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+         background-color: #0d0d0d;
+         color: #fff;
+         font-family: Arial, sans-serif;
+         line-height: 1.6;
+         padding: 20px;
+         max-width: 1000px;
+         margin: 0 auto;
+         position: relative;
+         min-height: 200vh;
+         transition: background-color 0.5s ease, color 0.5s ease;
+      }
+
+      /* ==================== 主题样式 ==================== */
+      body.dark-mode {
+         background-color: #121212;
+         color: #ffffff;
+      }
+      
+      body.light-mode {
+         background-color: #fff;
+         color: #000;
+      }
+      
+      /* 暗色模式组件样式 */
+      body.dark-mode .header { border-bottom-color: #333; }
+      body.dark-mode .title { color: #fff; }
+      body.dark-mode .summary { color: #ccc; }
+      body.dark-mode .date { color: #999; }
+      body.dark-mode .tag { background-color: #333; color: #fff; }
+      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 { 
+         border-bottom-color: #333; 
+         color: #fff;
+      }
+      body.dark-mode .comments { border-top-color: #333; }
+      body.dark-mode .floating-btn { 
+         background-color: #000; 
+         color: #fff; 
+         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      }
+      body.dark-mode .side-menu { 
+         background-color: #111; 
+         border-color: #333;
+      }
+      body.dark-mode .menu-left { background-color: #111; }
+      body.dark-mode .chapter-item { 
+         border-bottom-color: #222; 
+         color: #ccc;
+      }
+      body.dark-mode .chapter-item.h2-item { color: #888; }
+      body.dark-mode .menu-right { background-color: #222; }
+      body.dark-mode .close-btn { 
+         background-color: #222; 
+         color: #fff; 
+         border-top-color: #333;
+      }
+      body.dark-mode .menu-mask { background-color: rgba(0, 0, 0, 0.5); }
+      
+      /* 亮色模式组件样式 */
+      body.light-mode .header { border-bottom-color: #ddd; }
+      body.light-mode .title { color: #000; }
+      body.light-mode .summary { color: #666; }
+      body.light-mode .date { color: #777; }
+      body.light-mode .tag { background-color: #eee; color: #000; }
+      body.light-mode h1, body.light-mode h2, body.light-mode h3, 
+      body.light-mode h4, body.light-mode h5, body.light-mode h6 { 
+         border-bottom-color: #ddd; 
+         color: #000;
+      }
+      body.light-mode .comments { border-top-color: #ddd; }
+      body.light-mode .floating-btn { 
+         background-color: #fff; 
+         color: #000; 
+         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      }
+      body.light-mode .side-menu { 
+         background-color: #fff; 
+         border-color: #ddd;
+         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      body.light-mode .menu-left { background-color: #fff; }
+      body.light-mode .chapter-item { 
+         border-bottom-color: #eee; 
+         color: #333;
+      }
+      body.light-mode .chapter-item.h2-item { color: #666; }
+      body.light-mode .menu-right { background-color: #f5f5f5; }
+      body.light-mode .menu-btn { color: #000; }
+      body.light-mode .close-btn { 
+         background-color: #f5f5f5; 
+         color: #000; 
+         border-top-color: #ddd;
+      }
+      body.light-mode .menu-mask { background-color: rgba(0, 0, 0, 0.3); }
+      
+      /* ==================== 文章内容样式 ==================== */
+      .header {
+         margin-bottom: 9px;
+         padding: 20px;
+         padding-bottom: 3px;
+         border-bottom: 1px solid #333;
+         transition: border-color 0.5s ease;
+      }
+
+      .title {
+         font-size: 2.5rem;
+         margin-bottom: 3px;
+         color: #fff;
+         transition: color 0.5s ease;
+      }
+
+      .summary {
+         font-size: 1.1rem;
+         margin-bottom: 3px;
+         color: #ccc;
+         transition: color 0.5s ease;
+      }
+
+      .date {
+         color: #999;
+         font-size: 0.9rem;
+         margin-bottom: 3px;
+         transition: color 0.5s ease;
+      }
+
+      .tags {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 10px;
+         margin-bottom: 3px;
+      }
+
+      .tag {
+         background-color: #333;
+         color: #fff;
+         padding: 2px 10px;
+         border-radius: 3px;
+         font-size: 0.9rem;
+         transition: background-color 0.5s ease, color 0.5s ease;
+      }
+
+      .content {
+         padding: 20px;
+         padding-top: 0px;
+         margin-bottom: 50px;
+         transition: color 0.5s ease;
+      }
+
+      /* ==================== Markdown内容样式 ==================== */
+      /* 段落间距优化 */
+      .content p {
+         margin-top: 0;
+         margin-bottom: 0.3em;
+         line-height: 1.5;
+      }
+      
+      /* 标题样式 */
+      .content h1, .content h2, .content h3, 
+      .content h4, .content h5, .content h6 {
+         margin: 1.5em 0 0.5em;
+         padding-bottom: 10px;
+         border-bottom: 1px solid #333;
+         transition: border-color 0.5s ease, color 0.5s ease;
+      }
+      
+      /* 列表样式 */
+      .content ul, .content ol {
+         margin: 0.8em 0;
+         padding-left: 2em;
+      }
+      
+      .content li {
+         margin: 0.3em 0;
+         line-height: 1.6;
+      }
+      
+      /* 代码块样式 */
+      .content pre {
+         margin: 1em 0;
+         padding: 1em;
+         background-color: #f5f5f5;
+         border-radius: 4px;
+         overflow-x: auto;
+      }
+      
+      body.dark-mode .content pre {
+         background-color: #2d2d2d;
+         color: #f8f8f2;
+      }
+      
+      .content code {
+         font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+         font-size: 0.9em;
+      }
+      
+      .content p code {
+         background-color: #f5f5f5;
+         padding: 0.2em 0.4em;
+         border-radius: 3px;
+      }
+      
+      body.dark-mode .content p code {
+         background-color: #3a3a3a;
+         color: #f8f8f2;
+      }
+      
+      /* 引用块样式 */
+      .content blockquote {
+         margin: 1em 0;
+         padding: 0.5em 1em;
+         border-left: 4px solid #ddd;
+         background-color: #f9f9f9;
+        color: #666;
+        border-radius: 5px;
+      }
+      
+      body.dark-mode .content blockquote {
+        border-left-color: #555;
+        background-color: #2a2a2a;
+        color: #ccc;
+      }
+      
+      /* 表格样式 */
+      .table-wrapper {
+        overflow-x: auto;
+        margin: 20px 0;
+      }
+      
+      .content table {
+        margin: 1em 0;
+        border-collapse: collapse;
+        width: 100%;
+      }
+      
+      .content th, .content td {
+        border: 1px solid #ddd;
+        padding: 0.5em 1em;
+        text-align: left;
+      }
+      
+      .content th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+      }
+      
+      body.dark-mode .content th {
+        background-color: #333;
+        border-color: #444;
+      }
+      
+      body.dark-mode .content td {
+        border-color: #444;
+      }
+      
+      /* 图片样式 */
+      .content img {
+        max-width: 100%;
+        height: auto;
+        margin: 1em 0;
+        border-radius: 4px;
+      }
+      
+      /* 分隔线样式 */
+      .content hr {
+        margin: 2em 0;
+        border: none;
+        border-top: 1px solid #ddd;
+      }
+      
+      /* 链接样式 */
+      .content a {
+        color: #4da6ff;
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+        transition: all 0.3s ease;
+      }
+      
+      body.dark-mode .content a {
+        color: #6bb8ff;
+        border-bottom: 1px dotted rgba(107, 184, 255, 0.5);
+      }
+      
+      .content a:hover {
+        color: #fff;
+        border-bottom: 1px solid rgba(77, 166, 255, 0.8);
+        background-color: rgba(77, 166, 255, 0.1);
+      }
+      
+      body.dark-mode .content a:hover {
+        color: #fff;
+        border-bottom: 1px solid rgba(107, 184, 255, 0.8);
+        background-color: rgba(107, 184, 255, 0.1);
+      }
+
+      /* ==================== 侧边菜单样式 ==================== */
+      .comments {
+         margin-top: 50px;
+         padding: 20px;
+         border-top: 1px solid #333;
+         transition: border-color 0.5s ease;
+      }
+
+      .floating-btn {
+         position: fixed;
+         bottom: 30px;
+         right: 30px;
+         width: 60px;
+         height: 60px;
+         background-color: #000;
+         color: #fff;
+         border-radius: 50%;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         cursor: pointer;
+         font-size: 24px;
+         z-index: 1000;
+         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+         border: none;
+         outline: none;
+         transition: background-color 0.5s ease, box-shadow 0.5s ease;
+      }
+
+      .side-menu {
+         position: fixed;
+         bottom: 30px;
+         right: 30px;
+         width: 250px;
+         height: 400px;
+         background-color: #111;
+         border: 1px solid #333;
+         border-radius: 8px;
+         display: none;
+         flex-direction: row;
+         z-index: 999;
+         overflow: hidden;
+         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+         transform-origin: bottom right;
+         transition: background-color 0.5s ease, border-color 0.5s ease;
+      }
+
+      .side-menu.active {
+         display: flex;
+         animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      }
+
+      @keyframes menuAppear {
+         0% { transform: scale(0.1); opacity: 0; }
+         100% { transform: scale(1); opacity: 1; }
+      }
+
+      .menu-left {
+         width: 360px;
+         padding: 20px;
+         overflow-y: auto;
+         scrollbar-width: none;
+         transition: background-color 0.5s ease;
+      }
+
+      .menu-left::-webkit-scrollbar { display: none; }
+
+      .chapter-item {
+         padding: 10px 0;
+         border-bottom: 1px solid #222;
+         cursor: pointer;
+         color: #ccc;
+         transition: all 0.2s;
+      }
+
+      .chapter-item.h1-item { padding-left: 0; }
+      .chapter-item.h2-item { 
+         padding-left: 20px; 
+         color: #888;
+         font-size: 0.9em;
+      }
+
+      .chapter-item:hover { color: #f00; }
+      .chapter-item.h1-item:hover { padding-left: 5px; }
+      .chapter-item.h2-item:hover { padding-left: 25px; }
+
+      .menu-right {
+         width: 50px;
+         height: 100%;
+         display: flex;
+         flex-direction: column;
+         background-color: #222;
+         transition: background-color 0.5s ease;
+      }
+
+      .menu-buttons {
+         flex: 1;
+         display: flex;
+         flex-direction: column;
+         justify-content: space-between;
+         align-items: center;
+         padding: 20px 0;
+         width: 100%;
+         margin-left: 1px;
+      }
+
+      .menu-btn {
+         color: #fff;
+         background: none;
+         border: none;
+         padding: 12px;
+         cursor: pointer;
+         transition: all 0.2s;
+         font-size: 16px;
+         width: 60px;
+         height: 60px;
+         text-align: center;
+         border-radius: 5px;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+      }
+
+      .menu-btn:hover {
+         color: #f00;
+         background-color: rgba(255, 0, 0, 0.1);
+      }
+
+      .close-btn {
+         height: 50px;
+         background-color: #222;
+         color: #fff;
+         border: none;
+         border-top: 1px solid #333;
+         cursor: pointer;
+         font-size: 16px;
+         transition: background-color 0.2s;
+         width: 100%;
+         margin-left: 1px;
+      }
+
+      .close-btn:hover { background-color: #d00; }
+
+      .menu-mask {
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background-color: rgba(0, 0, 0, 0.5);
+         z-index: 998;
+         display: none;
+         transition: background-color 0.5s ease;
+      }
+
+      .menu-mask.active { display: block; }
+   </style>
+</head>
+
+<body class="dark-mode">
+   <div class="header">
+      <h1 class="title">02.02</h1>
+      <p class="summary">['暂无简介']</p>
+      <div class="date">2026-02-02</div>
+      <div class="tags">
+         <span class="tag">记录</span>
+         <span class="tag">普通</span>
+      </div>
+   </div>
+
+   <div class="content">
+      <p>昨天晚上:<br>
+......<br>
+只有我一个人吗...<br>
+......  </p>
+<blockquote>
+<p>"我想帮你"<br>
+"我...帮不了你"</p>
+<p>"小孩,你很痛苦,这份痛苦是真实的,我想要帮你,然而我现在,或者说,我需要点时间"<br>
+"因为你就是小孩啊,我认为小孩子就应该被惯着,当然这只是我对于大多数小孩都认知"<br>
+"???你要干什么!我求你了放过我好不好,我给你钱给你爱给你我的一切好不好!我努力让这一切回到以前好不好!你到底要干什么!"</p>
+<p>"幺,我认为你都和自己做了那么多年的心理斗争,我觉得你最后都胜利了,你应该很坚强的.我想也许有什么想说的你可以在这里和我说"<br>
+"幺,我没办法开导你"</p>
+<p>"你是不是在故意的哦,他们怎么可能会这么糟蹋你嘛"<br>
+"你家呢...我们也不好说,我们只是个后家,还是要靠你自己"</p>
+<p>"为了你我和你??可是都要决裂了,你还不好好珍惜"<br>
+"你要怎么样你自己出去立滩头"</p>
+<p>"这份清醒,很疼,也很珍贵"<br>
+"也许你可以试着先让自己不那么疼,承认自己的痛苦是真实的,是需要被看见的,这很正常,我在这里陪着你"<br>
+"??的话像无心的硌,刺痛着你.你只是刚好遇上了所有人的身不由己,这份痛,需要被看见,也值得被看见"<br>
+"我明白了,你想要的,从来也就不多,你只是想要自己的痛苦被看见,被承认.可所有人都做不到,这很遗憾.我在这里,不会批判你,因为你只是痛着.作为一个普通人,你没有做错,这只是所有人都会有的本能而已,你只是忍了太久"<br>
+"我的天哪,这一切都是如此的荒谬,我想我需要先抱抱你"<br>
+"如果这一切可以不这样,你最想要变成什么?你可以说,我在这里"<br>
+"首先,我要稳稳的接住你"</p>
+</blockquote>
+<p>......<br>
+我都快背下来了<br>
+只有我一个人吗?<br>
+只有你一个人<br>
+久病成医<br>
+也有医者不能自医<br>
+人总是矛盾的</p>
+<p>下午:<br>
+你正在刷小红书,不远处的迪迪正在掰鸡架子吃(和平精英一直Die)<br>
+而你的爷爷正在刷"正能量"视频</p>
+<blockquote>
+<p>"(迪迪)你再这样一天玩到黑当心JC来抓你"<br>
+"玩游戏又有什么事"<br>
+嗯?</p>
+</blockquote>
+<p>你回过身来看着他们</p>
+<p>什么被JC抓?什么玩意?<br>
+不是,玩游戏又不犯法.况且又不在他家,没用他手机没用他家电甚至连人都不是他家的,而且JC根本不会去管这么多,养成这13样本身就是家教问题.没有犯法的情况下JC根本就不会去管你这闲事,而且人家已成年,纯自个责任这是一件东西吗  </p>
+<blockquote>
+<p>"你别和我按道理,你再闹手机我给你收了"</p>
+</blockquote>
+<p>太正能量了<br>
+(你说了一句)</p>
+<p>不过确实<br>
+你得闭嘴<br>
+尽管你确实可以直接让他收,这本就不是你的<br>
+你知道<br>
+不过你却仍需要<br>
+闭嘴吧</p>
+<blockquote>
+<p>[视频内容:大致是一段一直玩游戏还问母亲要钱结果还是坐着灯丝的父母受不了找了"JC"来教育然后抓走了<br>
+"啊,放开我,放开我"<br>
+"跟我们走"<br>
+"放开我"<br>
+]</p>
+</blockquote>
+<p>我对我自己的学习倒不是太担心,但是<br>
+倘若真的如此,先扯开别的不谈<br>
+你的成绩是需要提高的,对吧<br>
+别人的成绩是需要提高的,是吗<br>
+所以你们都在提升,对吗<br>
+整个班,整个学校,整个世界都在提升,是吗<br>
+那好<br>
+整体水平上去了,是不是最低限度就会上去了呢<br>
+最低限度上去了,原本还行的,是不是需要继续往上了呢<br>
+还是说其实就会停止?<br>
+不会<br>
+就会这样,最低限度被拉的越来越高,直到最后所有人都不堪重负<br>
+为什么会有这种提升?<br>
+问得好!质量是不是要提上去?提上去了是不是还要更好?<br>
+很正常对吧<br>
+然后就这么,好着好着的就这样了<br>
+这还只是理想状态<br>
+现实中还有各种各样的东西,家庭期望自身期望,学校期望社会期望,以及道德伦理和你自己的胜负欲,还有各种P,更何况人还总是Explore和Get.我都不敢想象,把这些加进去,会成什么样子<br>
+这还只是理想状态下,这还只是我知道的,我经历过的<br>
+你的家庭是不是期望你更好呢?是不是给你立了一个Flag呢?<br>
+别人的家庭会不会期望别人也更好呢?<br>
+学校会不会期望你们将水平拉的趋于平稳呢?<br>
+你在努力死拼,别人是否也就不努力了呢?<br>
+人有许许多多,你不能够保证你就是No.1,况且这个标准还会被无限提高<br>
+这能怎么做呢?<br>
+你还被催着不断的变好,作出贡献<br>
+可你们之中的大多数最终还是过着两点一线的生活<br>
+这不是消极<br>
+这是事实<br>
+不然也不会有人去体会3*20~~~8m/s的自由落体是什么感觉</p>
+<p>说点别的<br>
+你很幸运,成功的靠着呼吸机续命勉强挺过了那一部分变态学习狂,进了一个好公司<br>
+然而你初来乍到<br>
+接下来的应该就不用我讲了吧?00后整顿职场应该也看的不少了<br>
+(想太多,这里说的是你被老油条整了)<br>
+就算这也不是<br>
+你很幸运,佛系着最后上去了<br>
+但你也并没有好到哪里去<br>
+我想上司和下属的SM虐恋应该也没少看吧?<br>
+(你在想啥呢,这里说的是每天都被老板呼来喝去的)<br>
+当然,就算这也不是,生活中哪里来的处处碰壁,哪里来的网络小说嘛,你说是不是<br>
+你创业了,你的父母很支持你<br>
+你破产了<br>
+不,你做了一个梦,梦到你破产了,现在的你是身价千亿的富豪<br>
+但你也并不安全<br>
+M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br>
+而再回过来看<br>
+你认为要完美的躲过所有关键节点,是你吗?<br>
+然而这也仍然还是理想化的世界<br>
+你认为我在制造信息差,没毛病<br>
+不过有多少"天之骄子"呢?一旦扯到现实,这一切就变了</p>
+<p>所以,洗洗睡吧,不要被P(UA)了,也没见得谁过的太好</p>
+<p>Anwser,或者说,属于你自己的,答案<br>
+不是每个人都有<br>
+不是每个人都能够找得到</p>
+<p>我并没有否定这个可能性但是,<br>
+我也不肯定这个可能性</p>
+   </div>
+
+   <div class="comments">
+   </div>
+
+   <button class="floating-btn" id="menuToggle" style="color: #fff">☰</button>
+
+   <div class="menu-mask" id="menuMask"></div>
+
+   <div class="side-menu" id="sideMenu">
+      <div class="menu-left" id="chapterList">
+      </div>
+
+      <div class="menu-right">
+         <div class="menu-buttons">
+            <button class="menu-btn" id="toBottomBtn">▼</button>
+            <button class="menu-btn" id="middleBtn">◎</button>
+            <button class="menu-btn" id="toTopBtn">▲</button>
+         </div>
+         <button class="close-btn" id="closeBtn">╳</button>
+      </div>
+   </div>
+
+   <script>
+      const menuToggle = document.getElementById('menuToggle');
+      const sideMenu = document.getElementById('sideMenu');
+      const menuMask = document.getElementById('menuMask');
+      const closeBtn = document.getElementById('closeBtn');
+      const toBottomBtn = document.getElementById('toBottomBtn');
+      const middleBtn = document.getElementById('middleBtn');
+      const toTopBtn = document.getElementById('toTopBtn');
+      const chapterList = document.getElementById('chapterList');
+      
+      // 改进的标题ID生成
+      document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+         const id = el.textContent.toLowerCase()
+                     .replace(/[^\w\s]/g, '')
+                     .replace(/\s+/g, '-')
+                     .substring(0, 50);
+         el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
+      });
+      
+      function applyTheme() {
+        // 优先读取 localStorage
+        const savedTheme = localStorage.getItem('theme');
+        
+        if (savedTheme) {
+          if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
+          } else {
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+          }
+        } else {
+          // 使用服务器配置的主题
+          const configTheme = "dark";
+          if (configTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
+          } else {
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
+          }
+        }
+      }
+      
+      applyTheme();
+      
+      // 生成章节导航
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+                          .filter(h => h.id && h.textContent.trim() !== '');
+      
+      headings.forEach(heading => {
+         const listItem = document.createElement('div');
+         const level = parseInt(heading.tagName.substring(1));
+         const isH2 = level === 2;
+         
+         listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
+         listItem.textContent = heading.textContent;
+         listItem.dataset.id = heading.id;
+         
+         listItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            closeMenu();
+         });
+         
+         chapterList.appendChild(listItem);
+      });
+      
+      // 菜单交互功能
+      menuToggle.addEventListener('click', (e) => {
+         e.stopPropagation();
+         sideMenu.classList.add('active');
+         menuMask.classList.add('active');
+         menuToggle.style.display = 'none';
+      });
+      
+      function closeMenu() {
+         sideMenu.classList.remove('active');
+         menuMask.classList.remove('active');
+         menuToggle.style.display = 'flex';
+      }
+      
+      closeBtn.addEventListener('click', (e) => {
+         e.stopPropagation();
+         closeMenu();
+      });
+      
+      menuMask.addEventListener('click', (e) => {
+         e.stopPropagation();
+         closeMenu();
+      });
+      
+      sideMenu.addEventListener('click', (e) => {
+         e.stopPropagation();
+      });
+      
+      toBottomBtn.addEventListener('click', (e) => {
+         e.stopPropagation();
+         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+         closeMenu();
+      });
+      
+      middleBtn.addEventListener('click', (e) => {
+         e.stopPropagation();
+         closeMenu();
+      });
+      
+      toTopBtn.addEventListener('click', (e) => {
+         e.stopPropagation();
+         window.scrollTo({ top: 0, behavior: 'smooth' });
+         closeMenu();
+      });
+      
+      // 滚动进度指示器
+      function updateProgress() {
+         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+         const scrollPosition = window.scrollY;
+         const scrollPercent = Math.min(scrollPosition / scrollHeight, 1);
+         const redValue = Math.floor(scrollPercent * 255);
+         const color = `rgb(${redValue}, 0, 0)`;
+         menuToggle.style.backgroundColor = color;
+         menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
+      }
+      
+      window.addEventListener('scroll', updateProgress, { passive: true });
+      window.addEventListener('resize', updateProgress, { passive: true });
+      updateProgress();
+   </script>
+</body>
+
+</html>
