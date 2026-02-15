@@ -10,6 +10,15 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '16'
+  title: Gem-2
+  date: '2026-02-15'
+  tags:
+  - 记录
+  - 普通
+  content: 暂无简介
+  url: article/16.html
+  verticalTitle: Gem-2
 - id: '15'
   title: Gem-1
   date: '2026-02-15'
