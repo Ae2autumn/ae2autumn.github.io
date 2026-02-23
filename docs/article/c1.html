@@ -2416,13 +2416,15 @@ Fu~fu~<br>
         const toTopBtn = document.getElementById('toTopBtn');
         const chapterList = document.getElementById('chapterList');
    
-        // === 1. 标题ID生成 - 修复重复标题问题 ===
+        // === 1. 生成唯一ID（解决重复标题问题，采用第一个版本的逻辑）===
         let headingIdCounter = 0;
         const titleIdMap = new Map();
         
-        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
-          if (!el.textContent.trim()) return;
-          
+        const allHeadings = Array.from(
+          document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
+        ).filter(h => h.textContent.trim() !== '');
+   
+        allHeadings.forEach((el) => {
           const baseText = el.textContent.toLowerCase()
             .replace(/[^\w\s]/g, '')
             .replace(/\s+/g, '-')
@@ -2464,146 +2466,144 @@ Fu~fu~<br>
         }
         applyTheme();
    
-        // === 3. 生成章节导航 ===
-        const allHeadings = Array.from(
-          document.querySelectorAll('.content h1, .content h2, .content h3')
-        ).filter(h => h.id && h.textContent.trim() !== '');
+        // === 3. 生成章节导航（支持H1-H6，采用第一个版本的逻辑）===
+        let currentId = null; // 用于存储当前激活的ID
+        let observer = null; // 存储 Intersection Observer 实例
    
-        const headingInfoMap = [];
-        let lastActiveId = null;
-        let isScrolling = false;
-   
-        allHeadings.forEach((heading, index) => {
+        allHeadings.forEach((heading) => {
           const listItem = document.createElement('div');
           const level = parseInt(heading.tagName.substring(1));
-          const isH2 = level === 2;
-          const isH3 = level === 3;
-   
-          listItem.className = `chapter-item ${isH2 ? 'h2-item' : (isH3 ? 'h3-item' : 'h1-item')}`;
+          const cls = [
+            'h1-item', 'h2-item', 'h3-item', 'h4-item', 'h5-item', 'h6-item'
+          ][level-1] || 'h1-item';
+          
+          listItem.className = `chapter-item ${cls}`;
           listItem.textContent = heading.textContent;
-          listItem.dataset.id = heading.id; // 用于查找对应的DOM元素
-           
+          listItem.dataset.id = heading.id;
           listItem.style.wordWrap = 'break-word';
           listItem.style.wordBreak = 'break-word';
-   
-          // --- 修改点击处理 ---
-          // 移除了复杂的 mousedown/up/leave 逻辑，直接使用 click
+          
+          // 为菜单项添加点击事件
           listItem.addEventListener('click', (e) => {
             e.stopPropagation();
-            // 1. 清除所有高亮
-            clearAllActiveItems();
-            // 2. 滚动到目标标题
+            // 在点击时也设置当前高亮项
+            setActiveItem(heading.id);
             heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // 3. 设置当前点击的为高亮
-            setActiveMenuItem(heading.id);
-            // 4. 关闭菜单
             closeMenu();
           });
-   
+          
           chapterList.appendChild(listItem);
-   
-          headingInfoMap.push({
-            id: heading.id,
-            element: heading,
-            offsetTop: heading.offsetTop
-          });
         });
    
-        headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
-   
-        // --- 修复后的 setActiveMenuItem 函数 ---
-        function setActiveMenuItem(id) {
-          // 1. 总是先清除所有高亮状态
-          clearAllActiveItems();
-          // 2. 更新 lastActiveId
-          lastActiveId = id;
-          // 3. 查找并设置新高亮的元素
-          const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
-          if (newItem) {
-            newItem.classList.add('current');
+        // === 4. 使用 Intersection Observer 管理高亮状态（采用第二个版本的稳定逻辑）===
+        
+        function observeHeadings() {
+          if (observer) {
+            // 如果观察器已存在，先断开连接
+            observer.disconnect();
+          }
+          
+          const options = {
+            root: null, // 使用视口作为根
+            rootMargin: '-30% 0px -30% 0px', // 定义触发区域为中心上下各30%
+            threshold: 0.1 // 交叉比例阈值
+          };
+          
+          observer = new IntersectionObserver(entries => {
+            let closestEntry = null;
+            let minDistance = Infinity;
+            
+            // 遍历所有进入/退出交叉区域的条目
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                // 计算条目中心到视口中心的距离
+                const rect = entry.boundingClientRect;
+                const viewportCenter = window.innerHeight / 2;
+                const elementCenter = rect.top + rect.height / 2;
+                const distanceToCenter = Math.abs(elementCenter - viewportCenter);
+                
+                // 找到距离视口中心最近的条目
+                if (distanceToCenter < minDistance) {
+                  minDistance = distanceToCenter;
+                  closestEntry = entry;
+                }
+              }
+            });
+            
+            // 如果找到了最近的条目，则更新高亮状态
+            if (closestEntry) {
+              currentId = closestEntry.target.id;
+              setActiveItem(currentId); // 调用统一的设置高亮函数
+              
+              // 如果侧边栏菜单是打开的，滚动到当前高亮项
+              if (sideMenu.classList.contains('active')) {
+                scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
+              }
+            }
+          }, options);
+          
+          // 开始观察所有相关的标题元素
+          allHeadings.forEach(h => observer.observe(h));
+        }
+        
+        // 统一的设置高亮项函数
+        function setActiveItem(id) {
+          // 移除所有之前的高亮状态
+          document.querySelectorAll('.chapter-item.current').forEach(item => {
+            item.classList.remove('current');
+          });
+          // 为当前ID对应的菜单项添加高亮状态
+          const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+          if (item) {
+            item.classList.add('current');
           }
         }
-   
-        // --- 新增辅助函数：清除所有高亮 ---
-        function clearAllActiveItems() {
-            document.querySelectorAll('.chapter-item.current').forEach(item => {
-                item.classList.remove('current');
-            });
-        }
-   
-        // === 4. 滚动监听与高亮逻辑 ===
-        function updateActiveChapterOnScroll() {
-          if (isScrolling) return;
-          isScrolling = true;
-          
-          requestAnimationFrame(() => {
-            const scrollPosition = window.scrollY + 100;
-            let activeHeadingId = null;
-            let minDistance = Infinity;
-   
-            for (let i = 0; i < headingInfoMap.length; i++) {
-              const heading = headingInfoMap[i];
-              const rect = heading.element.getBoundingClientRect();
-              const distance = Math.abs(rect.top);
-              
-              if (distance < minDistance && rect.top <= 200) {
-                minDistance = distance;
-                activeHeadingId = heading.id;
-              }
-            }
-   
-            if (!activeHeadingId && headingInfoMap.length > 0) {
-              activeHeadingId = headingInfoMap[0].id;
-            }
-   
-            // 只有当ID真正发生变化时才更新
-            if (activeHeadingId && activeHeadingId !== lastActiveId) {
-              // 使用修复后的函数
-              setActiveMenuItem(activeHeadingId);
-              
-              if (sideMenu.classList.contains('active')) {
-                scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
-              }
-            }
-            
-            isScrolling = false;
-          });
-        }
-   
-        // 修复后的 scrollToCenter 函数
-        function scrollToCenter(element) {
-          if (!element) return;
-          
+        
+        // 滚动菜单列表使指定项居中
+        function scrollToCenter(el) {
+          if (!el) return;
           const container = chapterList;
-          const elementHeight = element.offsetHeight;
-          const elementTop = element.offsetTop;
-          const containerHeight = container.clientHeight;
-          
-          const targetScrollTop = elementTop - (containerHeight - elementHeight) / 2;
-   
-          container.scrollTo({
-            top: Math.max(0, targetScrollTop),
-            behavior: 'smooth'
-          });
+          const targetScrollTop = el.offsetTop - (container.clientHeight - el.offsetHeight) / 2;
+          container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
         }
+        
+        // 初始化 Intersection Observer
+        observeHeadings();
    
-        window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
-   
+        // 页面加载完成后，初始化当前高亮项
         window.addEventListener('load', () => {
-          setTimeout(() => {
-            updateActiveChapterOnScroll();
-          }, 100);
+          requestAnimationFrame(() => {
+            let closestElement = null;
+            let minDistance = Infinity;
+            const viewportCenter = window.innerHeight / 2;
+            
+            // 遍历所有标题，找到初始位置下最接近视口中心的
+            allHeadings.forEach(heading => {
+              const rect = heading.getBoundingClientRect();
+              const elementCenter = rect.top + rect.height / 2;
+              const distanceToCenter = Math.abs(elementCenter - viewportCenter);
+              if (distanceToCenter < minDistance) {
+                minDistance = distanceToCenter;
+                closestElement = heading;
+              }
+            });
+            
+            // 如果找到了，则设置为当前高亮
+            if (closestElement && closestElement.id) {
+                currentId = closestElement.id;
+                setActiveItem(currentId);
+            }
+          });
         });
    
-        // === 5. 菜单控制 ===
+        // === 5. 菜单控制（保持不变）===
         menuToggle.addEventListener('click', (e) => {
           e.stopPropagation();
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
           menuToggle.style.display = 'none';
-          
-          if (lastActiveId) {
-            scrollToCenter(document.querySelector(`.chapter-item[data-id="${lastActiveId}"]`));
+          if (currentId) {
+            scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
           }
         });
    
@@ -2646,7 +2646,7 @@ Fu~fu~<br>
           closeMenu();
         });
    
-        // === 6. 滚动进度指示器 ===
+        // === 6. 滚动进度指示器（保持不变）===
         function updateProgress() {
           const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
           const scrollPosition = window.scrollY;
