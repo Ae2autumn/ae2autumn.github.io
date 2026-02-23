@@ -418,7 +418,7 @@
          background-color: #111;
          border: 1px solid #333;
          border-radius: 8px;
-         display: none;
+         display: none; /* 初始隐藏 */
          flex-direction: row;
          z-index: 999;
          overflow: hidden;
@@ -430,7 +430,7 @@
       }
 
       .side-menu.active {
-         display: flex;
+         display: flex; /* 显示时设为flex */
          animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       }
 
@@ -443,15 +443,15 @@
          width: 360px; /* 这个固定宽度可能需要调整 */
          max-width: 100%; /* 限制最大宽度 */
          padding: 20px;
-         overflow-y: auto;
-         scrollbar-width: none;
+         overflow-y: auto; /* 启用滚动 */
+         scrollbar-width: none; /* Firefox */
          transition: background-color 0.5s ease;
          /* 确保菜单内容换行 */
          word-wrap: break-word; 
          word-break: break-word; 
       }
 
-      .menu-left::-webkit-scrollbar { display: none; }
+      .menu-left::-webkit-scrollbar { display: none; } /* Chrome, Safari, Edge */
 
       .chapter-item {
          padding: 10px 0;
@@ -558,11 +558,11 @@
          height: 100%;
          background-color: rgba(0, 0, 0, 0.5);
          z-index: 998;
-         display: none;
+         display: none; /* 初始隐藏 */
          transition: background-color 0.5s ease;
       }
 
-      .menu-mask.active { display: block; }
+      .menu-mask.active { display: block; } /* 显示时设为block */
    </style>
 </head>
 
@@ -647,12 +647,13 @@
      }
      applyTheme();
 
-     // === 3. 生成章节导航 (支持H3) ===
+     // === 3. 生成章节导航 (支持H3) 并缓存标题信息 ===
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
 
      const headingsForTOC = allHeadings.slice(0);
+     const headingInfoMap = []; // 缓存标题信息
 
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
@@ -671,78 +672,113 @@
        listItem.addEventListener('click', (e) => {
          e.stopPropagation();
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-         closeMenu();
+         closeMenu(); // 点击后关闭菜单
        });
 
        chapterList.appendChild(listItem);
+
+       // 缓存标题的ID和offsetTop
+       headingInfoMap.push({
+         id: heading.id,
+         element: heading,
+         offsetTop: heading.offsetTop
+       });
      });
 
-     // === 4. Intersection Observer 实现 (追踪阅读进度) ===
-     let observer;
-     function observeHeadings() {
-         if (observer) observer.disconnect();
+     // 按照 offsetTop 排序，确保顺序正确
+     headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
 
-         const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
-         const options = {
-             rootMargin: '0px',
-             threshold: 0.5 // 当标题至少一半可见时触发
-         };
+     // === 4. 滚动监听与高亮逻辑 (解耦于菜单状态) ===
+     let isMenuOpen = false; // 添加一个标志来跟踪菜单状态
 
-         observer = new IntersectionObserver((entries) => {
-             entries.forEach(entry => {
-                 if (entry.isIntersecting) {
-                     setActiveMenuItem(entry.target.id);
-                 }
-             });
-         }, options);
+     function updateActiveChapterOnScroll() {
+         const scrollPosition = window.pageYOffset + 10; // 加一点偏移量，避免正好卡在边界
+         let activeHeadingId = null;
 
-         headings.forEach(heading => observer.observe(heading));
+         // 找到最后一个 offsetTop 小于等于当前滚动位置的标题
+         for (let i = headingInfoMap.length - 1; i >= 0; i--) {
+             if (scrollPosition >= headingInfoMap[i].offsetTop) {
+                 activeHeadingId = headingInfoMap[i].id;
+                 break;
+             }
+         }
+
+         // 更新菜单项高亮
+         if (activeHeadingId) {
+             setActiveMenuItem(activeHeadingId);
+             // 只有在菜单打开时才滚动居中
+             if (isMenuOpen) {
+                scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+             }
+         }
      }
 
      function setActiveMenuItem(id) {
-         const currentItem = document.querySelector('.chapter-item.current');
-         if (currentItem) {
-             currentItem.classList.remove('current');
-         }
+         // 移除所有当前激活项的类
+         document.querySelectorAll('.chapter-item.current').forEach(item => {
+             item.classList.remove('current');
+         });
 
+         // 为找到的ID对应的菜单项添加激活类
          const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
          if (newItem) {
              newItem.classList.add('current');
-             scrollToCenter(newItem);
          }
      }
 
+     // 修复后的 scrollToCenter 函数
      function scrollToCenter(element) {
+         if (!element) return; // 如果元素不存在，则退出
+         
          const container = chapterList;
-         const itemHeight = element.offsetHeight;
-         const containerScrollTop = container.scrollTop;
+         const containerRect = container.getBoundingClientRect();
+         const elementRect = element.getBoundingClientRect();
+         
+         // 计算元素相对于容器的偏移
+         const offsetTop = elementRect.top - containerRect.top + container.scrollTop;
          const containerHeight = container.clientHeight;
-         const itemOffsetTop = element.offsetTop - container.offsetTop;
+         const elementHeight = element.offsetHeight;
 
-         const scrollPosition = itemOffsetTop - (containerHeight / 2) + (itemHeight / 2);
+         // 计算滚动到的目标位置 (元素居中)
+         const targetScrollTop = offsetTop - (containerHeight / 2) + (elementHeight / 2);
 
+         // 执行平滑滚动
          container.scrollTo({
-             top: scrollPosition,
+             top: targetScrollTop,
              behavior: 'smooth'
          });
      }
 
-     // 初始化观察者
-     observeHeadings();
+     // 初始化滚动监听器
+     window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
 
-
-     // === 5. 菜单交互功能 ===
+     // 监听菜单开关事件，更新 isMenuOpen 标志
      menuToggle.addEventListener('click', (e) => {
        e.stopPropagation();
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
+       isMenuOpen = true; // 菜单打开
+       // 菜单打开后，强制更新一次高亮和位置
+       const currentScrollPos = window.pageYOffset + 10;
+       let activeHeadingId = null;
+       for (let i = headingInfoMap.length - 1; i >= 0; i--) {
+           if (currentScrollPos >= headingInfoMap[i].offsetTop) {
+               activeHeadingId = headingInfoMap[i].id;
+               break;
+           }
+       }
+       if (activeHeadingId) {
+           setActiveMenuItem(activeHeadingId);
+           scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+       }
      });
 
      function closeMenu() {
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
+       isMenuOpen = false; // 菜单关闭
      }
 
      closeBtn.addEventListener('click', (e) => {
