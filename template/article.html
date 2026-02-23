@@ -649,12 +649,13 @@
      }
      applyTheme();
 
-     // === 3. 生成章节导航 (支持H3) ===
+     // === 3. 生成章节导航 (支持H3) 并缓存标题信息 ===
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
 
      const headingsForTOC = allHeadings.slice(0);
+     const headingInfoMap = []; // 缓存标题信息
 
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
@@ -673,45 +674,45 @@
        listItem.addEventListener('click', (e) => {
          e.stopPropagation();
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-         closeMenu();
+         closeMenu(); // 点击后关闭菜单
        });
 
        chapterList.appendChild(listItem);
+
+       // 缓存标题的ID和offsetTop
+       headingInfoMap.push({
+         id: heading.id,
+         element: heading,
+         offsetTop: heading.offsetTop
+       });
      });
 
-     // === 4. Intersection Observer 实现 (追踪阅读进度) ===
-     let observer;
+     // 按照 offsetTop 排序，确保顺序正确
+     headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
+
+     // === 4. 滚动监听与高亮逻辑 (解耦于菜单状态) ===
      let isMenuOpen = false; // 添加一个标志来跟踪菜单状态
 
-     function observeHeadings() {
-         if (observer) observer.disconnect();
+     function updateActiveChapterOnScroll() {
+         const scrollPosition = window.pageYOffset + 10; // 加一点偏移量，避免正好卡在边界
+         let activeHeadingId = null;
 
-         const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
-         const options = {
-             rootMargin: '0px 0px -50% 0px', // 负的bottom margin，使触发点向上移动，更早地认为元素进入了视口中心下方
-             threshold: [0, 0.1] // 在元素刚开始进入或有少量可见时就触发
-         };
-
-         observer = new IntersectionObserver((entries) => {
-             // 过滤出所有相交的条目，并按文档顺序排序
-             const intersectingEntries = entries.filter(entry => entry.isIntersecting);
-             if (intersectingEntries.length > 0) {
-                 // 找到第一个（在文档流中最上面的）相交元素
-                 const firstIntersectingEntry = intersectingEntries.reduce((acc, curr) => {
-                     return acc.boundingClientRect.top <= curr.boundingClientRect.top ? acc : curr;
-                 });
-
-                 // 更新高亮，无论菜单是否打开
-                 setActiveMenuItem(firstIntersectingEntry.target.id);
-
-                 // 仅在菜单打开时执行滚动居中
-                 if (isMenuOpen) {
-                    scrollToCenter(document.querySelector(`.chapter-item[data-id="${firstIntersectingEntry.target.id}"]`));
-                 }
+         // 找到最后一个 offsetTop 小于等于当前滚动位置的标题
+         for (let i = headingInfoMap.length - 1; i >= 0; i--) {
+             if (scrollPosition >= headingInfoMap[i].offsetTop) {
+                 activeHeadingId = headingInfoMap[i].id;
+                 break;
              }
-         }, options);
+         }
 
-         headings.forEach(heading => observer.observe(heading));
+         // 更新菜单项高亮
+         if (activeHeadingId) {
+             setActiveMenuItem(activeHeadingId);
+             // 只有在菜单打开时才滚动居中
+             if (isMenuOpen) {
+                scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+             }
+         }
      }
 
      function setActiveMenuItem(id) {
@@ -750,9 +751,8 @@
          });
      }
 
-
-     // 初始化观察者
-     observeHeadings();
+     // 初始化滚动监听器
+     window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
 
      // 监听菜单开关事件，更新 isMenuOpen 标志
      menuToggle.addEventListener('click', (e) => {
@@ -761,6 +761,19 @@
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
        isMenuOpen = true; // 菜单打开
+       // 菜单打开后，强制更新一次高亮和位置
+       const currentScrollPos = window.pageYOffset + 10;
+       let activeHeadingId = null;
+       for (let i = headingInfoMap.length - 1; i >= 0; i--) {
+           if (currentScrollPos >= headingInfoMap[i].offsetTop) {
+               activeHeadingId = headingInfoMap[i].id;
+               break;
+           }
+       }
+       if (activeHeadingId) {
+           setActiveMenuItem(activeHeadingId);
+           scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+       }
      });
 
      function closeMenu() {
