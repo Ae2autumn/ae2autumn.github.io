@@ -579,7 +579,7 @@
    </div>
 
    <div class="content">
-      {{ article.content | safe | default('') }}
+      {{ article.content | safe | default('<h1>示例标题 1</h1><p>这里是第一部分的内容...</p><h2>二级标题 1.1</h2><p>这里是1.1节的内容...</p><h3>三级标题 1.1.1</h3><p>这里是1.1.1节的内容...</p><h1>示例标题 2</h1><p>这里是第二部分的内容...</p><h2>二级标题 2.1</h2><p>这里是2.1节的内容...</p><h3>三级标题 2.1.1</h3><p>这里是2.1.1节的内容...</p>') }}
    </div>
 
    <div class="comments">
@@ -685,28 +685,35 @@
          if (observer) observer.disconnect();
 
          const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
+         // 调整阈值，使其在标题刚进入视口或有一定可见度时触发
          const options = {
              rootMargin: '0px',
-             threshold: 0.5 // 当标题至少一半可见时触发
+             threshold: [0, 0.2] // 当元素顶部触及视口或20%高度在视口内时触发
          };
 
          observer = new IntersectionObserver((entries) => {
-             entries.forEach(entry => {
-                 if (entry.isIntersecting) {
-                     setActiveMenuItem(entry.target.id);
-                 }
-             });
+             // 过滤出所有相交的条目，并按文档顺序排序
+             const intersectingEntries = entries.filter(entry => entry.isIntersecting);
+             if (intersectingEntries.length > 0) {
+                 // 找到第一个（在文档流中最上面的）相交元素
+                 const firstIntersectingEntry = intersectingEntries.reduce((acc, curr) => {
+                     return acc.boundingClientRect.top <= curr.boundingClientRect.top ? acc : curr;
+                 });
+
+                 setActiveMenuItem(firstIntersectingEntry.target.id);
+             }
          }, options);
 
          headings.forEach(heading => observer.observe(heading));
      }
 
      function setActiveMenuItem(id) {
-         const currentItem = document.querySelector('.chapter-item.current');
-         if (currentItem) {
-             currentItem.classList.remove('current');
-         }
+         // 移除所有当前激活项的类
+         document.querySelectorAll('.chapter-item.current').forEach(item => {
+             item.classList.remove('current');
+         });
 
+         // 为找到的ID对应的菜单项添加激活类
          const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
          if (newItem) {
              newItem.classList.add('current');
