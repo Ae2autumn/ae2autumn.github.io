@@ -17,6 +17,13 @@ articles:
   content: 暂无简介
   url: article/c1.html
   verticalTitle: c1
+- id: gem
+  title: gem
+  date: '2026-02-23'
+  tags: []
+  content: 暂无简介
+  url: article/gem.html
+  verticalTitle: gem
 - id: '17'
   title: Gem-3
   date: '2026-02-15'
