@@ -728,14 +728,28 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
      const toTopBtn = document.getElementById('toTopBtn');
      const chapterList = document.getElementById('chapterList');
 
-     // === 1. 仅在 .content 内的标题生成唯一 ID ===
+     // === 1. 标题ID生成 - 修复重复标题问题 ===
+     // 使用唯一ID生成方案，避免重复标题冲突
+     let headingIdCounter = 0;
+     const titleIdMap = new Map(); // 用于跟踪重复标题
+     
      document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
-       const id = el.textContent.toLowerCase()
-                   .replace(/[^\w\s]/g, '')        // 移除特殊字符
-                   .replace(/\s+/g, '-')           // 空格转连字符
-                   .substring(0, 50);              // 截断防过长
-       el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
-       // 为生成的ID标题也应用换行规则（虽然CSS已覆盖）
+       if (!el.textContent.trim()) return;
+       
+       const baseText = el.textContent.toLowerCase()
+         .replace(/[^\w\s]/g, '')
+         .replace(/\s+/g, '-')
+         .substring(0, 50);
+       
+       // 检查是否已存在相同标题
+       if (titleIdMap.has(baseText)) {
+         titleIdMap.set(baseText, titleIdMap.get(baseText) + 1);
+         el.id = `${baseText}-${titleIdMap.get(baseText)}`;
+       } else {
+         titleIdMap.set(baseText, 1);
+         el.id = baseText || `heading-${++headingIdCounter}`;
+       }
+       
        el.style.wordWrap = 'break-word';
        el.style.wordBreak = 'break-word';
      });
@@ -764,15 +778,17 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
      }
      applyTheme();
 
-     // === 3. 生成章节导航 (支持H3) 并缓存标题信息 ===
+     // === 3. 生成章节导航 ===
      const allHeadings = Array.from(
-       document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
+       document.querySelectorAll('.content h1, .content h2, .content h3')
      ).filter(h => h.id && h.textContent.trim() !== '');
 
-     const headingsForTOC = allHeadings.slice(0);
-     const headingInfoMap = []; // 缓存标题信息
+     // 存储标题信息用于滚动监听
+     const headingInfoMap = [];
+     let lastActiveId = null; // 跟踪最后激活的ID，避免重复高亮
+     let isScrolling = false; // 防止滚动事件处理过快
 
-     headingsForTOC.forEach(heading => {
+     allHeadings.forEach((heading, index) => {
        const listItem = document.createElement('div');
        const level = parseInt(heading.tagName.substring(1));
        const isH2 = level === 2;
@@ -782,19 +798,38 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
        listItem.textContent = heading.textContent;
        listItem.dataset.id = heading.id;
        
-       // 为菜单项也应用换行规则
        listItem.style.wordWrap = 'break-word';
        listItem.style.wordBreak = 'break-word';
+
+       // 添加防抖点击事件，防止长按触发多次
+       let clickTimeout = null;
+       listItem.addEventListener('mousedown', (e) => {
+         clearTimeout(clickTimeout);
+         clickTimeout = setTimeout(() => {
+           e.stopPropagation();
+           e.preventDefault();
+         }, 200); // 200ms后认为是长按，阻止默认点击
+       });
+
+       listItem.addEventListener('mouseup', (e) => {
+         clearTimeout(clickTimeout);
+       });
+
+       listItem.addEventListener('mouseleave', () => {
+         clearTimeout(clickTimeout);
+       });
 
        listItem.addEventListener('click', (e) => {
          e.stopPropagation();
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-         closeMenu(); // 点击后关闭菜单
+         // 点击后设置该章节为当前高亮
+         setActiveMenuItem(heading.id, true);
+         closeMenu();
        });
 
        chapterList.appendChild(listItem);
 
-       // 缓存标题的ID和offsetTop
+       // 缓存标题信息
        headingInfoMap.push({
          id: heading.id,
          element: heading,
@@ -805,89 +840,104 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
      // 按照 offsetTop 排序，确保顺序正确
      headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
 
-     // === 4. 滚动监听与高亮逻辑 (解耦于菜单状态) ===
-     let isMenuOpen = false; // 添加一个标志来跟踪菜单状态
-
+     // === 4. 滚动监听与高亮逻辑 - 使用更精准的算法 ===
      function updateActiveChapterOnScroll() {
-         const scrollPosition = window.pageYOffset + 10; // 加一点偏移量，避免正好卡在边界
+       if (isScrolling) return;
+       isScrolling = true;
+       
+       requestAnimationFrame(() => {
+         const scrollPosition = window.scrollY + 100; // 偏移量，避免边界问题
          let activeHeadingId = null;
+         let minDistance = Infinity;
 
-         // 找到最后一个 offsetTop 小于等于当前滚动位置的标题
-         for (let i = headingInfoMap.length - 1; i >= 0; i--) {
-             if (scrollPosition >= headingInfoMap[i].offsetTop) {
-                 activeHeadingId = headingInfoMap[i].id;
-                 break;
-             }
+         // 找到距离视口顶部最近的标题
+         for (let i = 0; i < headingInfoMap.length; i++) {
+           const heading = headingInfoMap[i];
+           const rect = heading.element.getBoundingClientRect();
+           const distance = Math.abs(rect.top);
+           
+           if (distance < minDistance && rect.top <= 200) { // 标题在视口上方或接近视口
+             minDistance = distance;
+             activeHeadingId = heading.id;
+           }
          }
 
-         // 更新菜单项高亮
-         if (activeHeadingId) {
-             setActiveMenuItem(activeHeadingId);
-             // 只有在菜单打开时才滚动居中
-             if (isMenuOpen) {
-                scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
-             }
+         // 如果没有找到在视口上方的标题，则选择最靠近视口顶部的标题
+         if (!activeHeadingId && headingInfoMap.length > 0) {
+           activeHeadingId = headingInfoMap[0].id;
          }
+
+         // 只有在ID变化时才更新高亮，避免重复操作
+         if (activeHeadingId && activeHeadingId !== lastActiveId) {
+           setActiveMenuItem(activeHeadingId);
+           lastActiveId = activeHeadingId;
+           
+           // 只有在菜单打开时才滚动居中
+           if (sideMenu.classList.contains('active')) {
+             scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+           }
+         }
+         
+         isScrolling = false;
+       });
      }
 
-     function setActiveMenuItem(id) {
-         // 移除所有当前激活项的类
-         document.querySelectorAll('.chapter-item.current').forEach(item => {
-             item.classList.remove('current');
-         });
+     function setActiveMenuItem(id, isClick = false) {
+       // 如果已经是当前激活的，则跳过
+       if (lastActiveId === id && !isClick) return;
+       
+       // 移除所有当前激活项的类
+       document.querySelectorAll('.chapter-item.current').forEach(item => {
+         item.classList.remove('current');
+       });
 
-         // 为找到的ID对应的菜单项添加激活类
-         const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
-         if (newItem) {
-             newItem.classList.add('current');
-         }
+       // 为找到的ID对应的菜单项添加激活类
+       const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (newItem) {
+         newItem.classList.add('current');
+         lastActiveId = id;
+       }
      }
 
      // 修复后的 scrollToCenter 函数
      function scrollToCenter(element) {
-         if (!element) return; // 如果元素不存在，则退出
-         
-         const container = chapterList;
-         const containerRect = container.getBoundingClientRect();
-         const elementRect = element.getBoundingClientRect();
-         
-         // 计算元素相对于容器的偏移
-         const offsetTop = elementRect.top - containerRect.top + container.scrollTop;
-         const containerHeight = container.clientHeight;
-         const elementHeight = element.offsetHeight;
+       if (!element) return;
+       
+       const container = chapterList;
+       const elementHeight = element.offsetHeight;
+       const elementTop = element.offsetTop;
+       const containerHeight = container.clientHeight;
+       
+       // 计算滚动到的目标位置 (元素居中)
+       const targetScrollTop = elementTop - (containerHeight - elementHeight) / 2;
 
-         // 计算滚动到的目标位置 (元素居中)
-         const targetScrollTop = offsetTop - (containerHeight / 2) + (elementHeight / 2);
-
-         // 执行平滑滚动
-         container.scrollTo({
-             top: targetScrollTop,
-             behavior: 'smooth'
-         });
+       // 执行平滑滚动
+       container.scrollTo({
+         top: Math.max(0, targetScrollTop),
+         behavior: 'smooth'
+       });
      }
 
-     // 初始化滚动监听器
+     // 初始化滚动监听器 - 始终运行
      window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
 
-     // 监听菜单开关事件，更新 isMenuOpen 标志
+     // 初始高亮
+     window.addEventListener('load', () => {
+       setTimeout(() => {
+         updateActiveChapterOnScroll();
+       }, 100);
+     });
+
+     // === 5. 菜单控制 ===
      menuToggle.addEventListener('click', (e) => {
        e.stopPropagation();
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
-       isMenuOpen = true; // 菜单打开
-       // 菜单打开后，强制更新一次高亮和位置
-       const currentScrollPos = window.pageYOffset + 10;
-       let activeHeadingId = null;
-       for (let i = headingInfoMap.length - 1; i >= 0; i--) {
-           if (currentScrollPos >= headingInfoMap[i].offsetTop) {
-               activeHeadingId = headingInfoMap[i].id;
-               break;
-           }
-       }
-       if (activeHeadingId) {
-           setActiveMenuItem(activeHeadingId);
-           scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+       
+       // 菜单打开后，确保当前高亮章节居中
+       if (lastActiveId) {
+         scrollToCenter(document.querySelector(`.chapter-item[data-id="${lastActiveId}"]`));
        }
      });
 
@@ -895,7 +945,6 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
-       isMenuOpen = false; // 菜单关闭
      }
 
      closeBtn.addEventListener('click', (e) => {
@@ -920,7 +969,6 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
 
      middleBtn.addEventListener('click', (e) => {
        e.stopPropagation();
-       // 滚动到中间（可选：计算中间位置）
        const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
        window.scrollTo({ top: middle, behavior: 'smooth' });
        closeMenu();
