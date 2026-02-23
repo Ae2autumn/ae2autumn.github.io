@@ -604,281 +604,259 @@
    </div>
 
    <script>
-     const menuToggle = document.getElementById('menuToggle');
-     const sideMenu = document.getElementById('sideMenu');
-     const menuMask = document.getElementById('menuMask');
-     const closeBtn = document.getElementById('closeBtn');
-     const toBottomBtn = document.getElementById('toBottomBtn');
-     const middleBtn = document.getElementById('middleBtn');
-     const toTopBtn = document.getElementById('toTopBtn');
-     const chapterList = document.getElementById('chapterList');
-
-     // === 1. 标题ID生成 - 修复重复标题问题 ===
-     // 使用唯一ID生成方案，避免重复标题冲突
-     let headingIdCounter = 0;
-     const titleIdMap = new Map(); // 用于跟踪重复标题
-     
-     document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
-       if (!el.textContent.trim()) return;
-       
-       const baseText = el.textContent.toLowerCase()
-         .replace(/[^\w\s]/g, '')
-         .replace(/\s+/g, '-')
-         .substring(0, 50);
-       
-       // 检查是否已存在相同标题
-       if (titleIdMap.has(baseText)) {
-         titleIdMap.set(baseText, titleIdMap.get(baseText) + 1);
-         el.id = `${baseText}-${titleIdMap.get(baseText)}`;
-       } else {
-         titleIdMap.set(baseText, 1);
-         el.id = baseText || `heading-${++headingIdCounter}`;
-       }
-       
-       el.style.wordWrap = 'break-word';
-       el.style.wordBreak = 'break-word';
-     });
-
-     // === 2. 应用主题 ===
-     function applyTheme() {
-       const savedTheme = localStorage.getItem('theme');
-       if (savedTheme) {
-         if (savedTheme === 'light') {
-           document.body.classList.add('light-mode');
-           document.body.classList.remove('dark-mode');
-         } else {
-           document.body.classList.add('dark-mode');
-           document.body.classList.remove('light-mode');
-         }
-       } else {
-         const configTheme = "{{ blog.theme.mode }}";
-         if (configTheme === 'light') {
-           document.body.classList.add('light-mode');
-           document.body.classList.remove('dark-mode');
-         } else {
-           document.body.classList.add('dark-mode');
-           document.body.classList.remove('light-mode');
-         }
-       }
-     }
-     applyTheme();
-
-     // === 3. 生成章节导航 ===
-     const allHeadings = Array.from(
-       document.querySelectorAll('.content h1, .content h2, .content h3')
-     ).filter(h => h.id && h.textContent.trim() !== '');
-
-     // 存储标题信息用于滚动监听
-     const headingInfoMap = [];
-     let lastActiveId = null; // 跟踪最后激活的ID，避免重复高亮
-     let isScrolling = false; // 防止滚动事件处理过快
-
-     allHeadings.forEach((heading, index) => {
-       const listItem = document.createElement('div');
-       const level = parseInt(heading.tagName.substring(1));
-       const isH2 = level === 2;
-       const isH3 = level === 3;
-
-       listItem.className = `chapter-item ${isH2 ? 'h2-item' : (isH3 ? 'h3-item' : 'h1-item')}`;
-       listItem.textContent = heading.textContent;
-       listItem.dataset.id = heading.id;
-       
-       listItem.style.wordWrap = 'break-word';
-       listItem.style.wordBreak = 'break-word';
-
-       // 添加防抖点击事件，防止长按触发多次
-       let clickTimeout = null;
-       listItem.addEventListener('mousedown', (e) => {
-         clearTimeout(clickTimeout);
-         clickTimeout = setTimeout(() => {
-           e.stopPropagation();
-           e.preventDefault();
-         }, 200); // 200ms后认为是长按，阻止默认点击
-       });
-
-       listItem.addEventListener('mouseup', (e) => {
-         clearTimeout(clickTimeout);
-       });
-
-       listItem.addEventListener('mouseleave', () => {
-         clearTimeout(clickTimeout);
-       });
-
-       listItem.addEventListener('click', (e) => {
-         e.stopPropagation();
-         heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-         // 点击后设置该章节为当前高亮
-         setActiveMenuItem(heading.id, true);
-         closeMenu();
-       });
-
-       chapterList.appendChild(listItem);
-
-       // 缓存标题信息
-       headingInfoMap.push({
-         id: heading.id,
-         element: heading,
-         offsetTop: heading.offsetTop
-       });
-     });
-
-     // 按照 offsetTop 排序，确保顺序正确
-     headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
-
-     // === 4. 滚动监听与高亮逻辑 - 使用更精准的算法 ===
-     function updateActiveChapterOnScroll() {
-       if (isScrolling) return;
-       isScrolling = true;
-       
-       requestAnimationFrame(() => {
-         const scrollPosition = window.scrollY + 100; // 偏移量，避免边界问题
-         let activeHeadingId = null;
-         let minDistance = Infinity;
-
-         // 找到距离视口顶部最近的标题
-         for (let i = 0; i < headingInfoMap.length; i++) {
-           const heading = headingInfoMap[i];
-           const rect = heading.element.getBoundingClientRect();
-           const distance = Math.abs(rect.top);
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+        const menuMask = document.getElementById('menuMask');
+        const closeBtn = document.getElementById('closeBtn');
+        const toBottomBtn = document.getElementById('toBottomBtn');
+        const middleBtn = document.getElementById('middleBtn');
+        const toTopBtn = document.getElementById('toTopBtn');
+        const chapterList = document.getElementById('chapterList');
+   
+        // === 1. 标题ID生成 - 修复重复标题问题 ===
+        let headingIdCounter = 0;
+        const titleIdMap = new Map();
+        
+        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
+          if (!el.textContent.trim()) return;
+          
+          const baseText = el.textContent.toLowerCase()
+            .replace(/[^\w\s]/g, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 50);
+          
+          if (titleIdMap.has(baseText)) {
+            titleIdMap.set(baseText, titleIdMap.get(baseText) + 1);
+            el.id = `${baseText}-${titleIdMap.get(baseText)}`;
+          } else {
+            titleIdMap.set(baseText, 1);
+            el.id = baseText || `heading-${++headingIdCounter}`;
+          }
+          
+          el.style.wordWrap = 'break-word';
+          el.style.wordBreak = 'break-word';
+        });
+   
+        // === 2. 应用主题 ===
+        function applyTheme() {
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme) {
+            if (savedTheme === 'light') {
+              document.body.classList.add('light-mode');
+              document.body.classList.remove('dark-mode');
+            } else {
+              document.body.classList.add('dark-mode');
+              document.body.classList.remove('light-mode');
+            }
+          } else {
+            const configTheme = "{{ blog.theme.mode }}";
+            if (configTheme === 'light') {
+              document.body.classList.add('light-mode');
+              document.body.classList.remove('dark-mode');
+            } else {
+              document.body.classList.add('dark-mode');
+              document.body.classList.remove('light-mode');
+            }
+          }
+        }
+        applyTheme();
+   
+        // === 3. 生成章节导航 ===
+        const allHeadings = Array.from(
+          document.querySelectorAll('.content h1, .content h2, .content h3')
+        ).filter(h => h.id && h.textContent.trim() !== '');
+   
+        const headingInfoMap = [];
+        let lastActiveId = null;
+        let isScrolling = false;
+   
+        allHeadings.forEach((heading, index) => {
+          const listItem = document.createElement('div');
+          const level = parseInt(heading.tagName.substring(1));
+          const isH2 = level === 2;
+          const isH3 = level === 3;
+   
+          listItem.className = `chapter-item ${isH2 ? 'h2-item' : (isH3 ? 'h3-item' : 'h1-item')}`;
+          listItem.textContent = heading.textContent;
+          listItem.dataset.id = heading.id; // 用于查找对应的DOM元素
            
-           if (distance < minDistance && rect.top <= 200) { // 标题在视口上方或接近视口
-             minDistance = distance;
-             activeHeadingId = heading.id;
-           }
-         }
-
-         // 如果没有找到在视口上方的标题，则选择最靠近视口顶部的标题
-         if (!activeHeadingId && headingInfoMap.length > 0) {
-           activeHeadingId = headingInfoMap[0].id;
-         }
-
-         // 只有在ID变化时才更新高亮，避免重复操作
-         if (activeHeadingId && activeHeadingId !== lastActiveId) {
-           setActiveMenuItem(activeHeadingId);
-           lastActiveId = activeHeadingId;
-           
-           // 只有在菜单打开时才滚动居中
-           if (sideMenu.classList.contains('active')) {
-             scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
-           }
-         }
-         
-         isScrolling = false;
-       });
-     }
-
-     function setActiveMenuItem(id, isClick = false) {
-       // 如果已经是当前激活的，则跳过
-       if (lastActiveId === id && !isClick) return;
-       
-       // 移除所有当前激活项的类
-       document.querySelectorAll('.chapter-item.current').forEach(item => {
-         item.classList.remove('current');
-       });
-
-       // 为找到的ID对应的菜单项添加激活类
-       const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (newItem) {
-         newItem.classList.add('current');
-         lastActiveId = id;
-       }
-     }
-
-     // 修复后的 scrollToCenter 函数
-     function scrollToCenter(element) {
-       if (!element) return;
-       
-       const container = chapterList;
-       const elementHeight = element.offsetHeight;
-       const elementTop = element.offsetTop;
-       const containerHeight = container.clientHeight;
-       
-       // 计算滚动到的目标位置 (元素居中)
-       const targetScrollTop = elementTop - (containerHeight - elementHeight) / 2;
-
-       // 执行平滑滚动
-       container.scrollTo({
-         top: Math.max(0, targetScrollTop),
-         behavior: 'smooth'
-       });
-     }
-
-     // 初始化滚动监听器 - 始终运行
-     window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
-
-     // 初始高亮
-     window.addEventListener('load', () => {
-       setTimeout(() => {
-         updateActiveChapterOnScroll();
-       }, 100);
-     });
-
-     // === 5. 菜单控制 ===
-     menuToggle.addEventListener('click', (e) => {
-       e.stopPropagation();
-       sideMenu.classList.add('active');
-       menuMask.classList.add('active');
-       menuToggle.style.display = 'none';
-       
-       // 菜单打开后，确保当前高亮章节居中
-       if (lastActiveId) {
-         scrollToCenter(document.querySelector(`.chapter-item[data-id="${lastActiveId}"]`));
-       }
-     });
-
-     function closeMenu() {
-       sideMenu.classList.remove('active');
-       menuMask.classList.remove('active');
-       menuToggle.style.display = 'flex';
-     }
-
-     closeBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       closeMenu();
-     });
-
-     menuMask.addEventListener('click', (e) => {
-       e.stopPropagation();
-       closeMenu();
-     });
-
-     sideMenu.addEventListener('click', (e) => {
-       e.stopPropagation();
-     });
-
-     toBottomBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     middleBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-       window.scrollTo({ top: middle, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     toTopBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: 0, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     // === 6. 滚动进度指示器 ===
-     function updateProgress() {
-       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-       const scrollPosition = window.scrollY;
-       const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
-       const redValue = Math.floor(scrollPercent * 255);
-       const color = `rgb(${redValue}, 0, 0)`;
-       menuToggle.style.backgroundColor = color;
-       menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
-     }
-
-     window.addEventListener('scroll', updateProgress, { passive: true });
-     window.addEventListener('resize', updateProgress, { passive: true });
-     updateProgress();
+          listItem.style.wordWrap = 'break-word';
+          listItem.style.wordBreak = 'break-word';
+   
+          // --- 修改点击处理 ---
+          // 移除了复杂的 mousedown/up/leave 逻辑，直接使用 click
+          listItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // 1. 清除所有高亮
+            clearAllActiveItems();
+            // 2. 滚动到目标标题
+            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // 3. 设置当前点击的为高亮
+            setActiveMenuItem(heading.id);
+            // 4. 关闭菜单
+            closeMenu();
+          });
+   
+          chapterList.appendChild(listItem);
+   
+          headingInfoMap.push({
+            id: heading.id,
+            element: heading,
+            offsetTop: heading.offsetTop
+          });
+        });
+   
+        headingInfoMap.sort((a, b) => a.offsetTop - b.offsetTop);
+   
+        // --- 修复后的 setActiveMenuItem 函数 ---
+        function setActiveMenuItem(id) {
+          // 1. 总是先清除所有高亮状态
+          clearAllActiveItems();
+          // 2. 更新 lastActiveId
+          lastActiveId = id;
+          // 3. 查找并设置新高亮的元素
+          const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
+          if (newItem) {
+            newItem.classList.add('current');
+          }
+        }
+   
+        // --- 新增辅助函数：清除所有高亮 ---
+        function clearAllActiveItems() {
+            document.querySelectorAll('.chapter-item.current').forEach(item => {
+                item.classList.remove('current');
+            });
+        }
+   
+        // === 4. 滚动监听与高亮逻辑 ===
+        function updateActiveChapterOnScroll() {
+          if (isScrolling) return;
+          isScrolling = true;
+          
+          requestAnimationFrame(() => {
+            const scrollPosition = window.scrollY + 100;
+            let activeHeadingId = null;
+            let minDistance = Infinity;
+   
+            for (let i = 0; i < headingInfoMap.length; i++) {
+              const heading = headingInfoMap[i];
+              const rect = heading.element.getBoundingClientRect();
+              const distance = Math.abs(rect.top);
+              
+              if (distance < minDistance && rect.top <= 200) {
+                minDistance = distance;
+                activeHeadingId = heading.id;
+              }
+            }
+   
+            if (!activeHeadingId && headingInfoMap.length > 0) {
+              activeHeadingId = headingInfoMap[0].id;
+            }
+   
+            // 只有当ID真正发生变化时才更新
+            if (activeHeadingId && activeHeadingId !== lastActiveId) {
+              // 使用修复后的函数
+              setActiveMenuItem(activeHeadingId);
+              
+              if (sideMenu.classList.contains('active')) {
+                scrollToCenter(document.querySelector(`.chapter-item[data-id="${activeHeadingId}"]`));
+              }
+            }
+            
+            isScrolling = false;
+          });
+        }
+   
+        // 修复后的 scrollToCenter 函数
+        function scrollToCenter(element) {
+          if (!element) return;
+          
+          const container = chapterList;
+          const elementHeight = element.offsetHeight;
+          const elementTop = element.offsetTop;
+          const containerHeight = container.clientHeight;
+          
+          const targetScrollTop = elementTop - (containerHeight - elementHeight) / 2;
+   
+          container.scrollTo({
+            top: Math.max(0, targetScrollTop),
+            behavior: 'smooth'
+          });
+        }
+   
+        window.addEventListener('scroll', updateActiveChapterOnScroll, { passive: true });
+   
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            updateActiveChapterOnScroll();
+          }, 100);
+        });
+   
+        // === 5. 菜单控制 ===
+        menuToggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sideMenu.classList.add('active');
+          menuMask.classList.add('active');
+          menuToggle.style.display = 'none';
+          
+          if (lastActiveId) {
+            scrollToCenter(document.querySelector(`.chapter-item[data-id="${lastActiveId}"]`));
+          }
+        });
+   
+        function closeMenu() {
+          sideMenu.classList.remove('active');
+          menuMask.classList.remove('active');
+          menuToggle.style.display = 'flex';
+        }
+   
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeMenu();
+        });
+   
+        menuMask.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeMenu();
+        });
+   
+        sideMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+   
+        toBottomBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          closeMenu();
+        });
+   
+        middleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+          window.scrollTo({ top: middle, behavior: 'smooth' });
+          closeMenu();
+        });
+   
+        toTopBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          closeMenu();
+        });
+   
+        // === 6. 滚动进度指示器 ===
+        function updateProgress() {
+          const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const scrollPosition = window.scrollY;
+          const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
+          const redValue = Math.floor(scrollPercent * 255);
+          const color = `rgb(${redValue}, 0, 0)`;
+          menuToggle.style.backgroundColor = color;
+          menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
+        }
+   
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        window.addEventListener('resize', updateProgress, { passive: true });
+        updateProgress();
    </script>
 
 </body>
