@@ -21,7 +21,7 @@ BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 LOCAL_POSTS_DIR = os.path.join(DOCS_DIR, "posts")
 
 DEFAULT_ARTICLE_TEMPLATE = "article.html"
-DEFAULT_HOME_TEMPLATE = "default.html"
+DEFAULT_HOME_TEMPLATE = "home.html"
 
 # 创建输出目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
