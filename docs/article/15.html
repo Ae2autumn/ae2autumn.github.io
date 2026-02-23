@@ -5,12 +5,10 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Gem-1 - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
-   <!-- 使用同步加载确保图标可用 -->
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
    <style>
-      /* ==================== 重置 & 基础样式 ==================== */
-      /* 强制所有元素使用 border-box 盒模型，并处理长文本 */
+      /* ==================== 基础样式 ==================== */
       *, *::before, *::after {
          box-sizing: border-box;
       }
@@ -18,11 +16,6 @@
       * {
          margin: 0;
          padding: 0;
-      }
-
-      html {
-          /* 设置字体大小基准，影响 rem 计算 */
-          font-size: 16px; 
       }
 
       body {
@@ -34,9 +27,9 @@
          max-width: 1000px;
          margin: 0 auto;
          position: relative;
+         min-height: 200vh;
          transition: background-color 0.5s ease, color 0.5s ease;
-         /* 防止 body 本身成为滚动源 */
-         overflow-x: hidden; 
+         overflow-x: hidden;
       }
 
       /* ==================== 主题样式 ==================== */
@@ -50,78 +43,56 @@
          color: #000;
       }
       
-      /* 暗色模式组件样式 */
       body.dark-mode .header { border-bottom-color: #333; }
       body.dark-mode .title { color: #fff; }
       body.dark-mode .summary { color: #ccc; }
       body.dark-mode .date { color: #999; }
       body.dark-mode .tag { background-color: #333; color: #fff; }
-      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
-      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 { 
-         border-bottom-color: #333; 
+      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
+         border-bottom-color: #333;
          color: #fff;
       }
       body.dark-mode .comments { border-top-color: #333; }
-      body.dark-mode .floating-btn { 
-         background-color: #000; 
-         color: #fff; 
+      body.dark-mode .floating-btn {
+         background-color: #000;
+         color: #fff;
          box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
       }
-      body.dark-mode .side-menu { 
-         background-color: #111; 
+      body.dark-mode .side-menu {
+         background-color: #111;
          border-color: #333;
       }
       body.dark-mode .menu-left { background-color: #111; }
-      body.dark-mode .chapter-item { 
-         border-bottom-color: #222; 
-         color: #ccc;
-      }
+      body.dark-mode .chapter-item { border-bottom-color: #222; color: #ccc; }
       body.dark-mode .chapter-item.h2-item { color: #888; }
+      body.dark-mode .chapter-item.h3-item { color: #666; }
       body.dark-mode .menu-right { background-color: #222; }
-      body.dark-mode .close-btn { 
-         background-color: #222; 
-         color: #fff; 
-         border-top-color: #333;
-      }
+      body.dark-mode .close-btn { background-color: #222; color: #fff; border-top-color: #333; }
       body.dark-mode .menu-mask { background-color: rgba(0, 0, 0, 0.5); }
-      
-      /* 亮色模式组件样式 */
+
       body.light-mode .header { border-bottom-color: #ddd; }
       body.light-mode .title { color: #000; }
       body.light-mode .summary { color: #666; }
       body.light-mode .date { color: #777; }
       body.light-mode .tag { background-color: #eee; color: #000; }
-      body.light-mode h1, body.light-mode h2, body.light-mode h3, 
-      body.light-mode h4, body.light-mode h5, body.light-mode h6 { 
-         border-bottom-color: #ddd; 
+      body.light-mode h1, body.light-mode h2, body.light-mode h3,
+      body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+         border-bottom-color: #ddd;
          color: #000;
       }
       body.light-mode .comments { border-top-color: #ddd; }
-      body.light-mode .floating-btn { 
-         background-color: #fff; 
-         color: #000; 
-         box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
-      }
-      body.light-mode .side-menu { 
-         background-color: #fff; 
-         border-color: #ddd;
-         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      }
+      body.light-mode .floating-btn { background-color: #fff; color: #000; box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3); }
+      body.light-mode .side-menu { background-color: #fff; border-color: #ddd; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
       body.light-mode .menu-left { background-color: #fff; }
-      body.light-mode .chapter-item { 
-         border-bottom-color: #eee; 
-         color: #333;
-      }
+      body.light-mode .chapter-item { border-bottom-color: #eee; color: #333; }
       body.light-mode .chapter-item.h2-item { color: #666; }
+      body.light-mode .chapter-item.h3-item { color: #999; }
       body.light-mode .menu-right { background-color: #f5f5f5; }
       body.light-mode .menu-btn { color: #000; }
-      body.light-mode .close-btn { 
-         background-color: #f5f5f5; 
-         color: #000; 
-         border-top-color: #ddd;
-      }
+      body.light-mode .close-btn { background-color: #f5f5f5; color: #000; border-top-color: #ddd; }
       body.light-mode .menu-mask { background-color: rgba(0, 0, 0, 0.3); }
-      
+
       /* ==================== 文章内容样式 ==================== */
       .header {
          margin-bottom: 9px;
@@ -129,9 +100,9 @@
          padding-bottom: 3px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease;
-         /* 确保 header 不会因为内容过长而撑开 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
       .title {
@@ -139,9 +110,9 @@
          margin-bottom: 3px;
          color: #fff;
          transition: color 0.5s ease;
-         /* 关键：强制标题换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
       .summary {
@@ -149,9 +120,9 @@
          margin-bottom: 3px;
          color: #ccc;
          transition: color 0.5s ease;
-         /* 关键：强制摘要换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
       .date {
@@ -159,9 +130,6 @@
          font-size: 0.9rem;
          margin-bottom: 3px;
          transition: color 0.5s ease;
-         /* 日期一般较短，但也加上以防万一 */
-         word-wrap: break-word; 
-         word-break: break-word; 
       }
 
       .tags {
@@ -178,9 +146,6 @@
          border-radius: 3px;
          font-size: 0.9rem;
          transition: background-color 0.5s ease, color 0.5s ease;
-         /* 标签内文字通常不长，但保持一致性 */
-         word-wrap: break-word; 
-         word-break: break-word; 
       }
 
       .content {
@@ -188,191 +153,138 @@
          padding-top: 0px;
          margin-bottom: 50px;
          transition: color 0.5s ease;
-         /* 关键：确保内容区内的所有内容都能正常换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         /* 防止内容溢出 */
+         overflow-x: hidden;
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
       /* ==================== Markdown内容样式 ==================== */
-      /* 段落间距优化 */
       .content p {
          margin-top: 0;
          margin-bottom: 0.3em;
          line-height: 1.5;
-         /* 确保段落内长文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      /* 标题样式 - 添加换行处理 */
-      .content h1, .content h2, .content h3, 
+
+      .content h1, .content h2, .content h3,
       .content h4, .content h5, .content h6 {
          margin: 1.5em 0 0.5em;
          padding-bottom: 10px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease, color 0.5s ease;
-         /* 关键：强制标题换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      /* 列表样式 */
+
       .content ul, .content ol {
          margin: 0.8em 0;
          padding-left: 2em;
-         /* 确保列表项内长文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
       }
-      
+
       .content li {
          margin: 0.3em 0;
          line-height: 1.6;
-         /* 确保列表项内长文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      /* 代码块样式 */
+
       .content pre {
          margin: 1em 0;
          padding: 1em;
          background-color: #f5f5f5;
          border-radius: 4px;
-         /* 代码块需要横向滚动而不是换行，这通常是正确的 */
          overflow-x: auto;
-         white-space: pre; /* 保持代码格式 */
+         white-space: pre;
+         max-width: 100%;
       }
-      
-      body.dark-mode .content pre {
-         background-color: #2d2d2d;
-         color: #f8f8f2;
-      }
-      
+
+      body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
+
       .content code {
          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
          font-size: 0.9em;
-         /* 行内代码块也应遵循换行规则，但 pre 已处理整体 */
-         word-wrap: break-word; 
-         word-break: break-word; 
       }
-      
+
       .content p code {
          background-color: #f5f5f5;
          padding: 0.2em 0.4em;
          border-radius: 3px;
-         /* 行内代码块本身不应成为换行点，但如果父元素换行，它会随之移动 */
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      body.dark-mode .content p code {
-         background-color: #3a3a3a;
-         color: #f8f8f2;
-      }
-      
-      /* 引用块样式 */
+
+      body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
+
       .content blockquote {
          margin: 1em 0;
          padding: 0.5em 1em;
          border-left: 4px solid #ddd;
          background-color: #f9f9f9;
-        color: #666;
-        border-radius: 5px;
-        /* 确保引用块内长文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         color: #666;
+         border-radius: 5px;
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      body.dark-mode .content blockquote {
-        border-left-color: #555;
-        background-color: #2a2a2a;
-        color: #ccc;
-      }
-      
-      /* 表格样式 - 表格是特殊元素，可能需要单独处理 */
-      .table-wrapper {
-        overflow-x: auto; /* 允许表格水平滚动 */
-        margin: 20px 0;
-        /* 防止 wrapper 本身被撑宽 */
-        max-width: 100%; 
-      }
-      
+
+      body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
+
+      .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
+
       .content table {
-        margin: 1em 0;
-        border-collapse: collapse;
-        width: auto; /* 让表格根据内容调整，但配合 wrapper 滚动 */
-        max-width: 100%; /* 表格最大不超过容器 */
-        min-width: fit-content; /* 防止表格过度压缩 */
+         margin: 1em 0;
+         border-collapse: collapse;
+         width: 100%;
+         max-width: 100%;
       }
-      
+
       .content th, .content td {
-        border: 1px solid #ddd;
-        padding: 0.5em 1em;
-        text-align: left;
-        max-width: 300px; /* 限制单元格最大宽度，强制内容换行 */
-        word-wrap: break-word; /* 在单元格内换行 */
-        word-break: break-word; /* 在单元格内换行 */
+         border: 1px solid #ddd;
+         padding: 0.5em 1em;
+         text-align: left;
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
+         max-width: 300px;
       }
-      
-      .content th {
-        background-color: #f5f5f5;
-        font-weight: 600;
-      }
-      
-      body.dark-mode .content th {
-        background-color: #333;
-        border-color: #444;
-      }
-      
-      body.dark-mode .content td {
-        border-color: #444;
-      }
-      
-      /* 图片样式 */
-      .content img {
-        max-width: 100%;
-        height: auto;
-        margin: 1em 0;
-        border-radius: 4px;
-        /* 防止图片过大撑开容器 */
-        display: block; 
-      }
-      
-      /* 分隔线样式 */
-      .content hr {
-        margin: 2em 0;
-        border: none;
-        border-top: 1px solid #ddd;
-        /* 防止 hr 被撑宽 */
-        max-width: 100%; 
-        box-sizing: content-box; /* 确保边框不影响总宽度 */
-      }
-      
-      /* 链接样式 */
+
+      .content th { background-color: #f5f5f5; font-weight: 600; }
+      body.dark-mode .content th { background-color: #333; border-color: #444; }
+      body.dark-mode .content td { border-color: #444; }
+
+      .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
+
+      .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
+
       .content a {
-        color: #4da6ff;
-        text-decoration: none;
-        border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
-        transition: all 0.3s ease;
-        /* 确保链接内长文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         color: #4da6ff;
+         text-decoration: none;
+         border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+         transition: all 0.3s ease;
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
-      
-      body.dark-mode .content a {
-        color: #6bb8ff;
-        border-bottom: 1px dotted rgba(107, 184, 255, 0.5);
-      }
-      
+
+      body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107, 184, 255, 0.5); }
+
       .content a:hover {
-        color: #fff;
-        border-bottom: 1px solid rgba(77, 166, 255, 0.8);
-        background-color: rgba(77, 166, 255, 0.1);
+         color: #fff;
+         border-bottom: 1px solid rgba(77, 166, 255, 0.8);
+         background-color: rgba(77, 166, 255, 0.1);
       }
-      
+
       body.dark-mode .content a:hover {
-        color: #fff;
-        border-bottom: 1px solid rgba(107, 184, 255, 0.8);
-        background-color: rgba(107, 184, 255, 0.1);
+         color: #fff;
+         border-bottom: 1px solid rgba(107, 184, 255, 0.8);
+         background-color: rgba(107, 184, 255, 0.1);
       }
 
       /* ==================== 侧边菜单样式 ==================== */
@@ -381,9 +293,6 @@
          padding: 20px;
          border-top: 1px solid #333;
          transition: border-color 0.5s ease;
-         /* 确保评论区相关文本换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
       }
 
       .floating-btn {
@@ -405,7 +314,6 @@
          border: none;
          outline: none;
          transition: background-color 0.5s ease, box-shadow 0.5s ease;
-         /* 固定按钮不受内容影响 */
       }
 
       .side-menu {
@@ -417,19 +325,18 @@
          background-color: #111;
          border: 1px solid #333;
          border-radius: 8px;
-         display: none; /* 初始隐藏 */
+         display: none;
          flex-direction: row;
          z-index: 999;
          overflow: hidden;
          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
          transform-origin: bottom right;
          transition: background-color 0.5s ease, border-color 0.5s ease;
-         /* 确保菜单自身不被内容撑宽 */
-         max-width: calc(100vw - 60px); 
+         max-width: calc(100vw - 60px);
       }
 
       .side-menu.active {
-         display: flex; /* 显示时设为flex */
+         display: flex;
          animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       }
 
@@ -439,58 +346,41 @@
       }
 
       .menu-left {
-         width: 360px; /* 这个固定宽度可能需要调整 */
-         max-width: 100%; /* 限制最大宽度 */
+         width: 200px;
          padding: 20px;
-         overflow-y: auto; /* 启用滚动 */
-         scrollbar-width: none; /* Firefox */
+         overflow-y: auto;
+         scrollbar-width: none;
          transition: background-color 0.5s ease;
-         /* 确保菜单内容换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
-      .menu-left::-webkit-scrollbar { display: none; } /* Chrome, Safari, Edge */
+      .menu-left::-webkit-scrollbar { display: none; }
 
       .chapter-item {
          padding: 10px 0;
          border-bottom: 1px solid #222;
          cursor: pointer;
          color: #ccc;
-         transition: all 0.2s;
-         /* 确保章节标题换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
+         transition: color 0.2s, padding-left 0.2s;
+         word-wrap: break-word;
+         word-break: break-word;
+         overflow-wrap: break-word;
       }
 
+      /* 层级缩进 */
       .chapter-item.h1-item { padding-left: 0; }
-      .chapter-item.h2-item { 
-         padding-left: 20px; 
-         color: #888;
-         font-size: 0.9em;
-         /* 确保子章节标题换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
-      }
-      .chapter-item.h3-item { 
-         padding-left: 40px; 
-         color: #aaa; /* 可选：给H3一个不同的默认色 */
-         font-size: 0.85em;
-         /* 确保子章节标题换行 */
-         word-wrap: break-word; 
-         word-break: break-word; 
-      }
+      .chapter-item.h2-item { padding-left: 14px; color: #888; font-size: 0.9em; }
+      .chapter-item.h3-item { padding-left: 28px; color: #666; font-size: 0.85em; }
 
       .chapter-item:hover { color: #f00; }
       .chapter-item.h1-item:hover { padding-left: 5px; }
-      .chapter-item.h2-item:hover { padding-left: 25px; }
-      .chapter-item.h3-item:hover { padding-left: 45px; }
+      .chapter-item.h2-item:hover { padding-left: 19px; }
+      .chapter-item.h3-item:hover { padding-left: 33px; }
 
-      /* 高亮样式 - 仅改变颜色为红色 */
-      .chapter-item.current {
-         color: red;
-      }
-
+      /* 高亮：仅文字变红，无背景无粗体 */
+      .chapter-item.current { color: red; }
 
       .menu-right {
          width: 50px;
@@ -529,10 +419,7 @@
          align-items: center;
       }
 
-      .menu-btn:hover {
-         color: #f00;
-         background-color: rgba(255, 0, 0, 0.1);
-      }
+      .menu-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.1); }
 
       .close-btn {
          height: 50px;
@@ -557,11 +444,11 @@
          height: 100%;
          background-color: rgba(0, 0, 0, 0.5);
          z-index: 998;
-         display: none; /* 初始隐藏 */
+         display: none;
          transition: background-color 0.5s ease;
       }
 
-      .menu-mask.active { display: block; } /* 显示时设为block */
+      .menu-mask.active { display: block; }
    </style>
 </head>
 
@@ -789,17 +676,14 @@
 <p>回头见。</p>
    </div>
 
-   <div class="comments">
-   </div>
+   <div class="comments"></div>
 
    <button class="floating-btn" id="menuToggle" style="color: #fff">☰</button>
 
    <div class="menu-mask" id="menuMask"></div>
 
    <div class="side-menu" id="sideMenu">
-      <div class="menu-left" id="chapterList">
-      </div>
-
+      <div class="menu-left" id="chapterList"></div>
       <div class="menu-right">
          <div class="menu-buttons">
             <button class="menu-btn" id="toBottomBtn">▼</button>
@@ -811,215 +695,165 @@
    </div>
 
    <script>
-      const menuToggle = document.getElementById('menuToggle');
-      const sideMenu = document.getElementById('sideMenu');
-      const menuMask = document.getElementById('menuMask');
-      const closeBtn = document.getElementById('closeBtn');
-      const toBottomBtn = document.getElementById('toBottomBtn');
-      const middleBtn = document.getElementById('middleBtn');
-      const toTopBtn = document.getElementById('toTopBtn');
-      const chapterList = document.getElementById('chapterList');
-      
-      // === 1. 生成唯一ID ===
-      const allHeadings = Array.from(
-        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
-      ).filter(h => h.textContent.trim() !== '');
-      
-      allHeadings.forEach((el, index) => {
-        const baseId = el.textContent.toLowerCase()
-          .replace(/[^\w\s]/g, '')
-          .replace(/\s+/g, '-')
-          .substring(0, 50);
-        el.id = baseId ? `${baseId}-${index}` : `heading-${index}`;
-        el.style.wordWrap = 'break-word';
-        el.style.wordBreak = 'break-word';
-      });
-      
-      // === 2. 应用主题 ===
-      function applyTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-          if (savedTheme === 'light') {
-            document.body.classList.add('light-mode');
-            document.body.classList.remove('dark-mode');
-          } else {
-            document.body.classList.add('dark-mode');
-            document.body.classList.remove('light-mode');
-          }
-        } else {
-          const configTheme = "dark";
-          if (configTheme === 'light') {
-            document.body.classList.add('light-mode');
-            document.body.classList.remove('dark-mode');
-          } else {
-            document.body.classList.add('dark-mode');
-            document.body.classList.remove('light-mode');
-          }
-        }
-      }
-      applyTheme();
-      
-      // === 3. 生成章节导航 ===
-      let currentId = null;
-      let observer = null;
-      
-      allHeadings.forEach((heading) => {
-        const listItem = document.createElement('div');
-        const level = parseInt(heading.tagName.substring(1));
-        const cls = [
-          'h1-item', 'h2-item', 'h3-item', 'h4-item', 'h5-item', 'h6-item'
-        ][level-1] || 'h1-item';
-        
-        listItem.className = `chapter-item ${cls}`;
-        listItem.textContent = heading.textContent;
-        listItem.dataset.id = heading.id;
-        listItem.style.wordWrap = 'break-word';
-        listItem.style.wordBreak = 'break-word';
-        
-        listItem.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setActiveItem(heading.id);
-          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          closeMenu();
-        });
-        
-        chapterList.appendChild(listItem);
-      });
-      
-      // === 4. Intersection Observer 高亮逻辑 ===
-      function observeHeadings() {
-        if (observer) observer.disconnect();
-        
-        const options = {
-          root: null,
-          rootMargin: '-30% 0px -30% 0px',
-          threshold: 0.1
-        };
-        
-        observer = new IntersectionObserver(entries => {
-          let closestEntry = null;
-          let minDistance = Infinity;
-          
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const rect = entry.boundingClientRect;
-              const viewportCenter = window.innerHeight / 2;
-              const elementCenter = rect.top + rect.height / 2;
-              const distanceToCenter = Math.abs(elementCenter - viewportCenter);
-              
-              if (distanceToCenter < minDistance) {
-                minDistance = distanceToCenter;
-                closestEntry = entry;
-              }
-            }
-          });
-          
-          if (closestEntry) {
-            currentId = closestEntry.target.id;
-            setActiveItem(currentId);
-            
-            if (sideMenu.classList.contains('active')) {
-              scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
-            }
-          }
-        }, options);
-        
-        allHeadings.forEach(h => observer.observe(h));
-      }
-      
-      function setActiveItem(id) {
-        document.querySelectorAll('.chapter-item.current').forEach(item => {
-          item.classList.remove('current');
-        });
-        const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-        if (item) item.classList.add('current');
-      }
-      
-      function scrollToCenter(el) {
-        if (!el) return;
-        const container = chapterList;
-        const targetScrollTop = el.offsetTop - (container.clientHeight - el.offsetHeight) / 2;
-        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
-      }
-      
-      observeHeadings();
-      
-      window.addEventListener('load', () => {
-        requestAnimationFrame(() => {
-          let closestElement = null;
-          let minDistance = Infinity;
-          const viewportCenter = window.innerHeight / 2;
-          
-          allHeadings.forEach(heading => {
-            const rect = heading.getBoundingClientRect();
-            const elementCenter = rect.top + rect.height / 2;
-            const distanceToCenter = Math.abs(elementCenter - viewportCenter);
-            if (distanceToCenter < minDistance) {
-              minDistance = distanceToCenter;
-              closestElement = heading;
-            }
-          });
-          
-          if (closestElement && closestElement.id) {
-            currentId = closestElement.id;
-            setActiveItem(currentId);
-          }
-        });
-      });
-      
-      // === 5. 菜单控制 ===
-      menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sideMenu.classList.add('active');
-        menuMask.classList.add('active');
-        menuToggle.style.display = 'none';
-        if (currentId) {
-          scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
-        }
-      });
-      
-      function closeMenu() {
-        sideMenu.classList.remove('active');
-        menuMask.classList.remove('active');
-        menuToggle.style.display = 'flex';
-      }
-      
-      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
-      menuMask.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
-      sideMenu.addEventListener('click', (e) => e.stopPropagation());
-      
-      toBottomBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        closeMenu();
-      });
-      
-      middleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-        window.scrollTo({ top: middle, behavior: 'smooth' });
-        closeMenu();
-      });
-      
-      toTopBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        closeMenu();
-      });
-      
-      // === 6. 滚动进度指示器 ===
-      function updateProgress() {
-        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const scrollPosition = window.scrollY;
-        const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
-        const redValue = Math.floor(scrollPercent * 255);
-        menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
-        menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
-      }
-      
-      window.addEventListener('scroll', updateProgress, { passive: true });
-      window.addEventListener('resize', updateProgress, { passive: true });
-      updateProgress();
+     const menuToggle = document.getElementById('menuToggle');
+     const sideMenu   = document.getElementById('sideMenu');
+     const menuMask   = document.getElementById('menuMask');
+     const closeBtn   = document.getElementById('closeBtn');
+     const toBottomBtn = document.getElementById('toBottomBtn');
+     const middleBtn  = document.getElementById('middleBtn');
+     const toTopBtn   = document.getElementById('toTopBtn');
+     const chapterList = document.getElementById('chapterList');
+
+     // === 1. 收集 h1/h2/h3，生成唯一 ID ===
+     const allHeadings = Array.from(
+       document.querySelectorAll('.content h1, .content h2, .content h3')
+     ).filter(h => h.textContent.trim() !== '');
+
+     allHeadings.forEach((el, index) => {
+       el.id = `heading-${index}`;
+     });
+
+     // === 2. 应用主题 ===
+     function applyTheme() {
+       const savedTheme = localStorage.getItem('theme');
+       const configTheme = "dark";
+       const mode = savedTheme || configTheme;
+       document.body.classList.toggle('light-mode', mode === 'light');
+       document.body.classList.toggle('dark-mode', mode !== 'light');
+     }
+     applyTheme();
+
+     // === 3. 生成章节导航 ===
+     allHeadings.forEach(heading => {
+       const listItem = document.createElement('div');
+       const level = parseInt(heading.tagName.substring(1)); // 1, 2, 或 3
+
+       const classMap = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
+       listItem.className = `chapter-item ${classMap[level] || 'h1-item'}`;
+       listItem.textContent = heading.textContent;
+       listItem.dataset.id = heading.id;
+
+       // 平滑滚动跳转
+       listItem.addEventListener('click', (e) => {
+         e.stopPropagation();
+         heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+         closeMenu();
+       });
+
+       chapterList.appendChild(listItem);
+     });
+
+     // === 4. 高亮 & 进度追踪 ===
+     let currentId = null;
+
+     // 设置高亮项
+     function setActiveItem(id) {
+       document.querySelectorAll('.chapter-item.current').forEach(i => i.classList.remove('current'));
+       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (item) item.classList.add('current');
+     }
+
+     // 让高亮项在菜单列表中居中显示
+     function scrollMenuToItem(id) {
+       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (!item) return;
+       const container = chapterList;
+       const itemTop = item.offsetTop;
+       const itemHeight = item.offsetHeight;
+       const containerHeight = container.clientHeight;
+       const scrollTarget = itemTop - (containerHeight - itemHeight) / 2;
+       // 只有内容超出可滚动范围时才滚动
+       if (container.scrollHeight > containerHeight) {
+         container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+       }
+     }
+
+     // 根据滚动位置计算当前标题
+     function updateActiveHeading() {
+       if (allHeadings.length === 0) return;
+
+       const scrollY = window.scrollY;
+       const offset = 80; // 距顶部多少像素内算"当前"
+       let current = allHeadings[0]; // 默认第一个
+
+       for (let i = 0; i < allHeadings.length; i++) {
+         const top = allHeadings[i].getBoundingClientRect().top + scrollY;
+         if (top <= scrollY + offset) {
+           current = allHeadings[i];
+         } else {
+           break;
+         }
+       }
+
+       if (current.id !== currentId) {
+         currentId = current.id;
+         setActiveItem(currentId);
+         // 无论菜单是否打开，都更新内部滚动位置
+         scrollMenuToItem(currentId);
+       }
+     }
+
+     // 页面加载后默认高亮第一项
+     if (allHeadings.length > 0) {
+       currentId = allHeadings[0].id;
+       setActiveItem(currentId);
+     }
+
+     // 滚动时持续更新，菜单开关与否都生效
+     window.addEventListener('scroll', updateActiveHeading, { passive: true });
+
+     // === 5. 菜单控制 ===
+     menuToggle.addEventListener('click', (e) => {
+       e.stopPropagation();
+       sideMenu.classList.add('active');
+       menuMask.classList.add('active');
+       menuToggle.style.display = 'none';
+       // 打开时立刻滚动到当前高亮项
+       if (currentId) scrollMenuToItem(currentId);
+     });
+
+     function closeMenu() {
+       sideMenu.classList.remove('active');
+       menuMask.classList.remove('active');
+       menuToggle.style.display = 'flex';
+     }
+
+     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+     menuMask.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+     sideMenu.addEventListener('click', (e) => e.stopPropagation());
+
+     toBottomBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+       closeMenu();
+     });
+
+     middleBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+       window.scrollTo({ top: middle, behavior: 'smooth' });
+       closeMenu();
+     });
+
+     toTopBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+       closeMenu();
+     });
+
+     // === 6. 滚动进度指示器 ===
+     function updateProgress() {
+       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+       const scrollPosition = window.scrollY;
+       const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
+       const redValue = Math.floor(scrollPercent * 255);
+       menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
+       menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
+     }
+
+     window.addEventListener('scroll', updateProgress, { passive: true });
+     window.addEventListener('resize', updateProgress, { passive: true });
+     updateProgress();
    </script>
 
 </body>
