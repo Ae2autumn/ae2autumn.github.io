@@ -18,7 +18,7 @@ OMD_JSON = os.path.join(OMD_DIR, "articles.json")
 BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 
 # 新增：本地 Posts 目录
-LOCAL_POSTS_DIR = os.path.join(BASE_DIR, ".docs", "posts")
+LOCAL_POSTS_DIR = os.path.join(BASE_DIR, "posts")
 
 DEFAULT_ARTICLE_TEMPLATE = "article.html"
 DEFAULT_HOME_TEMPLATE = "home.html"
