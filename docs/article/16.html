@@ -9,17 +9,26 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
    <style>
-      /* ==================== 基础样式 ==================== */
+      /* ==================== 重置 & 基础样式 ==================== */
+      /* 强制所有元素使用 border-box 盒模型，并处理长文本 */
+      *, *::before, *::after {
+         box-sizing: border-box;
+      }
+
       * {
          margin: 0;
          padding: 0;
-         box-sizing: border-box;
+      }
+
+      html {
+          /* 设置字体大小基准，影响 rem 计算 */
+          font-size: 16px; 
       }
 
       body {
          background-color: #0d0d0d;
          color: #fff;
-         font-family: Arial, sans-serif;
+         font-family: Arial, sans-serif, "Microsoft YaHei UI", "Microsoft YaHei"; /* 添加中文字体备选 */
          line-height: 1.6;
          padding: 20px;
          max-width: 1000px;
@@ -27,6 +36,8 @@
          position: relative;
          min-height: 200vh;
          transition: background-color 0.5s ease, color 0.5s ease;
+         /* 防止 body 本身成为滚动源 */
+         overflow-x: hidden; 
       }
 
       /* ==================== 主题样式 ==================== */
@@ -119,6 +130,9 @@
          padding-bottom: 3px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease;
+         /* 确保 header 不会因为内容过长而撑开 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .title {
@@ -126,6 +140,9 @@
          margin-bottom: 3px;
          color: #fff;
          transition: color 0.5s ease;
+         /* 关键：强制标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .summary {
@@ -133,6 +150,9 @@
          margin-bottom: 3px;
          color: #ccc;
          transition: color 0.5s ease;
+         /* 关键：强制摘要换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .date {
@@ -140,6 +160,9 @@
          font-size: 0.9rem;
          margin-bottom: 3px;
          transition: color 0.5s ease;
+         /* 日期一般较短，但也加上以防万一 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .tags {
@@ -156,6 +179,9 @@
          border-radius: 3px;
          font-size: 0.9rem;
          transition: background-color 0.5s ease, color 0.5s ease;
+         /* 标签内文字通常不长，但保持一致性 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .content {
@@ -163,6 +189,9 @@
          padding-top: 0px;
          margin-bottom: 50px;
          transition: color 0.5s ease;
+         /* 关键：确保内容区内的所有内容都能正常换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       /* ==================== Markdown内容样式 ==================== */
@@ -171,26 +200,38 @@
          margin-top: 0;
          margin-bottom: 0.3em;
          line-height: 1.5;
+         /* 确保段落内长文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
-      /* 标题样式 */
+      /* 标题样式 - 添加换行处理 */
       .content h1, .content h2, .content h3, 
       .content h4, .content h5, .content h6 {
          margin: 1.5em 0 0.5em;
          padding-bottom: 10px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease, color 0.5s ease;
+         /* 关键：强制标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       /* 列表样式 */
       .content ul, .content ol {
          margin: 0.8em 0;
          padding-left: 2em;
+         /* 确保列表项内长文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       .content li {
          margin: 0.3em 0;
          line-height: 1.6;
+         /* 确保列表项内长文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       /* 代码块样式 */
@@ -199,7 +240,9 @@
          padding: 1em;
          background-color: #f5f5f5;
          border-radius: 4px;
+         /* 代码块需要横向滚动而不是换行，这通常是正确的 */
          overflow-x: auto;
+         white-space: pre; /* 保持代码格式 */
       }
       
       body.dark-mode .content pre {
@@ -210,12 +253,16 @@
       .content code {
          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
          font-size: 0.9em;
+         /* 行内代码块也应遵循换行规则，但 pre 已处理整体 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       .content p code {
          background-color: #f5f5f5;
          padding: 0.2em 0.4em;
          border-radius: 3px;
+         /* 行内代码块本身不应成为换行点，但如果父元素换行，它会随之移动 */
       }
       
       body.dark-mode .content p code {
@@ -231,6 +278,9 @@
          background-color: #f9f9f9;
         color: #666;
         border-radius: 5px;
+        /* 确保引用块内长文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       body.dark-mode .content blockquote {
@@ -239,22 +289,29 @@
         color: #ccc;
       }
       
-      /* 表格样式 */
+      /* 表格样式 - 表格是特殊元素，可能需要单独处理 */
       .table-wrapper {
-        overflow-x: auto;
+        overflow-x: auto; /* 允许表格水平滚动 */
         margin: 20px 0;
+        /* 防止 wrapper 本身被撑宽 */
+        max-width: 100%; 
       }
       
       .content table {
         margin: 1em 0;
         border-collapse: collapse;
-        width: 100%;
+        width: auto; /* 让表格根据内容调整，但配合 wrapper 滚动 */
+        max-width: 100%; /* 表格最大不超过容器 */
+        min-width: fit-content; /* 防止表格过度压缩 */
       }
       
       .content th, .content td {
         border: 1px solid #ddd;
         padding: 0.5em 1em;
         text-align: left;
+        max-width: 300px; /* 限制单元格最大宽度，强制内容换行 */
+        word-wrap: break-word; /* 在单元格内换行 */
+        word-break: break-word; /* 在单元格内换行 */
       }
       
       .content th {
@@ -277,6 +334,8 @@
         height: auto;
         margin: 1em 0;
         border-radius: 4px;
+        /* 防止图片过大撑开容器 */
+        display: block; 
       }
       
       /* 分隔线样式 */
@@ -284,6 +343,9 @@
         margin: 2em 0;
         border: none;
         border-top: 1px solid #ddd;
+        /* 防止 hr 被撑宽 */
+        max-width: 100%; 
+        box-sizing: content-box; /* 确保边框不影响总宽度 */
       }
       
       /* 链接样式 */
@@ -292,6 +354,9 @@
         text-decoration: none;
         border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
         transition: all 0.3s ease;
+        /* 确保链接内长文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
       
       body.dark-mode .content a {
@@ -317,6 +382,9 @@
          padding: 20px;
          border-top: 1px solid #333;
          transition: border-color 0.5s ease;
+         /* 确保评论区相关文本换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .floating-btn {
@@ -338,6 +406,7 @@
          border: none;
          outline: none;
          transition: background-color 0.5s ease, box-shadow 0.5s ease;
+         /* 固定按钮不受内容影响 */
       }
 
       .side-menu {
@@ -356,6 +425,8 @@
          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
          transform-origin: bottom right;
          transition: background-color 0.5s ease, border-color 0.5s ease;
+         /* 确保菜单自身不被内容撑宽 */
+         max-width: calc(100vw - 60px); 
       }
 
       .side-menu.active {
@@ -369,11 +440,15 @@
       }
 
       .menu-left {
-         width: 360px;
+         width: 360px; /* 这个固定宽度可能需要调整 */
+         max-width: 100%; /* 限制最大宽度 */
          padding: 20px;
          overflow-y: auto;
          scrollbar-width: none;
          transition: background-color 0.5s ease;
+         /* 确保菜单内容换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .menu-left::-webkit-scrollbar { display: none; }
@@ -384,6 +459,9 @@
          cursor: pointer;
          color: #ccc;
          transition: all 0.2s;
+         /* 确保章节标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .chapter-item.h1-item { padding-left: 0; }
@@ -391,11 +469,29 @@
          padding-left: 20px; 
          color: #888;
          font-size: 0.9em;
+         /* 确保子章节标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
+      }
+      .chapter-item.h3-item { 
+         padding-left: 40px; 
+         color: #aaa; /* 可选：给H3一个不同的默认色 */
+         font-size: 0.85em;
+         /* 确保子章节标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
       }
 
       .chapter-item:hover { color: #f00; }
       .chapter-item.h1-item:hover { padding-left: 5px; }
       .chapter-item.h2-item:hover { padding-left: 25px; }
+      .chapter-item.h3-item:hover { padding-left: 45px; }
+
+      /* 高亮样式 - 仅改变颜色为红色 */
+      .chapter-item.current {
+         color: red;
+      }
+
 
       .menu-right {
          width: 50px;
@@ -1525,7 +1621,7 @@ Autumn。<br>
      const middleBtn = document.getElementById('middleBtn');
      const toTopBtn = document.getElementById('toTopBtn');
      const chapterList = document.getElementById('chapterList');
-   
+
      // === 1. 仅在 .content 内的标题生成唯一 ID ===
      document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
        const id = el.textContent.toLowerCase()
@@ -1533,8 +1629,11 @@ Autumn。<br>
                    .replace(/\s+/g, '-')           // 空格转连字符
                    .substring(0, 50);              // 截断防过长
        el.id = id || `heading-${Math.random().toString(36).substr(2, 9)}`;
+       // 为生成的ID标题也应用换行规则（虽然CSS已覆盖）
+       el.style.wordWrap = 'break-word';
+       el.style.wordBreak = 'break-word';
      });
-   
+
      // === 2. 应用主题 ===
      function applyTheme() {
        const savedTheme = localStorage.getItem('theme');
@@ -1558,66 +1657,125 @@ Autumn。<br>
        }
      }
      applyTheme();
-   
-     // === 3. 生成章节导航 ===
+
+     // === 3. 生成章节导航 (支持H3) ===
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
-   
+
      const headingsForTOC = allHeadings.slice(0);
-   
+
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
        const level = parseInt(heading.tagName.substring(1));
        const isH2 = level === 2;
-   
-       listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
+       const isH3 = level === 3;
+
+       listItem.className = `chapter-item ${isH2 ? 'h2-item' : (isH3 ? 'h3-item' : 'h1-item')}`;
        listItem.textContent = heading.textContent;
        listItem.dataset.id = heading.id;
-   
+       
+       // 为菜单项也应用换行规则
+       listItem.style.wordWrap = 'break-word';
+       listItem.style.wordBreak = 'break-word';
+
        listItem.addEventListener('click', (e) => {
          e.stopPropagation();
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
          closeMenu();
        });
-   
+
        chapterList.appendChild(listItem);
      });
-   
-     // === 4. 菜单交互功能 ===
+
+     // === 4. Intersection Observer 实现 (追踪阅读进度) ===
+     let observer;
+     function observeHeadings() {
+         if (observer) observer.disconnect();
+
+         const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
+         const options = {
+             rootMargin: '0px',
+             threshold: 0.5 // 当标题至少一半可见时触发
+         };
+
+         observer = new IntersectionObserver((entries) => {
+             entries.forEach(entry => {
+                 if (entry.isIntersecting) {
+                     setActiveMenuItem(entry.target.id);
+                 }
+             });
+         }, options);
+
+         headings.forEach(heading => observer.observe(heading));
+     }
+
+     function setActiveMenuItem(id) {
+         const currentItem = document.querySelector('.chapter-item.current');
+         if (currentItem) {
+             currentItem.classList.remove('current');
+         }
+
+         const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
+         if (newItem) {
+             newItem.classList.add('current');
+             scrollToCenter(newItem);
+         }
+     }
+
+     function scrollToCenter(element) {
+         const container = chapterList;
+         const itemHeight = element.offsetHeight;
+         const containerScrollTop = container.scrollTop;
+         const containerHeight = container.clientHeight;
+         const itemOffsetTop = element.offsetTop - container.offsetTop;
+
+         const scrollPosition = itemOffsetTop - (containerHeight / 2) + (itemHeight / 2);
+
+         container.scrollTo({
+             top: scrollPosition,
+             behavior: 'smooth'
+         });
+     }
+
+     // 初始化观察者
+     observeHeadings();
+
+
+     // === 5. 菜单交互功能 ===
      menuToggle.addEventListener('click', (e) => {
        e.stopPropagation();
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
      });
-   
+
      function closeMenu() {
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
      }
-   
+
      closeBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        closeMenu();
      });
-   
+
      menuMask.addEventListener('click', (e) => {
        e.stopPropagation();
        closeMenu();
      });
-   
+
      sideMenu.addEventListener('click', (e) => {
        e.stopPropagation();
      });
-   
+
      toBottomBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
        closeMenu();
      });
-   
+
      middleBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        // 滚动到中间（可选：计算中间位置）
@@ -1625,14 +1783,14 @@ Autumn。<br>
        window.scrollTo({ top: middle, behavior: 'smooth' });
        closeMenu();
      });
-   
+
      toTopBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        window.scrollTo({ top: 0, behavior: 'smooth' });
        closeMenu();
      });
-   
-     // === 5. 滚动进度指示器 ===
+
+     // === 6. 滚动进度指示器 ===
      function updateProgress() {
        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
        const scrollPosition = window.scrollY;
@@ -1642,7 +1800,7 @@ Autumn。<br>
        menuToggle.style.backgroundColor = color;
        menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
      }
-   
+
      window.addEventListener('scroll', updateProgress, { passive: true });
      window.addEventListener('resize', updateProgress, { passive: true });
      updateProgress();
