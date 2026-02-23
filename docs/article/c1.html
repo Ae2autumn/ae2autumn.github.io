@@ -449,6 +449,35 @@
       }
 
       .menu-mask.active { display: block; }
+      
+      /* ==================== Reveal Highlight ==================== */
+      .floating-btn,
+      .side-menu,
+      .chapter-item {
+        position: relative;
+      }
+      
+      .floating-btn::before,
+      .side-menu::before,
+      .chapter-item::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 1px;
+        background: radial-gradient(
+          140px circle at var(--rx, -9999px) var(--ry, -9999px),
+          rgba(255, 80, 80, 0.9),
+          rgba(200, 0, 0, 0.4) 45%,
+          transparent 70%
+        );
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
    </style>
 </head>
 
@@ -2298,6 +2327,42 @@ Fu~fu~<br>
      const middleBtn  = document.getElementById('middleBtn');
      const toTopBtn   = document.getElementById('toTopBtn');
      const chapterList = document.getElementById('chapterList');
+     
+      // === Reveal Highlight ===
+      [
+        { el: menuToggle },
+        { el: sideMenu },
+      ].forEach(({ el }) => {
+        el.addEventListener('mousemove', e => {
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
+          el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
+        });
+        el.addEventListener('mouseleave', () => {
+          el.style.setProperty('--rx', '-9999px');
+        });
+      });
+      
+      // chapter-item 统一在父容器上监听
+      chapterList.addEventListener('mousemove', e => {
+        const items = chapterList.querySelectorAll('.chapter-item');
+        items.forEach(item => {
+          const r = item.getBoundingClientRect();
+          const inX = e.clientX >= r.left && e.clientX <= r.right;
+          const inY = e.clientY >= r.top  && e.clientY <= r.bottom;
+          if (inX && inY) {
+            item.style.setProperty('--rx', (e.clientX - r.left) + 'px');
+            item.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
+          } else {
+            item.style.setProperty('--rx', '-9999px');
+          }
+        });
+      });
+      chapterList.addEventListener('mouseleave', () => {
+        chapterList.querySelectorAll('.chapter-item').forEach(item => {
+          item.style.setProperty('--rx', '-9999px');
+        });
+      });
 
      // === 1. 收集 h1/h2/h3，生成唯一 ID ===
      const allHeadings = Array.from(
