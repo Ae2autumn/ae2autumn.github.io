@@ -473,10 +473,25 @@
          word-wrap: break-word; 
          word-break: break-word; 
       }
+      .chapter-item.h3-item { 
+         padding-left: 40px; 
+         color: #aaa; /* 可选：给H3一个不同的默认色 */
+         font-size: 0.85em;
+         /* 确保子章节标题换行 */
+         word-wrap: break-word; 
+         word-break: break-word; 
+      }
 
       .chapter-item:hover { color: #f00; }
       .chapter-item.h1-item:hover { padding-left: 5px; }
       .chapter-item.h2-item:hover { padding-left: 25px; }
+      .chapter-item.h3-item:hover { padding-left: 45px; }
+
+      /* 高亮样式 - 仅改变颜色为红色 */
+      .chapter-item.current {
+         color: red;
+      }
+
 
       .menu-right {
          width: 50px;
@@ -597,7 +612,7 @@
      const middleBtn = document.getElementById('middleBtn');
      const toTopBtn = document.getElementById('toTopBtn');
      const chapterList = document.getElementById('chapterList');
-   
+
      // === 1. 仅在 .content 内的标题生成唯一 ID ===
      document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6').forEach(el => {
        const id = el.textContent.toLowerCase()
@@ -609,7 +624,7 @@
        el.style.wordWrap = 'break-word';
        el.style.wordBreak = 'break-word';
      });
-   
+
      // === 2. 应用主题 ===
      function applyTheme() {
        const savedTheme = localStorage.getItem('theme');
@@ -633,20 +648,21 @@
        }
      }
      applyTheme();
-   
-     // === 3. 生成章节导航 ===
+
+     // === 3. 生成章节导航 (支持H3) ===
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
      ).filter(h => h.id && h.textContent.trim() !== '');
-   
+
      const headingsForTOC = allHeadings.slice(0);
-   
+
      headingsForTOC.forEach(heading => {
        const listItem = document.createElement('div');
        const level = parseInt(heading.tagName.substring(1));
        const isH2 = level === 2;
-   
-       listItem.className = `chapter-item ${isH2 ? 'h2-item' : 'h1-item'}`;
+       const isH3 = level === 3;
+
+       listItem.className = `chapter-item ${isH2 ? 'h2-item' : (isH3 ? 'h3-item' : 'h1-item')}`;
        listItem.textContent = heading.textContent;
        listItem.dataset.id = heading.id;
        
@@ -659,44 +675,98 @@
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
          closeMenu();
        });
-   
+
        chapterList.appendChild(listItem);
      });
-   
-     // === 4. 菜单交互功能 ===
+
+     // === 4. Intersection Observer 实现 (追踪阅读进度) ===
+     let observer;
+     function observeHeadings() {
+         if (observer) observer.disconnect();
+
+         const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
+         const options = {
+             rootMargin: '0px',
+             threshold: 0.5 // 当标题至少一半可见时触发
+         };
+
+         observer = new IntersectionObserver((entries) => {
+             entries.forEach(entry => {
+                 if (entry.isIntersecting) {
+                     setActiveMenuItem(entry.target.id);
+                 }
+             });
+         }, options);
+
+         headings.forEach(heading => observer.observe(heading));
+     }
+
+     function setActiveMenuItem(id) {
+         const currentItem = document.querySelector('.chapter-item.current');
+         if (currentItem) {
+             currentItem.classList.remove('current');
+         }
+
+         const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
+         if (newItem) {
+             newItem.classList.add('current');
+             scrollToCenter(newItem);
+         }
+     }
+
+     function scrollToCenter(element) {
+         const container = chapterList;
+         const itemHeight = element.offsetHeight;
+         const containerScrollTop = container.scrollTop;
+         const containerHeight = container.clientHeight;
+         const itemOffsetTop = element.offsetTop - container.offsetTop;
+
+         const scrollPosition = itemOffsetTop - (containerHeight / 2) + (itemHeight / 2);
+
+         container.scrollTo({
+             top: scrollPosition,
+             behavior: 'smooth'
+         });
+     }
+
+     // 初始化观察者
+     observeHeadings();
+
+
+     // === 5. 菜单交互功能 ===
      menuToggle.addEventListener('click', (e) => {
        e.stopPropagation();
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
      });
-   
+
      function closeMenu() {
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
      }
-   
+
      closeBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        closeMenu();
      });
-   
+
      menuMask.addEventListener('click', (e) => {
        e.stopPropagation();
        closeMenu();
      });
-   
+
      sideMenu.addEventListener('click', (e) => {
        e.stopPropagation();
      });
-   
+
      toBottomBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
        closeMenu();
      });
-   
+
      middleBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        // 滚动到中间（可选：计算中间位置）
@@ -704,14 +774,14 @@
        window.scrollTo({ top: middle, behavior: 'smooth' });
        closeMenu();
      });
-   
+
      toTopBtn.addEventListener('click', (e) => {
        e.stopPropagation();
        window.scrollTo({ top: 0, behavior: 'smooth' });
        closeMenu();
      });
-   
-     // === 5. 滚动进度指示器 ===
+
+     // === 6. 滚动进度指示器 ===
      function updateProgress() {
        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
        const scrollPosition = window.scrollY;
@@ -721,7 +791,7 @@
        menuToggle.style.backgroundColor = color;
        menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
      }
-   
+
      window.addEventListener('scroll', updateProgress, { passive: true });
      window.addEventListener('resize', updateProgress, { passive: true });
      updateProgress();
