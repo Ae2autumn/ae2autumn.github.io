@@ -186,7 +186,7 @@
       .content {
          padding: 20px;
          padding-top: 0px;
-         margin-bottom: 0px;
+         margin-bottom: 50px;
          transition: color 0.5s ease;
          /* 关键：确保内容区内的所有内容都能正常换行 */
          word-wrap: break-word; 
@@ -1477,7 +1477,7 @@ Start：是一场无知的冒险。</p>
           const listItem = document.createElement('div');
           const level = parseInt(heading.tagName.substring(1));
           const cls = [
-            'h1-item', 'h2-item', 'h3-item', 'h4-item', 'h5-item', 'h6-item'
+            'h1-item', 'h2-item', 'h3-item',
           ][level-1] || 'h1-item';
           
           listItem.className = `chapter-item ${cls}`;
@@ -1498,106 +1498,49 @@ Start：是一场无知的冒险。</p>
           chapterList.appendChild(listItem);
         });
    
-        // === 4. 使用 Intersection Observer 管理高亮状态（采用第二个版本的稳定逻辑）===
-        
-        function observeHeadings() {
-          if (observer) {
-            // 如果观察器已存在，先断开连接
-            observer.disconnect();
-          }
-          
-          const options = {
-            root: null, // 使用视口作为根
-            rootMargin: '-30% 0px -30% 0px', // 定义触发区域为中心上下各30%
-            threshold: 0.1 // 交叉比例阈值
-          };
-          
-          observer = new IntersectionObserver(entries => {
-            let closestEntry = null;
-            let minDistance = Infinity;
-            
-            // 遍历所有进入/退出交叉区域的条目
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                // 计算条目中心到视口中心的距离
-                const rect = entry.boundingClientRect;
-                const viewportCenter = window.innerHeight / 2;
-                const elementCenter = rect.top + rect.height / 2;
-                const distanceToCenter = Math.abs(elementCenter - viewportCenter);
+        // === 4. 使用 Intersection Observer 管理高亮状态 (简化版) ===
                 
-                // 找到距离视口中心最近的条目
-                if (distanceToCenter < minDistance) {
-                  minDistance = distanceToCenter;
-                  closestEntry = entry;
+        function observeHeadings() {
+            if (observer) {
+                observer.disconnect();
+            }
+            
+            const options = {
+                root: null,
+                rootMargin: '-30% 0px -30% 0px', // 定义中心区域
+                threshold: 0.1 // 或者可以设为 [0] 以获得更频繁的回调
+            };
+            
+            observer = new IntersectionObserver(entries => {
+                // 筛选出所有当前相交（在中心区域）的元素
+                const intersectingEntries = entries.filter(entry => entry.isIntersecting);
+                
+                if (intersectingEntries.length > 0) {
+                    // 选择排序靠后的那个元素作为当前高亮项，它通常更靠近中心
+                    // sort 是按照 DOM 中元素的顺序排列 entries 的，最后一个通常是视觉上最新的。
+                    const sortedEntries = intersectingEntries.sort((a, b) => {
+                         // 获取它们在 allHeadings 数组中的索引，以确定文档顺序
+                         const indexA = allHeadings.indexOf(a.target);
+                         const indexB = allHeadings.indexOf(b.target);
+                         return indexA - indexB; // 按文档顺序升序排列
+                    });
+                    
+                    // 选择最后一个（在文档流中最晚出现的）相交元素
+                    const currentEntry = sortedEntries[sortedEntries.length - 1];
+                    
+                    if (currentEntry) {
+                        currentId = currentEntry.target.id;
+                        setActiveItem(currentId);
+                        
+                        if (sideMenu.classList.contains('active')) {
+                            scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
+                        }
+                    }
                 }
-              }
-            });
+            }, options);
             
-            // 如果找到了最近的条目，则更新高亮状态
-            if (closestEntry) {
-              currentId = closestEntry.target.id;
-              setActiveItem(currentId); // 调用统一的设置高亮函数
-              
-              // 如果侧边栏菜单是打开的，滚动到当前高亮项
-              if (sideMenu.classList.contains('active')) {
-                scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
-              }
-            }
-          }, options);
-          
-          // 开始观察所有相关的标题元素
-          allHeadings.forEach(h => observer.observe(h));
+            allHeadings.forEach(h => observer.observe(h));
         }
-        
-        // 统一的设置高亮项函数
-        function setActiveItem(id) {
-          // 移除所有之前的高亮状态
-          document.querySelectorAll('.chapter-item.current').forEach(item => {
-            item.classList.remove('current');
-          });
-          // 为当前ID对应的菜单项添加高亮状态
-          const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-          if (item) {
-            item.classList.add('current');
-          }
-        }
-        
-        // 滚动菜单列表使指定项居中
-        function scrollToCenter(el) {
-          if (!el) return;
-          const container = chapterList;
-          const targetScrollTop = el.offsetTop - (container.clientHeight - el.offsetHeight) / 2;
-          container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
-        }
-        
-        // 初始化 Intersection Observer
-        observeHeadings();
-   
-        // 页面加载完成后，初始化当前高亮项
-        window.addEventListener('load', () => {
-          requestAnimationFrame(() => {
-            let closestElement = null;
-            let minDistance = Infinity;
-            const viewportCenter = window.innerHeight / 2;
-            
-            // 遍历所有标题，找到初始位置下最接近视口中心的
-            allHeadings.forEach(heading => {
-              const rect = heading.getBoundingClientRect();
-              const elementCenter = rect.top + rect.height / 2;
-              const distanceToCenter = Math.abs(elementCenter - viewportCenter);
-              if (distanceToCenter < minDistance) {
-                minDistance = distanceToCenter;
-                closestElement = heading;
-              }
-            });
-            
-            // 如果找到了，则设置为当前高亮
-            if (closestElement && closestElement.id) {
-                currentId = closestElement.id;
-                setActiveItem(currentId);
-            }
-          });
-        });
    
         // === 5. 菜单控制（保持不变）===
         menuToggle.addEventListener('click', (e) => {
