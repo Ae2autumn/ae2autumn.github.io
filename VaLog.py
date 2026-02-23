@@ -62,6 +62,9 @@ class VaLogGenerator:
             trim_blocks=True,
             lstrip_blocks=True
         )
+        # --- 优化点 2: 预加载模板 ---
+        self.article_template = self.env.get_template(self.article_template_name)
+        self.home_template = self.env.get_template(self.home_template_name)
 
     def _load_and_migrate_cache(self):
         """加载缓存并处理旧格式到新格式的迁移"""
@@ -202,13 +205,20 @@ class VaLogGenerator:
             file_id = os.path.splitext(filename)[0] # 去掉 .md 后缀作为 ID
             local_ids.add(file_id)
             
-            mtime = os.path.getmtime(file_path)
+            # --- 优化点 3 & 5: 获取并缓存 mtime 和 iso 时间 ---
+            try:
+                mtime = os.path.getmtime(file_path)
+                updated_at_iso = datetime.fromtimestamp(mtime).isoformat()
+            except OSError as e:
+                print(f"⚠️ 无法访问本地文件 {file_path}: {e}, 跳过")
+                continue
+            
             # 为本地文件创建一个类似 issue 的结构，方便后续处理
             local_article = {
                 "id": file_id,
                 "title": file_id, # 默认标题为文件名
-                "created_at": datetime.fromtimestamp(mtime).isoformat(), # 使用修改时间作为创建时间
-                "updated_at": datetime.fromtimestamp(mtime).isoformat(),
+                "created_at": updated_at_iso, # 使用修改时间作为创建时间
+                "updated_at": updated_at_iso,
                 "body": self._read_file_with_fallback(file_path), # 读取文件内容
                 "labels": [] # 本地文件默认无标签
             }
@@ -256,8 +266,9 @@ class VaLogGenerator:
         
         for item_id in to_delete:
             print(f"🗑️ 清理已移除的文章: #{item_id}")
-            # 删除 HTML 文件
+            # --- 优化点 5: 缓存路径 ---
             html_path = os.path.join(ARTICLE_DIR, f"{item_id}.html")
+            # 删除 HTML 文件
             if os.path.exists(html_path):
                 os.remove(html_path)
             
@@ -284,7 +295,8 @@ class VaLogGenerator:
                 iid = str(issue['number'])
                 updated_at = issue['updated_at']
                 
-                html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{iid}.html"))
+                # --- 优化点 4: 使用预生成的集合检查 ---
+                html_exists = iid in known_from_html
                 
                 # 获取缓存项并检查类型和时间
                 cached_info = self.cache.get(iid)
@@ -308,6 +320,7 @@ class VaLogGenerator:
         if self.data_source_mode in ['local_only', 'dual']:
             for local_article in all_local_articles:
                 lid = local_article['id']
+                # 注意：这里必须实时获取mtime，因为文件可能在此期间被修改
                 file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md")
                 
                 try:
@@ -317,7 +330,8 @@ class VaLogGenerator:
                     print(f"⚠️ 无法访问本地文件 {file_path}, 跳过: #{lid}")
                     continue
                 
-                html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{lid}.html"))
+                # --- 优化点 4: 使用预生成的集合检查 ---
+                html_exists = lid in known_from_html
                 
                 # 获取缓存项并检查类型和时间
                 cached_info = self.cache.get(lid)
@@ -341,6 +355,9 @@ class VaLogGenerator:
         all_articles = []
         specials = []
         special_tags = self.config.get('special_tags', [])
+
+        # --- 优化点 1: 引入临时缓存字典用于批量更新 ---
+        new_cache_updates = {}
 
         # --- 处理 Issues 文章 ---
         for issue in all_issues:
@@ -376,20 +393,25 @@ class VaLogGenerator:
                     "summary": metadata["summary"]
                 }
 
+                # --- 优化点 5: 缓存路径 ---
+                html_file_path = os.path.join(ARTICLE_DIR, f"{iid}.html")
                 # 渲染 HTML
-                tmpl = self.env.get_template(self.article_template_name)
-                with open(os.path.join(ARTICLE_DIR, f"{iid}.html"), "w", encoding="utf-8") as f:
-                    f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
+                # --- 优化点 2: 使用预加载的模板 ---
+                with open(html_file_path, "w", encoding="utf-8") as f:
+                    f.write(self.article_template.render(article=article_data, blog=self.config.get('blog', {})))
 
                 # 保存原始 Markdown (仅 Issue)
-                with open(os.path.join(OMD_DIR, f"{iid}.md"), "w", encoding="utf-8") as f:
+                # --- 优化点 5: 缓存路径 ---
+                omd_md_file_path = os.path.join(OMD_DIR, f"{iid}.md")
+                with open(omd_md_file_path, "w", encoding="utf-8") as f:
                     f.write(issue.get('body') or "")
 
-                # 更新缓存 (Issue 类型) - 确保是新格式
-                self.cache[iid] = {
+                # --- 优化点 1: 将缓存更新加入临时字典 ---
+                new_cache_updates[iid] = {
                     "type": "issue",
                     "last_modified": issue['updated_at']
                 }
+                # self.cache[iid] = { "type": "issue", "last_modified": issue['updated_at'] } # 原代码
 
             # 添加到对应列表
             if is_special:
@@ -431,24 +453,30 @@ class VaLogGenerator:
                     "summary": metadata["summary"]
                 }
 
+                # --- 优化点 5: 缓存路径 ---
+                html_file_path = os.path.join(ARTICLE_DIR, f"{lid}.html")
                 # 渲染 HTML
-                tmpl = self.env.get_template(self.article_template_name)
-                with open(os.path.join(ARTICLE_DIR, f"{lid}.html"), "w", encoding="utf-8") as f:
-                    f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
+                # --- 优化点 2: 使用预加载的模板 ---
+                with open(html_file_path, "w", encoding="utf-8") as f:
+                    f.write(self.article_template.render(article=article_data, blog=self.config.get('blog', {})))
 
-                # 保存到缓存 (Local File 类型) - 确保是新格式
-                file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md")
-                current_mtime_iso = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
-                self.cache[lid] = {
+                # --- 优化点 1: 将缓存更新加入临时字典 ---
+                # file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md") # 这个变量在循环外已定义
+                # current_mtime_iso = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat() # 这个变量在循环外已计算
+                new_cache_updates[lid] = {
                     "type": "local_file",
-                    "last_modified": current_mtime_iso
+                    "last_modified": local_article['updated_at'] # 使用预计算好的 iso 时间
                 }
+                # self.cache[lid] = { "type": "local_file", "last_modified": current_mtime_iso } # 原代码
 
             # 添加到对应列表 (本地文件目前不支持 special 标签)
             if is_special:
                 specials.append(list_item)
             else:
                 all_articles.append(list_item)
+
+        # --- 优化点 1: 统一应用缓存更新 ---
+        self.cache.update(new_cache_updates)
 
         # 特殊卡片保底
         if not specials and self.config.get('special', {}).get('view'):
@@ -479,6 +507,7 @@ class VaLogGenerator:
 
         # 保存状态 (新格式)
         with open(OMD_JSON, 'w', encoding='utf-8') as f:
+            # --- 优化点 1: 写入的是已合并更新的 self.cache ---
             json.dump(self.cache, f, indent=2, ensure_ascii=False)
 
         base_data = {
@@ -497,7 +526,8 @@ class VaLogGenerator:
     def generate_index(self, articles, specials):
         print("🏠 正在生成首页...")
         try:
-            tmpl = self.env.get_template(self.home_template_name)
+            # --- 优化点 2: 使用预加载的模板 ---
+            # tmpl = self.env.get_template(self.home_template_name) # 原代码
             ctx = {
                 "BLOG_NAME": self.config.get('blog', {}).get('name', 'VaLog'),
                 "SPECIAL_NAME": self.config.get('blog', {}).get('sname', 'Special'),
@@ -513,7 +543,8 @@ class VaLogGenerator:
                 "SPECIAL_TAGS": json.dumps(self.config.get('special_tags', []), ensure_ascii=False),
             }
             with open(os.path.join(DOCS_DIR, "index.html"), "w", encoding="utf-8") as f:
-                f.write(tmpl.render(**ctx))
+                # --- 优化点 2: 使用预加载的模板 ---
+                f.write(self.home_template.render(**ctx))
             print("✅ 首页生成完毕！")
         except Exception as e:
             print(f"❌ 首页生成错误: {e}")
