@@ -1410,43 +1410,29 @@
           const scrollLeft = this.state.scrollLeft;
           const viewportWidth = this.state.viewportWidth;
           
-          let startIndex = -1;
-          let endIndex = -1;
-          let currentLeft = 0;
-          
+          let startIndex = 0;
+          let endIndex = this.state.allArticles.length - 1;
+        
+          // 找 startIndex
           for (let i = 0; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
-            
-            if (currentLeft + state.width > scrollLeft) {
+            if (state.left + state.width > scrollLeft) {
               startIndex = Math.max(0, i - this.buffer);
               break;
             }
-            currentLeft += state.width + 15;
           }
-          
-          if (startIndex === -1) {
-            startIndex = 0;
-            currentLeft = 0;
-          }
-          
-          let viewportRight = scrollLeft + viewportWidth;
+        
+          // 找 endIndex，直接用 cardStates 里存好的 left，不自己累加
           for (let i = startIndex; i < this.state.allArticles.length; i++) {
             const state = this.state.cardStates.get(i);
             if (!state) continue;
-            
-            if (currentLeft > viewportRight) {
+            if (state.left > scrollLeft + viewportWidth) {
               endIndex = Math.min(this.state.allArticles.length - 1, i + this.buffer);
               break;
             }
-            
-            if (i === this.state.allArticles.length - 1) {
-              endIndex = this.state.allArticles.length - 1;
-            }
-            
-            currentLeft += state.width + 15;
           }
-          
+        
           return { startIndex, endIndex };
         }
         
