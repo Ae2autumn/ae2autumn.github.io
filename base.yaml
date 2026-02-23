@@ -10,6 +10,13 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: c1
+  title: c1
+  date: '2026-02-23'
+  tags: []
+  content: 暂无简介
+  url: article/c1.html
+  verticalTitle: c1
 - id: '17'
   title: Gem-3
   date: '2026-02-15'
