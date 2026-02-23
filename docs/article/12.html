@@ -601,202 +601,215 @@
    </div>
 
    <script>
-        const menuToggle = document.getElementById('menuToggle');
-        const sideMenu = document.getElementById('sideMenu');
-        const menuMask = document.getElementById('menuMask');
-        const closeBtn = document.getElementById('closeBtn');
-        const toBottomBtn = document.getElementById('toBottomBtn');
-        const middleBtn = document.getElementById('middleBtn');
-        const toTopBtn = document.getElementById('toTopBtn');
-        const chapterList = document.getElementById('chapterList');
-   
-        // === 1. 生成唯一ID（解决重复标题问题，采用第一个版本的逻辑）===
-        let headingIdCounter = 0;
-        const titleIdMap = new Map();
-        
-        const allHeadings = Array.from(
-          document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
-        ).filter(h => h.textContent.trim() !== '');
-   
-        allHeadings.forEach((el) => {
-          const baseText = el.textContent.toLowerCase()
-            .replace(/[^\w\s]/g, '')
-            .replace(/\s+/g, '-')
-            .substring(0, 50);
-          
-          if (titleIdMap.has(baseText)) {
-            titleIdMap.set(baseText, titleIdMap.get(baseText) + 1);
-            el.id = `${baseText}-${titleIdMap.get(baseText)}`;
+      const menuToggle = document.getElementById('menuToggle');
+      const sideMenu = document.getElementById('sideMenu');
+      const menuMask = document.getElementById('menuMask');
+      const closeBtn = document.getElementById('closeBtn');
+      const toBottomBtn = document.getElementById('toBottomBtn');
+      const middleBtn = document.getElementById('middleBtn');
+      const toTopBtn = document.getElementById('toTopBtn');
+      const chapterList = document.getElementById('chapterList');
+      
+      // === 1. 生成唯一ID ===
+      const allHeadings = Array.from(
+        document.querySelectorAll('.content h1, .content h2, .content h3, .content h4, .content h5, .content h6')
+      ).filter(h => h.textContent.trim() !== '');
+      
+      allHeadings.forEach((el, index) => {
+        const baseId = el.textContent.toLowerCase()
+          .replace(/[^\w\s]/g, '')
+          .replace(/\s+/g, '-')
+          .substring(0, 50);
+        el.id = baseId ? `${baseId}-${index}` : `heading-${index}`;
+        el.style.wordWrap = 'break-word';
+        el.style.wordBreak = 'break-word';
+      });
+      
+      // === 2. 应用主题 ===
+      function applyTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
           } else {
-            titleIdMap.set(baseText, 1);
-            el.id = baseText || `heading-${++headingIdCounter}`;
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
           }
-          
-          el.style.wordWrap = 'break-word';
-          el.style.wordBreak = 'break-word';
-        });
-   
-        // === 2. 应用主题 ===
-        function applyTheme() {
-          const savedTheme = localStorage.getItem('theme');
-          if (savedTheme) {
-            if (savedTheme === 'light') {
-              document.body.classList.add('light-mode');
-              document.body.classList.remove('dark-mode');
-            } else {
-              document.body.classList.add('dark-mode');
-              document.body.classList.remove('light-mode');
-            }
+        } else {
+          const configTheme = "dark";
+          if (configTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.body.classList.remove('dark-mode');
           } else {
-            const configTheme = "dark";
-            if (configTheme === 'light') {
-              document.body.classList.add('light-mode');
-              document.body.classList.remove('dark-mode');
-            } else {
-              document.body.classList.add('dark-mode');
-              document.body.classList.remove('light-mode');
-            }
+            document.body.classList.add('dark-mode');
+            document.body.classList.remove('light-mode');
           }
         }
-        applyTheme();
-   
-        // === 3. 生成章节导航（支持H1-H6，采用第一个版本的逻辑）===
-        let currentId = null; // 用于存储当前激活的ID
-        let observer = null; // 存储 Intersection Observer 实例
-   
-        allHeadings.forEach((heading) => {
-          const listItem = document.createElement('div');
-          const level = parseInt(heading.tagName.substring(1));
-          const cls = [
-            'h1-item', 'h2-item', 'h3-item',
-          ][level-1] || 'h1-item';
+      }
+      applyTheme();
+      
+      // === 3. 生成章节导航 ===
+      let currentId = null;
+      let observer = null;
+      
+      allHeadings.forEach((heading) => {
+        const listItem = document.createElement('div');
+        const level = parseInt(heading.tagName.substring(1));
+        const cls = [
+          'h1-item', 'h2-item', 'h3-item', 'h4-item', 'h5-item', 'h6-item'
+        ][level-1] || 'h1-item';
+        
+        listItem.className = `chapter-item ${cls}`;
+        listItem.textContent = heading.textContent;
+        listItem.dataset.id = heading.id;
+        listItem.style.wordWrap = 'break-word';
+        listItem.style.wordBreak = 'break-word';
+        
+        listItem.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActiveItem(heading.id);
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          closeMenu();
+        });
+        
+        chapterList.appendChild(listItem);
+      });
+      
+      // === 4. Intersection Observer 高亮逻辑 ===
+      function observeHeadings() {
+        if (observer) observer.disconnect();
+        
+        const options = {
+          root: null,
+          rootMargin: '-30% 0px -30% 0px',
+          threshold: 0.1
+        };
+        
+        observer = new IntersectionObserver(entries => {
+          let closestEntry = null;
+          let minDistance = Infinity;
           
-          listItem.className = `chapter-item ${cls}`;
-          listItem.textContent = heading.textContent;
-          listItem.dataset.id = heading.id;
-          listItem.style.wordWrap = 'break-word';
-          listItem.style.wordBreak = 'break-word';
-          
-          // 为菜单项添加点击事件
-          listItem.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // 在点击时也设置当前高亮项
-            setActiveItem(heading.id);
-            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            closeMenu();
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const rect = entry.boundingClientRect;
+              const viewportCenter = window.innerHeight / 2;
+              const elementCenter = rect.top + rect.height / 2;
+              const distanceToCenter = Math.abs(elementCenter - viewportCenter);
+              
+              if (distanceToCenter < minDistance) {
+                minDistance = distanceToCenter;
+                closestEntry = entry;
+              }
+            }
           });
           
-          chapterList.appendChild(listItem);
-        });
-   
-        // === 4. 使用 Intersection Observer 管理高亮状态 (简化版) ===
-                
-        function observeHeadings() {
-            if (observer) {
-                observer.disconnect();
+          if (closestEntry) {
+            currentId = closestEntry.target.id;
+            setActiveItem(currentId);
+            
+            if (sideMenu.classList.contains('active')) {
+              scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
             }
-            
-            const options = {
-                root: null,
-                rootMargin: '-30% 0px -30% 0px', // 定义中心区域
-                threshold: 0.1 // 或者可以设为 [0] 以获得更频繁的回调
-            };
-            
-            observer = new IntersectionObserver(entries => {
-                // 筛选出所有当前相交（在中心区域）的元素
-                const intersectingEntries = entries.filter(entry => entry.isIntersecting);
-                
-                if (intersectingEntries.length > 0) {
-                    // 选择排序靠后的那个元素作为当前高亮项，它通常更靠近中心
-                    // sort 是按照 DOM 中元素的顺序排列 entries 的，最后一个通常是视觉上最新的。
-                    const sortedEntries = intersectingEntries.sort((a, b) => {
-                         // 获取它们在 allHeadings 数组中的索引，以确定文档顺序
-                         const indexA = allHeadings.indexOf(a.target);
-                         const indexB = allHeadings.indexOf(b.target);
-                         return indexA - indexB; // 按文档顺序升序排列
-                    });
-                    
-                    // 选择最后一个（在文档流中最晚出现的）相交元素
-                    const currentEntry = sortedEntries[sortedEntries.length - 1];
-                    
-                    if (currentEntry) {
-                        currentId = currentEntry.target.id;
-                        setActiveItem(currentId);
-                        
-                        if (sideMenu.classList.contains('active')) {
-                            scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
-                        }
-                    }
-                }
-            }, options);
-            
-            allHeadings.forEach(h => observer.observe(h));
-        }
-   
-        // === 5. 菜单控制（保持不变）===
-        menuToggle.addEventListener('click', (e) => {
-          e.stopPropagation();
-          sideMenu.classList.add('active');
-          menuMask.classList.add('active');
-          menuToggle.style.display = 'none';
-          if (currentId) {
-            scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
+          }
+        }, options);
+        
+        allHeadings.forEach(h => observer.observe(h));
+      }
+      
+      function setActiveItem(id) {
+        document.querySelectorAll('.chapter-item.current').forEach(item => {
+          item.classList.remove('current');
+        });
+        const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+        if (item) item.classList.add('current');
+      }
+      
+      function scrollToCenter(el) {
+        if (!el) return;
+        const container = chapterList;
+        const targetScrollTop = el.offsetTop - (container.clientHeight - el.offsetHeight) / 2;
+        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      }
+      
+      observeHeadings();
+      
+      window.addEventListener('load', () => {
+        requestAnimationFrame(() => {
+          let closestElement = null;
+          let minDistance = Infinity;
+          const viewportCenter = window.innerHeight / 2;
+          
+          allHeadings.forEach(heading => {
+            const rect = heading.getBoundingClientRect();
+            const elementCenter = rect.top + rect.height / 2;
+            const distanceToCenter = Math.abs(elementCenter - viewportCenter);
+            if (distanceToCenter < minDistance) {
+              minDistance = distanceToCenter;
+              closestElement = heading;
+            }
+          });
+          
+          if (closestElement && closestElement.id) {
+            currentId = closestElement.id;
+            setActiveItem(currentId);
           }
         });
-   
-        function closeMenu() {
-          sideMenu.classList.remove('active');
-          menuMask.classList.remove('active');
-          menuToggle.style.display = 'flex';
+      });
+      
+      // === 5. 菜单控制 ===
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sideMenu.classList.add('active');
+        menuMask.classList.add('active');
+        menuToggle.style.display = 'none';
+        if (currentId) {
+          scrollToCenter(document.querySelector(`.chapter-item[data-id="${currentId}"]`));
         }
-   
-        closeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          closeMenu();
-        });
-   
-        menuMask.addEventListener('click', (e) => {
-          e.stopPropagation();
-          closeMenu();
-        });
-   
-        sideMenu.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
-   
-        toBottomBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          closeMenu();
-        });
-   
-        middleBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-          window.scrollTo({ top: middle, behavior: 'smooth' });
-          closeMenu();
-        });
-   
-        toTopBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          closeMenu();
-        });
-   
-        // === 6. 滚动进度指示器（保持不变）===
-        function updateProgress() {
-          const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-          const scrollPosition = window.scrollY;
-          const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
-          const redValue = Math.floor(scrollPercent * 255);
-          const color = `rgb(${redValue}, 0, 0)`;
-          menuToggle.style.backgroundColor = color;
-          menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
-        }
-   
-        window.addEventListener('scroll', updateProgress, { passive: true });
-        window.addEventListener('resize', updateProgress, { passive: true });
-        updateProgress();
+      });
+      
+      function closeMenu() {
+        sideMenu.classList.remove('active');
+        menuMask.classList.remove('active');
+        menuToggle.style.display = 'flex';
+      }
+      
+      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+      menuMask.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+      sideMenu.addEventListener('click', (e) => e.stopPropagation());
+      
+      toBottomBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        closeMenu();
+      });
+      
+      middleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+        window.scrollTo({ top: middle, behavior: 'smooth' });
+        closeMenu();
+      });
+      
+      toTopBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        closeMenu();
+      });
+      
+      // === 6. 滚动进度指示器 ===
+      function updateProgress() {
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollPosition = window.scrollY;
+        const scrollPercent = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
+        const redValue = Math.floor(scrollPercent * 255);
+        menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
+        menuToggle.style.boxShadow = `0 4px 12px rgba(${redValue}, 0, 0, 0.3)`;
+      }
+      
+      window.addEventListener('scroll', updateProgress, { passive: true });
+      window.addEventListener('resize', updateProgress, { passive: true });
+      updateProgress();
    </script>
 
 </body>
