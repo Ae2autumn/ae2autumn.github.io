@@ -11,17 +11,17 @@ import markdown
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.yml")
 TEMPLATE_DIR = os.path.join(BASE_DIR, "template")
-DOCS_DIR = os.path.join(BASE_DIR, "docs")
+DOCS_DIR = os.path.join(BASE_DIR, "docs") # docs 目录
 ARTICLE_DIR = os.path.join(DOCS_DIR, "article")
 OMD_DIR = os.path.join(BASE_DIR, "O-MD")
 OMD_JSON = os.path.join(OMD_DIR, "articles.json")
 BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 
-# 新增：本地 Posts 目录
-LOCAL_POSTS_DIR = os.path.join(BASE_DIR, "posts")
+# 新增：本地 Posts 目录 (位于 docs 目录下)
+LOCAL_POSTS_DIR = os.path.join(DOCS_DIR, "posts")
 
 DEFAULT_ARTICLE_TEMPLATE = "article.html"
-DEFAULT_HOME_TEMPLATE = "home.html"
+DEFAULT_HOME_TEMPLATE = "default.html"
 
 # 创建输出目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
@@ -52,15 +52,8 @@ class VaLogGenerator:
             'VaLog-default-index', DEFAULT_HOME_TEMPLATE
         )
 
-        # 加载缓存
-        self.cache = {}
-        if os.path.exists(OMD_JSON):
-            try:
-                with open(OMD_JSON, 'r', encoding='utf-8') as f:
-                    self.cache = json.load(f)
-            except Exception as e:
-                print(f"⚠️ 缓存加载失败: {e}")
-                self.cache = {}
+        # 加载并迁移缓存
+        self.cache = self._load_and_migrate_cache()
 
         # Jinja2 模板引擎
         self.env = Environment(
@@ -69,6 +62,37 @@ class VaLogGenerator:
             trim_blocks=True,
             lstrip_blocks=True
         )
+
+    def _load_and_migrate_cache(self):
+        """加载缓存并处理旧格式到新格式的迁移"""
+        cache = {}
+        if os.path.exists(OMD_JSON):
+            try:
+                with open(OMD_JSON, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+            except Exception as e:
+                print(f"⚠️ 缓存加载失败: {e}")
+        
+        # 检查并迁移旧格式缓存
+        # 旧格式: { "issue_number": "updated_at_string" }
+        # 新格式: { "id": { "type": "issue|local_file", "last_modified": "..." } }
+        migrated = False
+        for key, value in list(cache.items()): # 使用 list() 避免在迭代时修改字典
+            # 如果值是字符串，说明是旧格式 (一定是 issue)
+            if isinstance(value, str):
+                print(f"🔄 迁移旧缓存条目: #{key}")
+                cache[key] = {
+                    "type": "issue",
+                    "last_modified": value
+                }
+                migrated = True
+        
+        if migrated:
+            print("💾 保存迁移后的缓存...")
+            with open(OMD_JSON, 'w', encoding='utf-8') as f:
+                json.dump(cache, f, indent=2, ensure_ascii=False)
+        
+        return cache
 
     def extract_metadata_and_body(self, body):
         """提取元数据（返回 summary 为字符串）"""
@@ -162,7 +186,7 @@ class VaLogGenerator:
             return [], set()
 
     def get_local_files_articles(self):
-        """从本地 .docs/posts 目录获取文章数据"""
+        """从本地 docs/posts 目录获取文章数据"""
         local_articles = []
         local_ids = set()
 
@@ -171,7 +195,7 @@ class VaLogGenerator:
             return local_articles, local_ids
 
         md_files = [f for f in os.listdir(LOCAL_POSTS_DIR) if f.lower().endswith('.md')]
-        print(f"📁 在本地目录找到 {len(md_files)} 个 Markdown 文件")
+        print(f"📁 在本地目录 {LOCAL_POSTS_DIR} 找到 {len(md_files)} 个 Markdown 文件")
         
         for filename in md_files:
             file_path = os.path.join(LOCAL_POSTS_DIR, filename)
@@ -238,8 +262,9 @@ class VaLogGenerator:
                 os.remove(html_path)
             
             # 删除 O-MD 中的 Markdown 文件 (仅适用于原来源为 Issue 的文章)
-            cache_entry = self.cache.get(item_id, {})
-            if cache_entry.get('type') == 'issue':
+            cache_entry = self.cache.get(item_id)
+            # 现在 cache_entry 一定是字典格式
+            if cache_entry and cache_entry.get('type') == 'issue':
                  omd_md_path = os.path.join(OMD_DIR, f"{item_id}.md")
                  if os.path.exists(omd_md_path):
                      os.remove(omd_md_path)
@@ -260,20 +285,22 @@ class VaLogGenerator:
                 updated_at = issue['updated_at']
                 
                 html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{iid}.html"))
-                in_cache = iid in self.cache
-                cache_is_issue_type = self.cache.get(iid, {}).get('type') == 'issue'
-                cache_time_matches = in_cache and self.cache[iid].get('last_modified') == updated_at
+                
+                # 获取缓存项并检查类型和时间
+                cached_info = self.cache.get(iid)
+                cache_is_issue_type = cached_info and cached_info.get('type') == 'issue'
+                cache_time_matches = cached_info and cached_info.get('last_modified') == updated_at
 
                 # 之前缓存了 issue，但 HTML 丢失了
-                if in_cache and cache_is_issue_type and cache_time_matches and not html_exists:
+                if cache_is_issue_type and cache_time_matches and not html_exists:
                     print(f"⚠️ Issue #{iid} HTML 丢失，将重建")
                     to_process_issues.add(iid)
                 # 之前没缓存过
-                elif not in_cache:
+                elif not cached_info:
                     print(f"🆕 新 Issue 或缓存丢失: #{iid}")
                     to_process_issues.add(iid)
                 # 缓存存在但时间不匹配（内容更新）
-                elif in_cache and cache_is_issue_type and not cache_time_matches:
+                elif cache_is_issue_type and not cache_time_matches:
                     print(f"🔄 Issue 内容已更新: #{iid}")
                     to_process_issues.add(iid)
 
@@ -291,20 +318,22 @@ class VaLogGenerator:
                     continue
                 
                 html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{lid}.html"))
-                in_cache = lid in self.cache
-                cache_is_local_type = self.cache.get(lid, {}).get('type') == 'local_file'
-                cache_time_matches = in_cache and self.cache[lid].get('last_modified') == current_mtime_iso
+                
+                # 获取缓存项并检查类型和时间
+                cached_info = self.cache.get(lid)
+                cache_is_local_type = cached_info and cached_info.get('type') == 'local_file'
+                cache_time_matches = cached_info and cached_info.get('last_modified') == current_mtime_iso
 
                 # 之前缓存了 local_file，但 HTML 丢失了
-                if in_cache and cache_is_local_type and cache_time_matches and not html_exists:
+                if cache_is_local_type and cache_time_matches and not html_exists:
                     print(f"⚠️ 本地文件 #{lid} HTML 丢失，将重建")
                     to_process_local.add(lid)
                 # 之前没缓存过
-                elif not in_cache:
+                elif not cached_info:
                     print(f"🆕 新本地文件: #{lid}")
                     to_process_local.add(lid)
                 # 缓存存在但时间不匹配（文件更新）
-                elif in_cache and cache_is_local_type and not cache_time_matches:
+                elif cache_is_local_type and not cache_time_matches:
                     print(f"🔄 本地文件内容已更新: #{lid}")
                     to_process_local.add(lid)
 
@@ -356,7 +385,7 @@ class VaLogGenerator:
                 with open(os.path.join(OMD_DIR, f"{iid}.md"), "w", encoding="utf-8") as f:
                     f.write(issue.get('body') or "")
 
-                # 更新缓存 (Issue 类型)
+                # 更新缓存 (Issue 类型) - 确保是新格式
                 self.cache[iid] = {
                     "type": "issue",
                     "last_modified": issue['updated_at']
@@ -407,7 +436,7 @@ class VaLogGenerator:
                 with open(os.path.join(ARTICLE_DIR, f"{lid}.html"), "w", encoding="utf-8") as f:
                     f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
 
-                # 保存到缓存 (Local File 类型)
+                # 保存到缓存 (Local File 类型) - 确保是新格式
                 file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md")
                 current_mtime_iso = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
                 self.cache[lid] = {
@@ -448,7 +477,7 @@ class VaLogGenerator:
 
         all_articles.sort(key=lambda x: x['date'], reverse=True)
 
-        # 保存状态
+        # 保存状态 (新格式)
         with open(OMD_JSON, 'w', encoding='utf-8') as f:
             json.dump(self.cache, f, indent=2, ensure_ascii=False)
 
