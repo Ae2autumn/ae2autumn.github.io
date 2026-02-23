@@ -429,6 +429,8 @@
          z-index: 2;
       }
 
+      /* 章节项之间的分隔线光效：挂在每个 item 自身的 border-bottom 上 */
+      /* 用 outline 模拟底部边框发光，不受 overflow 裁剪 */
       .chapter-item {
          padding: 10px 0;
          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -438,6 +440,7 @@
          word-wrap: break-word;
          word-break: break-word;
          overflow-wrap: break-word;
+         position: relative;
       }
 
       body.light-mode .chapter-item {
@@ -457,7 +460,10 @@
       .chapter-item.h1-item:hover { padding-left: 5px; }
       .chapter-item.h2-item:hover { padding-left: 19px; }
       .chapter-item.h3-item:hover { padding-left: 33px; }
+      /* current：滚动追踪高亮 */
       .chapter-item.current { color: red !important; }
+      /* hovered：鼠标悬停时覆盖 current，同一时间只有一个高亮 */
+      .chapter-item.hovered { color: red !important; }
 
       /* ==================== 菜单右侧：按钮区 ==================== */
       .menu-right {
@@ -3880,16 +3886,39 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          closeMenu();
        });
 
+       // hover 高亮：覆盖 current，离开后恢复
+       listItem.addEventListener('mouseenter', () => {
+         hoveredItem = listItem;
+         refreshHighlight();
+       });
+       listItem.addEventListener('mouseleave', () => {
+         hoveredItem = null;
+         refreshHighlight();
+       });
+
        chapterList.appendChild(listItem);
      });
 
      // === 4. 高亮 & 进度追踪 ===
-     let currentId = null;
+     let currentId   = null;
+     let hoveredItem = null; // 当前鼠标悬停的 chapter-item
+
+     function refreshHighlight() {
+       document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
+         .forEach(i => i.classList.remove('current', 'hovered'));
+       if (hoveredItem) {
+         // 有 hover：只显示 hover 高亮，压制 current
+         hoveredItem.classList.add('hovered');
+       } else {
+         // 无 hover：恢复 current 高亮
+         const item = document.querySelector(`.chapter-item[data-id="${currentId}"]`);
+         if (item) item.classList.add('current');
+       }
+     }
 
      function setActiveItem(id) {
-       document.querySelectorAll('.chapter-item.current').forEach(i => i.classList.remove('current'));
-       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (item) item.classList.add('current');
+       currentId = id;
+       refreshHighlight();
      }
 
      function scrollMenuToItem(id) {
@@ -3986,7 +4015,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      updateProgress();
 
      // ==================== Reveal Highlight ====================
-     // 统一用 document mousemove，在元素外一定范围内也能触发
+     // 仅桌面端生效：移动端没有悬停概念，跳过所有光效逻辑
+     const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+     if (isDesktop) {
 
      const revealTargets = [
        { el: menuToggle,       range: 60,  alwaysOn: true  },
@@ -4003,27 +4035,25 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      }
 
      function handleMove(e) {
-       // 只处理鼠标，忽略触摸和触控笔
        if (e.pointerType && e.pointerType !== 'mouse') return;
 
        revealTargets.forEach(({ el, range, alwaysOn }) => {
          if (!el) return;
-
-         // 菜单隐藏时，内层元素跳过
          if (!alwaysOn && !sideMenuWrapper.classList.contains('active')) {
            el.style.setProperty('--rx', '-9999px');
            el.style.setProperty('--ry', '-9999px');
            return;
          }
-
          const r    = el.getBoundingClientRect();
          const dx   = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
          const dy   = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
          const dist = Math.sqrt(dx * dx + dy * dy);
-
          if (dist <= range) {
+           // menu-left 有 overflow-y:auto，::before 的坐标系是整个 scrollable 区域
+           // 需要加上 scrollTop 修正，让发光跟随鼠标而不是滚动内容
+           const scrollCorrection = (el === menuLeftEl) ? el.scrollTop : 0;
            el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
-           el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
+           el.style.setProperty('--ry', (e.clientY - r.top + scrollCorrection) + 'px');
          } else {
            el.style.setProperty('--rx', '-9999px');
            el.style.setProperty('--ry', '-9999px');
@@ -4031,19 +4061,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        });
      }
 
-     // pointermove：安卓 OTG 鼠标不按键也能持续触发
-     // mousemove：桌面浏览器兜底
-     document.addEventListener('pointermove', handleMove);
-     document.addEventListener('mousemove',   handleMove);
-
-     // 松开左键时重新计算一次（避免松手后残留）
-     document.addEventListener('pointerup',  handleMove);
-     document.addEventListener('mouseup',    handleMove);
-
-     // 鼠标离开窗口 / 窗口失焦 / pointer 离开时全部熄灭
+     document.addEventListener('pointermove',  handleMove);
+     document.addEventListener('mousemove',    handleMove);
+     document.addEventListener('pointerup',    handleMove);
+     document.addEventListener('mouseup',      handleMove);
      document.addEventListener('pointerleave', clearAllReveal);
      document.addEventListener('mouseleave',   clearAllReveal);
      window.addEventListener('blur',           clearAllReveal);
+
+     } // end isDesktop
 
    </script>
 
