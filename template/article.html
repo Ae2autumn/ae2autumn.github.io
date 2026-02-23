@@ -418,7 +418,7 @@
          background-color: #111;
          border: 1px solid #333;
          border-radius: 8px;
-         display: none;
+         display: none; /* 初始隐藏 */
          flex-direction: row;
          z-index: 999;
          overflow: hidden;
@@ -430,7 +430,7 @@
       }
 
       .side-menu.active {
-         display: flex;
+         display: flex; /* 显示时设为flex */
          animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       }
 
@@ -443,15 +443,15 @@
          width: 360px; /* 这个固定宽度可能需要调整 */
          max-width: 100%; /* 限制最大宽度 */
          padding: 20px;
-         overflow-y: auto;
-         scrollbar-width: none;
+         overflow-y: auto; /* 启用滚动 */
+         scrollbar-width: none; /* Firefox */
          transition: background-color 0.5s ease;
          /* 确保菜单内容换行 */
          word-wrap: break-word; 
          word-break: break-word; 
       }
 
-      .menu-left::-webkit-scrollbar { display: none; }
+      .menu-left::-webkit-scrollbar { display: none; } /* Chrome, Safari, Edge */
 
       .chapter-item {
          padding: 10px 0;
@@ -558,11 +558,11 @@
          height: 100%;
          background-color: rgba(0, 0, 0, 0.5);
          z-index: 998;
-         display: none;
+         display: none; /* 初始隐藏 */
          transition: background-color 0.5s ease;
       }
 
-      .menu-mask.active { display: block; }
+      .menu-mask.active { display: block; } /* 显示时设为block */
    </style>
 </head>
 
@@ -681,14 +681,15 @@
 
      // === 4. Intersection Observer 实现 (追踪阅读进度) ===
      let observer;
+     let isMenuOpen = false; // 添加一个标志来跟踪菜单状态
+
      function observeHeadings() {
          if (observer) observer.disconnect();
 
          const headings = document.querySelectorAll('.content h1, .content h2, .content h3');
-         // 调整阈值，使其在标题刚进入视口或有一定可见度时触发
          const options = {
-             rootMargin: '0px',
-             threshold: [0, 0.2] // 当元素顶部触及视口或20%高度在视口内时触发
+             rootMargin: '0px 0px -50% 0px', // 负的bottom margin，使触发点向上移动，更早地认为元素进入了视口中心下方
+             threshold: [0, 0.1] // 在元素刚开始进入或有少量可见时就触发
          };
 
          observer = new IntersectionObserver((entries) => {
@@ -700,7 +701,13 @@
                      return acc.boundingClientRect.top <= curr.boundingClientRect.top ? acc : curr;
                  });
 
+                 // 更新高亮，无论菜单是否打开
                  setActiveMenuItem(firstIntersectingEntry.target.id);
+
+                 // 仅在菜单打开时执行滚动居中
+                 if (isMenuOpen) {
+                    scrollToCenter(document.querySelector(`.chapter-item[data-id="${firstIntersectingEntry.target.id}"]`));
+                 }
              }
          }, options);
 
@@ -717,41 +724,50 @@
          const newItem = document.querySelector(`.chapter-item[data-id="${id}"]`);
          if (newItem) {
              newItem.classList.add('current');
-             scrollToCenter(newItem);
          }
      }
 
+     // 修复后的 scrollToCenter 函数
      function scrollToCenter(element) {
+         if (!element) return; // 如果元素不存在，则退出
+         
          const container = chapterList;
-         const itemHeight = element.offsetHeight;
-         const containerScrollTop = container.scrollTop;
+         const containerRect = container.getBoundingClientRect();
+         const elementRect = element.getBoundingClientRect();
+         
+         // 计算元素相对于容器的偏移
+         const offsetTop = elementRect.top - containerRect.top + container.scrollTop;
          const containerHeight = container.clientHeight;
-         const itemOffsetTop = element.offsetTop - container.offsetTop;
+         const elementHeight = element.offsetHeight;
 
-         const scrollPosition = itemOffsetTop - (containerHeight / 2) + (itemHeight / 2);
+         // 计算滚动到的目标位置 (元素居中)
+         const targetScrollTop = offsetTop - (containerHeight / 2) + (elementHeight / 2);
 
+         // 执行平滑滚动
          container.scrollTo({
-             top: scrollPosition,
+             top: targetScrollTop,
              behavior: 'smooth'
          });
      }
 
+
      // 初始化观察者
      observeHeadings();
 
-
-     // === 5. 菜单交互功能 ===
+     // 监听菜单开关事件，更新 isMenuOpen 标志
      menuToggle.addEventListener('click', (e) => {
        e.stopPropagation();
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
+       isMenuOpen = true; // 菜单打开
      });
 
      function closeMenu() {
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
+       isMenuOpen = false; // 菜单关闭
      }
 
      closeBtn.addEventListener('click', (e) => {
