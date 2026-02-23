@@ -17,12 +17,17 @@ OMD_DIR = os.path.join(BASE_DIR, "O-MD")
 OMD_JSON = os.path.join(OMD_DIR, "articles.json")
 BASE_YAML_OUT = os.path.join(BASE_DIR, "base.yaml")
 
+# 新增：本地 Posts 目录
+LOCAL_POSTS_DIR = os.path.join(BASE_DIR, ".docs", "posts")
+
 DEFAULT_ARTICLE_TEMPLATE = "article.html"
 DEFAULT_HOME_TEMPLATE = "home.html"
 
 # 创建输出目录
 os.makedirs(ARTICLE_DIR, exist_ok=True)
 os.makedirs(OMD_DIR, exist_ok=True)
+# 创建本地 posts 目录（如果不存在）
+os.makedirs(LOCAL_POSTS_DIR, exist_ok=True)
 
 
 class VaLogGenerator:
@@ -35,6 +40,10 @@ class VaLogGenerator:
         if os.path.exists(CONFIG_PATH):
             with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                 self.config = yaml.safe_load(f) or {}
+        
+        # 读取数据源模式
+        self.data_source_mode = self.config.get('data_source_mode', 'dual').lower()
+        print(f"📋 数据源模式: {self.data_source_mode}")
 
         self.article_template_name = self.config.get('templates', {}).get(
             'VaLog-default-article', DEFAULT_ARTICLE_TEMPLATE
@@ -129,82 +138,183 @@ class VaLogGenerator:
 
         return html_content
 
-    def run(self):
+    def get_issues_articles(self):
+        """从 GitHub Issues 获取文章数据"""
         repo = os.getenv("REPO")
         token = os.getenv("GITHUB_TOKEN")
         if not repo or not token:
             print("❌ 错误: 请设置环境变量 REPO (如 user/repo) 和 GITHUB_TOKEN")
-            return
+            return [], set()
 
         headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
 
-        # 获取 Issues
         try:
             url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page=100"
             resp = requests.get(url, headers=headers, timeout=30)
             resp.raise_for_status()
             issues = [i for i in resp.json() if not i.get("pull_request")]
-            print(f"✅ 成功获取 {len(issues)} 篇公开文章")
+            print(f"✅ 成功获取 {len(issues)} 篇 GitHub Issues 文章")
+            
+            # 返回 issues 列表和 ID 集合
+            return issues, {str(i['number']) for i in issues}
         except Exception as e:
             print(f"❌ GitHub API 请求失败: {e}")
-            return
+            return [], set()
 
-        remote_ids = {str(i['number']) for i in issues}
+    def get_local_files_articles(self):
+        """从本地 .docs/posts 目录获取文章数据"""
+        local_articles = []
+        local_ids = set()
 
-        # === 🔄 三端一致性校验（Issues + 缓存 + docs）===
-        to_process = set()
-        to_delete = set()
+        if not os.path.isdir(LOCAL_POSTS_DIR):
+            print(f"⚠️ 本地文章目录不存在: {LOCAL_POSTS_DIR}")
+            return local_articles, local_ids
 
-        # 获取本地存在的 ID（缓存 + HTML 文件）
-        local_cache_ids = set(self.cache.keys())
-        local_html_ids = {
+        md_files = [f for f in os.listdir(LOCAL_POSTS_DIR) if f.lower().endswith('.md')]
+        print(f"📁 在本地目录找到 {len(md_files)} 个 Markdown 文件")
+        
+        for filename in md_files:
+            file_path = os.path.join(LOCAL_POSTS_DIR, filename)
+            file_id = os.path.splitext(filename)[0] # 去掉 .md 后缀作为 ID
+            local_ids.add(file_id)
+            
+            mtime = os.path.getmtime(file_path)
+            # 为本地文件创建一个类似 issue 的结构，方便后续处理
+            local_article = {
+                "id": file_id,
+                "title": file_id, # 默认标题为文件名
+                "created_at": datetime.fromtimestamp(mtime).isoformat(), # 使用修改时间作为创建时间
+                "updated_at": datetime.fromtimestamp(mtime).isoformat(),
+                "body": self._read_file_with_fallback(file_path), # 读取文件内容
+                "labels": [] # 本地文件默认无标签
+            }
+            local_articles.append(local_article)
+        
+        return local_articles, local_ids
+
+    def _read_file_with_fallback(self, file_path, encodings=['utf-8', 'gbk', 'latin-1']):
+        """尝试多种编码读取文件"""
+        for encoding in encodings:
+            try:
+                with open(file_path, 'r', encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+        raise ValueError(f"无法使用常见编码读取文件: {file_path}")
+
+    def run(self):
+        # 根据配置决定数据源
+        all_issues = []
+        all_local_articles = []
+        remote_ids = set()
+        local_ids = set()
+
+        if self.data_source_mode in ['issues_only', 'dual']:
+            all_issues, remote_ids = self.get_issues_articles()
+        if self.data_source_mode in ['local_only', 'dual']:
+            all_local_articles, local_ids = self.get_local_files_articles()
+        
+        # 合并所有活跃 ID
+        all_active_ids = remote_ids | local_ids
+
+        # === 🔄 清理逻辑：移除已不存在的源所对应的生成物 ===
+        # 获取本地所有“已知”的项目 ID 集合
+        known_from_html = {
             f.replace('.html', '') 
             for f in os.listdir(ARTICLE_DIR) 
             if f.endswith('.html')
         }
-        all_local_ids = local_cache_ids | local_html_ids
+        known_from_cache = set(self.cache.keys())
+        all_known_ids = known_from_html | known_from_cache
 
-        # 处理远程存在的文章
-        for issue in issues:
-            iid = str(issue['number'])
-            updated_at = issue['updated_at']
-            html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{iid}.html"))
-            in_cache = iid in self.cache
-            cache_time_matches = in_cache and self.cache[iid] == updated_at
+        # 确定待删除列表
+        to_delete = all_known_ids - all_active_ids
+        
+        for item_id in to_delete:
+            print(f"🗑️ 清理已移除的文章: #{item_id}")
+            # 删除 HTML 文件
+            html_path = os.path.join(ARTICLE_DIR, f"{item_id}.html")
+            if os.path.exists(html_path):
+                os.remove(html_path)
+            
+            # 删除 O-MD 中的 Markdown 文件 (仅适用于原来源为 Issue 的文章)
+            cache_entry = self.cache.get(item_id, {})
+            if cache_entry.get('type') == 'issue':
+                 omd_md_path = os.path.join(OMD_DIR, f"{item_id}.md")
+                 if os.path.exists(omd_md_path):
+                     os.remove(omd_md_path)
+            
+            # 删除缓存记录
+            if item_id in self.cache:
+                del self.cache[item_id]
 
-            if in_cache and cache_time_matches and not html_exists:
-                print(f"⚠️ HTML 丢失，将重建: #{iid}")
-                to_process.add(iid)
-            elif not in_cache:
-                print(f"🆕 新文章或缓存丢失: #{iid}")
-                to_process.add(iid)
-            elif not cache_time_matches:
-                print(f"🔄 内容已更新: #{iid}")
-                to_process.add(iid)
 
-        # 处理远程不存在的文章（彻底清理）
-        for local_id in all_local_ids:
-            if local_id not in remote_ids:
-                to_delete.add(local_id)
+        # === 🔧 准备处理逻辑 ===
+        to_process_issues = set()
+        to_process_local = set()
 
-        # 执行删除
-        for cid in to_delete:
-            print(f"🗑️ 删除已移除文章: #{cid}")
-            for path in [
-                os.path.join(ARTICLE_DIR, f"{cid}.html"),
-                os.path.join(OMD_DIR, f"{cid}.md")
-            ]:
-                if os.path.exists(path):
-                    os.remove(path)
-            if cid in self.cache:
-                del self.cache[cid]
+        # --- 处理 Issues ---
+        if self.data_source_mode in ['issues_only', 'dual']:
+            for issue in all_issues:
+                iid = str(issue['number'])
+                updated_at = issue['updated_at']
+                
+                html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{iid}.html"))
+                in_cache = iid in self.cache
+                cache_is_issue_type = self.cache.get(iid, {}).get('type') == 'issue'
+                cache_time_matches = in_cache and self.cache[iid].get('last_modified') == updated_at
 
-        # === 开始处理需要生成的文章 ===
+                # 之前缓存了 issue，但 HTML 丢失了
+                if in_cache and cache_is_issue_type and cache_time_matches and not html_exists:
+                    print(f"⚠️ Issue #{iid} HTML 丢失，将重建")
+                    to_process_issues.add(iid)
+                # 之前没缓存过
+                elif not in_cache:
+                    print(f"🆕 新 Issue 或缓存丢失: #{iid}")
+                    to_process_issues.add(iid)
+                # 缓存存在但时间不匹配（内容更新）
+                elif in_cache and cache_is_issue_type and not cache_time_matches:
+                    print(f"🔄 Issue 内容已更新: #{iid}")
+                    to_process_issues.add(iid)
+
+        # --- 处理本地文件 ---
+        if self.data_source_mode in ['local_only', 'dual']:
+            for local_article in all_local_articles:
+                lid = local_article['id']
+                file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md")
+                
+                try:
+                    current_mtime = os.path.getmtime(file_path)
+                    current_mtime_iso = datetime.fromtimestamp(current_mtime).isoformat()
+                except OSError:
+                    print(f"⚠️ 无法访问本地文件 {file_path}, 跳过: #{lid}")
+                    continue
+                
+                html_exists = os.path.exists(os.path.join(ARTICLE_DIR, f"{lid}.html"))
+                in_cache = lid in self.cache
+                cache_is_local_type = self.cache.get(lid, {}).get('type') == 'local_file'
+                cache_time_matches = in_cache and self.cache[lid].get('last_modified') == current_mtime_iso
+
+                # 之前缓存了 local_file，但 HTML 丢失了
+                if in_cache and cache_is_local_type and cache_time_matches and not html_exists:
+                    print(f"⚠️ 本地文件 #{lid} HTML 丢失，将重建")
+                    to_process_local.add(lid)
+                # 之前没缓存过
+                elif not in_cache:
+                    print(f"🆕 新本地文件: #{lid}")
+                    to_process_local.add(lid)
+                # 缓存存在但时间不匹配（文件更新）
+                elif in_cache and cache_is_local_type and not cache_time_matches:
+                    print(f"🔄 本地文件内容已更新: #{lid}")
+                    to_process_local.add(lid)
+
+        # === 📝 开始处理需要生成的文章 ===
         all_articles = []
         specials = []
         special_tags = self.config.get('special_tags', [])
 
-        for issue in issues:
+        # --- 处理 Issues 文章 ---
+        for issue in all_issues:
             iid = str(issue['number'])
             tags = [label['name'] for label in issue.get('labels', [])]
             is_special = 'special' in tags or 'top' in tags or any(t in tags for t in special_tags)
@@ -222,8 +332,8 @@ class VaLogGenerator:
                 "verticalTitle": v_title
             }
 
-            if iid in to_process:
-                print(f"📝 处理文章: #{iid} - {issue['title']}")
+            if iid in to_process_issues:
+                print(f"📝 处理 Issue 文章: #{iid} - {issue['title']}")
                 processed_html = self.process_body(metadata["body"])
 
                 article_data = {
@@ -242,14 +352,70 @@ class VaLogGenerator:
                 with open(os.path.join(ARTICLE_DIR, f"{iid}.html"), "w", encoding="utf-8") as f:
                     f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
 
-                # 保存原始 Markdown
+                # 保存原始 Markdown (仅 Issue)
                 with open(os.path.join(OMD_DIR, f"{iid}.md"), "w", encoding="utf-8") as f:
                     f.write(issue.get('body') or "")
 
-                # 更新缓存
-                self.cache[iid] = issue['updated_at']
+                # 更新缓存 (Issue 类型)
+                self.cache[iid] = {
+                    "type": "issue",
+                    "last_modified": issue['updated_at']
+                }
 
             # 添加到对应列表
+            if is_special:
+                specials.append(list_item)
+            else:
+                all_articles.append(list_item)
+
+        # --- 处理本地文件文章 ---
+        for local_article in all_local_articles:
+            lid = local_article['id']
+            # 本地文件默认无标签，所以不考虑 special
+            is_special = False 
+
+            # 构建列表项所需数据
+            metadata = self.extract_metadata_and_body(local_article.get('body', ''))
+            v_title = metadata["vertical_title"] or local_article['title'] or "Blog"
+            list_item = {
+                "id": lid,
+                "title": local_article['title'],
+                "date": local_article['created_at'][:10],
+                "tags": local_article.get('labels', []), # 本地文件标签为空
+                "content": metadata["summary"],
+                "url": f"article/{lid}.html",
+                "verticalTitle": v_title
+            }
+
+            if lid in to_process_local:
+                print(f"📝 处理本地文件文章: #{lid} - {local_article['title']}")
+                processed_html = self.process_body(metadata["body"])
+
+                article_data = {
+                    "id": lid,
+                    "title": local_article['title'],
+                    "date": local_article['created_at'][:10],
+                    "tags": local_article.get('labels', []),
+                    "content": processed_html,
+                    "url": f"article/{lid}.html",
+                    "verticalTitle": v_title,
+                    "summary": metadata["summary"]
+                }
+
+                # 渲染 HTML
+                tmpl = self.env.get_template(self.article_template_name)
+                with open(os.path.join(ARTICLE_DIR, f"{lid}.html"), "w", encoding="utf-8") as f:
+                    f.write(tmpl.render(article=article_data, blog=self.config.get('blog', {})))
+
+                # 保存到缓存 (Local File 类型)
+                file_path = os.path.join(LOCAL_POSTS_DIR, f"{lid}.md")
+                current_mtime_iso = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+                self.cache[lid] = {
+                    "type": "local_file",
+                    "last_modified": current_mtime_iso
+                }
+
+            # 添加到对应列表 (本地文件目前不支持 special 标签)
             if is_special:
                 specials.append(list_item)
             else:
