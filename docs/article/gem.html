@@ -3956,18 +3956,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        chapterList.appendChild(listItem);
      });
 
-     // 移动端长按松手后清除 hover 残留
-     chapterList.addEventListener('touchend', () => {
-       hoveredItem = null;
-       refreshHighlight();
-     });
-     chapterList.addEventListener('pointerup', (e) => {
-       if (e.pointerType !== 'mouse') {
-         hoveredItem = null;
-         refreshHighlight();
-       }
-     });
-
      // === 4. 高亮 & 进度追踪 ===
      let currentId   = null;
      let hoveredItem = null; // 当前鼠标悬停的 chapter-item
@@ -4028,6 +4016,24 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      }
 
      window.addEventListener('scroll', updateActiveHeading, { passive: true });
+
+     // 移动端长按松手后清除 hover 残留
+     // 注意：要在 hoveredItem 和 refreshHighlight 定义之后绑定
+     chapterList.addEventListener('touchend', () => {
+       hoveredItem = null;
+       refreshHighlight();
+     });
+     chapterList.addEventListener('pointerup', (e) => {
+       if (e.pointerType !== 'mouse') {
+         hoveredItem = null;
+         refreshHighlight();
+       }
+     });
+     // 触摸滑动离开列表区域时也清除
+     chapterList.addEventListener('touchcancel', () => {
+       hoveredItem = null;
+       refreshHighlight();
+     });
 
      // === 5. 菜单控制 ===
      function openMenu() {
