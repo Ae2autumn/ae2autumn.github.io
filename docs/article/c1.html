@@ -2666,6 +2666,14 @@ Fu~fu~<br>
            setTimeout(() => {
              activeState = 'menu';
              setHighlight(centerId);
+             // 500ms 后无操作则回归 scroll 状态
+             setTimeout(() => {
+               if (activeState === 'menu' && !hoveredItem) {
+                 activeState = 'scroll';
+                 setHighlight(currentId);
+                 scrollMenuToItem(currentId);
+               }
+             }, 3000);
            }, 300);
          }
        }, 500);
