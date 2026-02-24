@@ -3946,51 +3946,72 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        // hover 高亮：仅桌面鼠标触发，移动端触摸完全跳过
        listItem.addEventListener('pointerenter', (e) => {
          if (e.pointerType !== 'mouse') return;
-         hoveredItem = listItem;
-         refreshHighlight();
+         onItemPointerEnter(listItem);
        });
        listItem.addEventListener('pointerleave', (e) => {
          if (e.pointerType !== 'mouse') return;
-         hoveredItem = null;
-         refreshHighlight();
+         onItemPointerLeave();
        });
 
        chapterList.appendChild(listItem);
      });
 
-     // === 4. 高亮 & 进度追踪 ===
-     let currentId   = null;
-     let hoveredItem = null; // 当前鼠标悬停的 chapter-item
+     // ==================== 高亮状态机 ====================
+     // 三个互斥状态，优先级：居中(menu-scroll) > 悬停(hover) > 滚动(scroll)
+     // 同一时间只有一个 item 处于高亮，通过 activeId 统一管理
 
-     function refreshHighlight() {
+     let currentId   = null; // 文章滚动驱动的当前标题 id
+     let hoveredItem = null; // 鼠标悬停的 chapter-item 元素
+     let activeState = 'scroll'; // 'scroll' | 'hover' | 'menu'
+
+     let hoverScrollTimer   = null; // 悬停后滚动居中的防抖
+     let menuScrollTimer    = null; // 菜单滚动停止后对齐的防抖
+     let isMenuScrolling    = false;// 菜单是否正在被用户滑动
+
+     // 唯一入口：设置高亮到指定 id
+     function setHighlight(id) {
        document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
          .forEach(i => i.classList.remove('current', 'hovered'));
-       if (hoveredItem) {
-         // 有 hover：只显示 hover 高亮，压制 current
-         hoveredItem.classList.add('hovered');
-       } else {
-         // 无 hover：恢复 current 高亮
-         const item = document.querySelector(`.chapter-item[data-id="${currentId}"]`);
-         if (item) item.classList.add('current');
-       }
+       if (!id) return;
+       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (item) item.classList.add(activeState === 'scroll' ? 'current' : 'hovered');
      }
 
-     function setActiveItem(id) {
-       currentId = id;
-       refreshHighlight();
-     }
-
-     function scrollMenuToItem(id) {
+     // 滚动菜单让指定 item 居中
+     function scrollMenuToItem(id, behavior = 'smooth') {
        const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
        if (!item) return;
-       const container       = chapterList;
-       const itemTop         = item.offsetTop;
-       const itemHeight      = item.offsetHeight;
-       const containerHeight = container.clientHeight;
-       const scrollTarget    = itemTop - (containerHeight - itemHeight) / 2;
-       if (container.scrollHeight > containerHeight) {
-         container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+       const itemTop      = item.offsetTop;
+       const itemHeight   = item.offsetHeight;
+       const containerH   = chapterList.clientHeight;
+       const target       = itemTop - (containerH - itemHeight) / 2;
+       if (chapterList.scrollHeight > containerH) {
+         chapterList.scrollTo({ top: Math.max(0, target), behavior });
        }
+     }
+
+     // 找菜单列表中最靠近视口中心的 item 的 id
+     function getCenteredItemId() {
+       const items      = chapterList.querySelectorAll('.chapter-item');
+       const containerR = chapterList.getBoundingClientRect();
+       const centerY    = containerR.top + containerR.height / 2;
+       let best = null, bestDist = Infinity;
+       items.forEach(item => {
+         const r    = item.getBoundingClientRect();
+         const mid  = r.top + r.height / 2;
+         const dist = Math.abs(mid - centerY);
+         if (dist < bestDist) { bestDist = dist; best = item; }
+       });
+       return best ? best.dataset.id : null;
+     }
+
+     // === 状态：scroll（文章滚动驱动）===
+     function applyScrollState(id) {
+       if (activeState === 'hover') return; // hover 期间不覆盖
+       activeState = 'scroll';
+       currentId   = id;
+       setHighlight(id);
+       if (!isMenuScrolling) scrollMenuToItem(id);
      }
 
      function updateActiveHeading() {
@@ -3998,43 +4019,75 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        const scrollY = window.scrollY;
        const offset  = 80;
        let current   = allHeadings[0];
-
        for (let i = 0; i < allHeadings.length; i++) {
          const top = allHeadings[i].getBoundingClientRect().top + scrollY;
          if (top <= scrollY + offset) current = allHeadings[i];
          else break;
        }
-
-       if (current.id !== currentId) {
-         currentId = current.id;
-         setActiveItem(currentId);
-         scrollMenuToItem(currentId);
+       if (current.id !== currentId || activeState !== 'scroll') {
+         applyScrollState(current.id);
        }
      }
 
      if (allHeadings.length > 0) {
        currentId = allHeadings[0].id;
-       setActiveItem(currentId);
+       applyScrollState(currentId);
      }
 
      window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
-     // 移动端长按松手后清除 hover 残留
-     // 注意：要在 hoveredItem 和 refreshHighlight 定义之后绑定
-     chapterList.addEventListener('touchend', () => {
+     // === 状态：hover（鼠标悬停）===
+     // 已在 allHeadings.forEach 里通过 pointerenter/pointerleave 绑定
+     // 这里提供 enter/leave 的实现供绑定时调用
+
+     function onItemPointerEnter(item) {
+       hoveredItem = item;
+       activeState = 'hover';
+       setHighlight(item.dataset.id);
+       // 防抖 350ms 后滚动居中
+       clearTimeout(hoverScrollTimer);
+       hoverScrollTimer = setTimeout(() => {
+         scrollMenuToItem(item.dataset.id);
+       }, 350);
+     }
+
+     function onItemPointerLeave() {
        hoveredItem = null;
-       refreshHighlight();
-     });
-     chapterList.addEventListener('pointerup', (e) => {
-       if (e.pointerType !== 'mouse') {
-         hoveredItem = null;
-         refreshHighlight();
-       }
-     });
-     // 触摸滑动离开列表区域时也清除
-     chapterList.addEventListener('touchcancel', () => {
-       hoveredItem = null;
-       refreshHighlight();
+       clearTimeout(hoverScrollTimer);
+       // 恢复 scroll 状态
+       activeState = 'scroll';
+       setHighlight(currentId);
+       scrollMenuToItem(currentId);
+     }
+
+     // === 状态：menu（菜单列表滚动）===
+     // 用户直接滑动菜单列表时触发
+     chapterList.addEventListener('scroll', () => {
+       if (activeState === 'hover') return; // hover 期间忽略菜单滚动
+       isMenuScrolling = true;
+       activeState = 'menu';
+
+       clearTimeout(menuScrollTimer);
+       menuScrollTimer = setTimeout(() => {
+         isMenuScrolling = false;
+         // 找到最靠近中心的 item
+         const centerId = getCenteredItemId();
+         if (centerId) {
+           // 先滚动对齐，再高亮
+           scrollMenuToItem(centerId);
+           setTimeout(() => {
+             activeState = 'menu';
+             setHighlight(centerId);
+           }, 300);
+         }
+       }, 500);
+     }, { passive: true });
+
+     // 移动端松手/取消后清除 hover 残留（兜底）
+     chapterList.addEventListener('touchend',    () => { if (hoveredItem) onItemPointerLeave(); });
+     chapterList.addEventListener('touchcancel', () => { if (hoveredItem) onItemPointerLeave(); });
+     chapterList.addEventListener('pointerup',   (e) => {
+       if (e.pointerType !== 'mouse' && hoveredItem) onItemPointerLeave();
      });
 
      // === 5. 菜单控制 ===
