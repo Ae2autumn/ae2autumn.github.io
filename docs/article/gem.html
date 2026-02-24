@@ -242,6 +242,11 @@
       body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
       body.light-mode .chapter-item::after { background: rgba(0,0,0,0.3); }
       .chapter-item:last-child::after { display: none; }
+      
+      /* 桌面端隐藏分割线（光效代替） */
+      @media (hover: hover) and (pointer: fine) {
+         .chapter-item::after { display: none; }
+      }
 
       .chapter-item.h1-item { padding-left: 0; }
       .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
@@ -268,9 +273,17 @@
          display: flex; flex-direction: column;
          background: rgba(0,0,0,0.2);
          border-left: 1px solid rgba(255,255,255,0.07);
-         transition: background 0.5s ease;
+         transition: background 0.5s ease, border-left-color 0.5s ease;
       }
-      body.light-mode .menu-right { background: rgba(0,0,0,0.05); border-left-color: rgba(0,0,0,0.06); }
+      body.light-mode .menu-right { 
+         background: rgba(0,0,0,0.05); 
+         border-left-color: rgba(0,0,0,0.06); 
+      }
+      
+      /* 桌面端隐藏边框（光效代替） */
+      @media (hover: hover) and (pointer: fine) {
+         .menu-right { border-left: none; }
+      }
 
       /* menu-right Reveal（独立于 Canvas） */
       .menu-right::before {
@@ -306,9 +319,13 @@
          color: rgba(255,255,255,0.6); border: none;
          border-top: 1px solid rgba(255,255,255,0.07);
          cursor: pointer; font-size: 16px;
-         transition: background 0.2s, color 0.2s; width: 100%;
+         transition: background 0.2s, color 0.2s, border-top-color 0.5s; width: 100%;
       }
-      body.light-mode .close-btn { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.5); border-top-color: rgba(0,0,0,0.06); }
+      body.light-mode .close-btn { 
+         background: rgba(0,0,0,0.04); 
+         color: rgba(0,0,0,0.5); 
+         border-top-color: rgba(0,0,0,0.06); 
+      }
       .close-btn:hover { color: var(--accent); background-color: rgba(255,0,0,0.08); }
 
       /* ==================== Canvas 叠加层（分隔线发光） ==================== */
@@ -3584,6 +3601,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        const isLight = document.body.classList.contains('light-mode');
        document.documentElement.style.setProperty('--reveal-hi',  isLight ? '180,205,255' : '255,0,0');
        document.documentElement.style.setProperty('--reveal-mid', isLight ? '108,143,255' : '160,0,0');
+       document.documentElement.style.setProperty('--accent', isLight ? '#0066cc' : '#f00');
      }
      function applyTheme() {
        const mode = localStorage.getItem('theme') || "dark";
@@ -3618,23 +3636,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
      // ============================================================
      // 3. 高亮状态机
-     //
-     //  highlightState 三种值（同时只存在一种）：
-     //    'page'       — 默认，由页面滚动位置驱动
-     //    'hover'      — 鼠标悬停某个 item（优先级最高）
-     //    'menuScroll' — 用户手动滑动菜单列表
-     //
-     //  核心规则：
-     //    1. setHighlight() 是唯一修改高亮的入口
-     //    2. hover 进入时锁定状态，page/menuScroll 不可覆盖
-     //    3. hover 离开时立即恢复 page，不触发任何额外滚动
-     //    4. scrollMenuToCenter() 只移动列表 UI，不改状态
-     //       且会短暂屏蔽 chapterList 的 scroll 事件，
-     //       防止程序滚动被误判为 menuScroll
      // ============================================================
-     let pageCurrentId  = null;      // 页面滚动确定的当前标题 id
-     let highlightState = 'page';    // 'page' | 'hover' | 'menuScroll'
-     let highlightId    = null;      // 当前高亮的 id
+     let pageCurrentId  = null;
+     let highlightState = 'page';
+     let highlightId    = null;
 
      function setHighlight(id, state) {
        highlightState = state;
@@ -3647,7 +3652,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      }
 
      // 滚动列表让指定 item 居中（纯 UI，不改状态）
-     // 滚动期间屏蔽 chapterList scroll 事件，防止误触 menuScroll
      let _suppressMenuScroll      = false;
      let _suppressMenuScrollTimer = null;
      function scrollMenuToCenter(id) {
@@ -3660,7 +3664,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        _suppressMenuScroll = true;
        chapterList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
        clearTimeout(_suppressMenuScrollTimer);
-       // smooth 动画通常 ≤ 300ms，留 450ms 余量
        _suppressMenuScrollTimer = setTimeout(() => { _suppressMenuScroll = false; }, 450);
      }
 
@@ -3689,7 +3692,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        });
        item.addEventListener('pointerleave', (e) => {
          if (e.pointerType !== 'mouse') return;
-         // 离开：立即恢复 page，不滚动（避免与 scrollMenuToCenter 循环）
          clearTimeout(_hoverScrollTimer);
          setHighlight(pageCurrentId, 'page');
        });
@@ -3697,7 +3699,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        chapterList.appendChild(item);
      });
 
-     // hover 居中防抖（300ms），只在仍处于同一 hover 时执行
      let _hoverScrollTimer = null;
      function scheduleHoverScroll(id) {
        clearTimeout(_hoverScrollTimer);
@@ -3721,7 +3722,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        }
        if (current.id === pageCurrentId) return;
        pageCurrentId = current.id;
-       // hover 期间不覆盖高亮，pageCurrentId 已更新备用
        if (highlightState !== 'hover') {
          setHighlight(pageCurrentId, 'page');
          if (sideMenuWrapper.classList.contains('active') && highlightState !== 'menuScroll') {
@@ -3730,7 +3730,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        }
      }
 
-     // 页面滚动停止后再次居中（防抖 250ms）
      let _pageScrollStopTimer = null;
      function onPageScroll() {
        updateActiveHeading();
@@ -3746,17 +3745,28 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      window.addEventListener('scroll', onPageScroll, { passive: true });
 
      // ============================================================
-     // 6. 菜单列表手动滚动 → menuScroll 状态
+     // 6. 菜单列表手动滚动 → menuScroll 状态（优化防抖）
      // ============================================================
      let _menuScrollStopTimer = null;
+     let _lastMenuScrollTime  = 0;
+     let _menuScrollVelocity  = 0;
+     
      chapterList.addEventListener('scroll', () => {
-       if (_suppressMenuScroll) return; // 程序触发的滚动，忽略
-       if (highlightState === 'hover')  return; // hover 期间屏蔽
+       if (_suppressMenuScroll) return;
+       if (highlightState === 'hover') return;
+
+       const now = Date.now();
+       const delta = now - _lastMenuScrollTime;
+       _menuScrollVelocity = delta > 0 ? Math.abs(chapterList.scrollTop - (_lastMenuScrollTop || 0)) / delta : 0;
+       _lastMenuScrollTime = now;
+       _lastMenuScrollTop = chapterList.scrollTop;
+
+       // 如果滚动速度过快，延长防抖时间
+       const debounceTime = _menuScrollVelocity > 1.5 ? 600 : 400;
 
        highlightState = 'menuScroll';
        clearTimeout(_menuScrollStopTimer);
        _menuScrollStopTimer = setTimeout(() => {
-         // 找最靠近列表中心的 item
          const items   = chapterList.querySelectorAll('.chapter-item');
          const contR   = chapterList.getBoundingClientRect();
          const centerY = contR.top + contR.height / 2;
@@ -3769,26 +3779,33 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          if (!best) return;
          const centerId = best.dataset.id;
          scrollMenuToCenter(centerId);
-         // 等居中动画完成后再高亮，确认没被 hover 打断
          setTimeout(() => {
            if (highlightState !== 'hover') {
-             pageCurrentId = centerId; // 同步，保持一致
+             pageCurrentId = centerId;
              setHighlight(centerId, 'page');
            }
          }, 460);
-       }, 300);
+       }, debounceTime);
      }, { passive: true });
+     
+     let _lastMenuScrollTop = 0;
 
      // ============================================================
-     // 7. 移动端触摸兜底：清除 hover 残留
+     // 7. 移动端触摸兜底：清除 hover 残留（增强）
      // ============================================================
      function clearHoverFallback() {
        if (highlightState !== 'hover') return;
        clearTimeout(_hoverScrollTimer);
        setHighlight(pageCurrentId, 'page');
      }
+     
+     // 在任何交互时都清除hover状态
+     chapterList.addEventListener('touchstart',  clearHoverFallback);
      chapterList.addEventListener('touchend',    clearHoverFallback);
      chapterList.addEventListener('touchcancel', clearHoverFallback);
+     chapterList.addEventListener('pointerdown', (e) => {
+       if (e.pointerType !== 'mouse') clearHoverFallback();
+     });
      chapterList.addEventListener('pointerup', (e) => {
        if (e.pointerType !== 'mouse') clearHoverFallback();
      });
@@ -3898,7 +3915,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        });
      }
 
-     // revealTargets：去掉 menuLeftEl（Canvas 代劳）
      const revealTargets = [
        { el: menuToggle,      range: 60, alwaysOn: true  },
        { el: sideMenuWrapper, range: 80, alwaysOn: false },
@@ -3932,8 +3948,29 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
            el.style.setProperty('--rx', '-9999px'); el.style.setProperty('--ry', '-9999px');
          }
        });
-       if (menuActive) { resizeCanvas(); canvas.classList.add('active'); drawDividerGlow(e.clientX, e.clientY); }
+       if (menuActive) { 
+         resizeCanvas(); 
+         canvas.classList.add('active'); 
+         drawDividerGlow(e.clientX, e.clientY); 
+       }
      }
+
+     // 页面滚动时清除Canvas光效（防止错位）
+     let _scrollClearTimer = null;
+     window.addEventListener('scroll', () => {
+       if (isDesktop && sideMenuWrapper.classList.contains('active')) {
+         ctx.clearRect(0, 0, canvas.width, canvas.height);
+         canvas.classList.remove('active');
+         // 短暂延迟后恢复，避免频繁重绘
+         clearTimeout(_scrollClearTimer);
+         _scrollClearTimer = setTimeout(() => {
+           if (sideMenuWrapper.classList.contains('active')) {
+             canvas.classList.add('active');
+             resizeCanvas();
+           }
+         }, 150);
+       }
+     }, { passive: true });
 
      document.addEventListener('pointermove',  handleMove);
      document.addEventListener('mousemove',    handleMove);
