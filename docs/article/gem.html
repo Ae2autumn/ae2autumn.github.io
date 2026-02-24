@@ -453,7 +453,7 @@
       }
       #menuRevealCanvas.active { opacity: 1; }
 
-      /* 章节分隔线：第一个和最后一个不显示 */
+      /* 章节项：使用伪元素实现底部分隔线 */
       .chapter-item {
          padding: 10px 0;
          cursor: pointer;
@@ -465,7 +465,7 @@
          position: relative;
       }
 
-      /* 使用 ::after 伪元素实现分隔线，左右留 8px 空隙 */
+      /* 使用 ::after 伪元素实现底部分隔线，左右留 8px 空隙 */
       .chapter-item::after {
          content: '';
          position: absolute;
@@ -476,8 +476,7 @@
          background: var(--divider-color);
       }
 
-      /* 第一个和最后一个 item 不显示分隔线 */
-      .chapter-item:first-child::after,
+      /* 最后一个 item 不显示分隔线 */
       .chapter-item:last-child::after {
          display: none;
       }
@@ -3934,6 +3933,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      let hoverScrollTimer = null;
      let menuScrollTimer = null;
      let isMenuScrolling = false;
+     let hoverLocked = false; // 新增：hover 锁定标志
 
      allHeadings.forEach(heading => {
        const listItem  = document.createElement('div');
@@ -3950,9 +3950,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          closeMenu();
        });
 
-       // hover 状态：桌面端用 pointerenter/leave，移动端用 touchstart/end
+       // hover 状态：桌面端用 pointerenter/leave
        listItem.addEventListener('pointerenter', (e) => {
-         if (e.pointerType === 'mouse') {
+         if (e.pointerType === 'mouse' && !hoverLocked) {
            onItemPointerEnter(listItem);
          }
        });
@@ -3965,7 +3965,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
        // 移动端长按
        listItem.addEventListener('touchstart', () => {
-         onItemPointerEnter(listItem);
+         if (!hoverLocked) {
+           onItemPointerEnter(listItem);
+         }
        });
 
        chapterList.appendChild(listItem);
@@ -3973,7 +3975,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
      // === 4. 高亮与滚动逻辑 ===
      
-     // 设置高亮：严格清除所有旧状态
+     // 设置高亮：严格互斥，同时只能有一个高亮
      function setHighlight(id) {
        // 清除所有高亮状态
        document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
@@ -3984,10 +3986,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
        if (!item) return;
        
-       // 根据当前状态设置对应的 class
-       if (activeState === 'hover' && hoveredItem === item) {
-         item.classList.add('hovered');
-       } else if (activeState === 'scroll' || activeState === 'menu') {
+       // 严格根据状态设置高亮
+       if (activeState === 'hover') {
+         // hover 状态：只高亮 hoveredItem
+         if (hoveredItem && hoveredItem.dataset.id === id) {
+           item.classList.add('hovered');
+         }
+       } else {
+         // scroll 或 menu 状态：高亮 current
          item.classList.add('current');
        }
      }
@@ -4063,15 +4069,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
      // === 状态：hover（鼠标悬停）===
      function onItemPointerEnter(item) {
+       if (hoverLocked) return; // 锁定期间忽略新的 hover
+       
        hoveredItem = item;
        activeState = 'hover';
        setHighlight(item.dataset.id);
        
-       // 防抖 350ms 后滚动居中
+       // 防抖 350ms 后滚动居中，并启动锁定期
        clearTimeout(hoverScrollTimer);
        hoverScrollTimer = setTimeout(() => {
          if (hoveredItem === item && activeState === 'hover') {
+           hoverLocked = true; // 开始锁定
            scrollMenuToItem(item.dataset.id);
+           
+           // 滚动完成后 500ms 解除锁定
+           setTimeout(() => {
+             hoverLocked = false;
+           }, 500);
          }
        }, 350);
      }
@@ -4103,23 +4117,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
            // 先滚动对齐
            scrollMenuToItem(centerId);
            
-           // 等滚动完成后高亮
+           // 等滚动完成后高亮，并保持在 menu 状态（不回退）
            setTimeout(() => {
              if (activeState === 'menu') {
                setHighlight(centerId);
-               
-               // 1.5秒后无操作则回归 scroll 状态
-               setTimeout(() => {
-                 if (activeState === 'menu' && !hoveredItem) {
-                   activeState = 'scroll';
-                   setHighlight(currentId);
-                   scrollMenuToItem(currentId);
-                 }
-               }, 1500);
+               // 移除自动回退逻辑，保持在 menu 状态
              }
            }, 300);
          }
-       }, 600); // 增加防抖时间，减少快速滚动时的闪烁
+       }, 600);
      }, { passive: true });
 
      // 移动端松手/取消后清除 hover 残留
@@ -4212,7 +4218,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        const revealMid = computedStyle.getPropertyValue('--reveal-mid').trim();
 
        const menuRect = menuLeftEl.getBoundingClientRect();
-       const scrollTop = menuLeftEl.scrollTop; // 关键：获取滚动偏移
+       const scrollTop = menuLeftEl.scrollTop;
        const items = menuLeftEl.querySelectorAll('.chapter-item');
        const radius = 80;
 
@@ -4222,10 +4228,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
        if (mdist > radius) return;
 
-       // 遍历所有 item（除了第一个和最后一个）
+       // 遍历所有 item，最后一个不画分隔线
        items.forEach((item, index) => {
-         // 第一个和最后一个不画分隔线
-         if (index === 0 || index === items.length - 1) return;
+         if (index === items.length - 1) return; // 最后一个不画
          
          // 使用 offsetTop 获取相对于父容器的位置
          const itemOffsetBottom = item.offsetTop + item.offsetHeight;
@@ -4294,8 +4299,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          const dist = Math.sqrt(dx * dx + dy * dy);
          
          if (dist <= range) {
-           // menu-left 的 ::before 伪元素使用 absolute 定位
-           // 所以不需要 scrollTop 修正（::before 是相对于 menu-left 的可见区域）
            el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
            el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
          } else {
@@ -4320,14 +4323,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      document.addEventListener('mouseleave',   clearAllReveal);
      window.addEventListener('blur',           clearAllReveal);
      window.addEventListener('resize',         resizeCanvas);
-
-     // 菜单滚动时也要重绘 canvas
-     menuLeftEl.addEventListener('scroll', () => {
-       if (canvas.classList.contains('active')) {
-         // 获取最后一次鼠标位置（可以从事件中获取，这里简化处理）
-         // 实际上滚动时光效会自动跟随，因为 handleMove 会持续触发
-       }
-     }, { passive: true });
 
      } // end isDesktop
 
