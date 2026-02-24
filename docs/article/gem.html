@@ -476,11 +476,11 @@
          left: 8px;
          right: 8px;
          height: 1px;
-         background: rgba(255, 255, 255, 0.15);
+         background: rgba(255, 255, 255, 0.3);
       }
 
       body.light-mode .chapter-item::after {
-         background: rgba(0, 0, 0, 0.12);
+         background: rgba(0, 0, 0, 0.3);
       }
 
       /* 最后一个 item 不要分割线 */
@@ -3954,6 +3954,18 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        });
 
        chapterList.appendChild(listItem);
+     });
+
+     // 移动端长按松手后清除 hover 残留
+     chapterList.addEventListener('touchend', () => {
+       hoveredItem = null;
+       refreshHighlight();
+     });
+     chapterList.addEventListener('pointerup', (e) => {
+       if (e.pointerType !== 'mouse') {
+         hoveredItem = null;
+         refreshHighlight();
+       }
      });
 
      // === 4. 高亮 & 进度追踪 ===
