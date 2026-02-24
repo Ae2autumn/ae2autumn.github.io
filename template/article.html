@@ -405,9 +405,7 @@
 
       .menu-left::-webkit-scrollbar { display: none; }
 
-      /* menu-left 的 Reveal 发光 */
-      /* 半径缩小到 60px：只照亮鼠标附近的边框，不穿透相邻 item 间隙 */
-      /* ::before 挂在自身上，不受 overflow-y:auto 裁剪，外侧边也能触发 */
+      /* menu-left 的外框 Reveal 仍保留，用于左/上/下边框 */
       .menu-left::before {
          content: '';
          position: absolute;
@@ -428,6 +426,16 @@
          pointer-events: none;
          z-index: 2;
       }
+
+      /* Canvas 叠加层：fixed 定位，跟随视口，专门画章节分隔线的发光 */
+      #menuRevealCanvas {
+         position: fixed;
+         pointer-events: none;
+         z-index: 1001;
+         opacity: 0;
+         transition: opacity 0.2s;
+      }
+      #menuRevealCanvas.active { opacity: 1; }
 
       /* 章节项之间的分隔线光效：挂在每个 item 自身的 border-bottom 上 */
       /* 用 outline 模拟底部边框发光，不受 overflow 裁剪 */
@@ -464,6 +472,8 @@
       .chapter-item.current { color: red !important; }
       /* hovered：鼠标悬停时覆盖 current，同一时间只有一个高亮 */
       .chapter-item.hovered { color: red !important; }
+      /* 最后一个 item 不要底部分割线 */
+      .chapter-item:last-child { border-bottom: none; }
 
       /* ==================== 菜单右侧：按钮区 ==================== */
       .menu-right {
@@ -623,6 +633,9 @@
          </div>
       </div>
    </div>
+
+   <!-- Canvas 叠加层：专门画章节分隔线的发光，fixed 定位不受滚动影响 -->
+   <canvas id="menuRevealCanvas"></canvas>
 
    <script>
      const menuToggle     = document.getElementById('menuToggle');
@@ -800,10 +813,67 @@
      updateProgress();
 
      // ==================== Reveal Highlight ====================
-     // 仅桌面端生效：移动端没有悬停概念，跳过所有光效逻辑
+     // 仅桌面端生效
      const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
      if (isDesktop) {
+
+     const canvas   = document.getElementById('menuRevealCanvas');
+     const ctx      = canvas.getContext('2d');
+
+     // 更新 canvas 尺寸和位置，与 menu-left 完全重叠
+     function resizeCanvas() {
+       if (!sideMenuWrapper.classList.contains('active')) return;
+       const r = menuLeftEl.getBoundingClientRect();
+       canvas.width  = r.width;
+       canvas.height = r.height;
+       canvas.style.left = r.left + 'px';
+       canvas.style.top  = r.top  + 'px';
+     }
+
+     // 画章节分隔线的发光：遍历所有 chapter-item 的 border-bottom 位置
+     // getBoundingClientRect 实时取位置，不受 scrollTop 影响
+     function drawDividerGlow(mouseX, mouseY) {
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       if (!sideMenuWrapper.classList.contains('active')) return;
+
+       const menuRect = menuLeftEl.getBoundingClientRect();
+       const items    = menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)'); // 最后一个没有分割线
+       const radius   = 80;
+
+       // 先检查鼠标是否在 menu-left 范围内（含感应距离）
+       const mdx  = Math.max(menuRect.left - mouseX, 0, mouseX - menuRect.right);
+       const mdy  = Math.max(menuRect.top  - mouseY, 0, mouseY - menuRect.bottom);
+       const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+       if (mdist > radius) return; // 超出范围直接跳过
+
+       items.forEach(item => {
+         const itemRect = item.getBoundingClientRect();
+         const lineY    = itemRect.bottom - menuRect.top;
+         const nearestX = Math.max(itemRect.left  - menuRect.left,
+                          Math.min(mouseX - menuRect.left, itemRect.right - menuRect.left));
+         const dist     = Math.hypot(
+           mouseX - menuRect.left - nearestX,
+           mouseY - menuRect.top  - lineY
+         );
+
+         if (dist > radius) return;
+
+         const intensity = 1 - dist / radius;
+         const gx   = mouseX - menuRect.left;
+         const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
+         grad.addColorStop(0,   `rgba(180,205,255,${0.9 * intensity})`);
+         grad.addColorStop(0.4, `rgba(108,143,255,${0.4 * intensity})`);
+         grad.addColorStop(1,   'rgba(108,143,255,0)');
+
+         ctx.beginPath();
+         ctx.moveTo(itemRect.left  - menuRect.left, lineY);
+         ctx.lineTo(itemRect.right - menuRect.left, lineY);
+         ctx.lineWidth   = 1;
+         ctx.strokeStyle = grad;
+         ctx.stroke();
+       });
+     }
 
      const revealTargets = [
        { el: menuToggle,       range: 60,  alwaysOn: true  },
@@ -817,14 +887,17 @@
          el?.style.setProperty('--rx', '-9999px');
          el?.style.setProperty('--ry', '-9999px');
        });
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       canvas.classList.remove('active');
      }
 
      function handleMove(e) {
        if (e.pointerType && e.pointerType !== 'mouse') return;
+       const menuActive = sideMenuWrapper.classList.contains('active');
 
        revealTargets.forEach(({ el, range, alwaysOn }) => {
          if (!el) return;
-         if (!alwaysOn && !sideMenuWrapper.classList.contains('active')) {
+         if (!alwaysOn && !menuActive) {
            el.style.setProperty('--rx', '-9999px');
            el.style.setProperty('--ry', '-9999px');
            return;
@@ -834,16 +907,20 @@
          const dy   = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
          const dist = Math.sqrt(dx * dx + dy * dy);
          if (dist <= range) {
-           // menu-left 有 overflow-y:auto，::before 的坐标系是整个 scrollable 区域
-           // 需要加上 scrollTop 修正，让发光跟随鼠标而不是滚动内容
-           const scrollCorrection = (el === menuLeftEl) ? el.scrollTop : 0;
            el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
-           el.style.setProperty('--ry', (e.clientY - r.top + scrollCorrection) + 'px');
+           el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
          } else {
            el.style.setProperty('--rx', '-9999px');
            el.style.setProperty('--ry', '-9999px');
          }
        });
+
+       // 更新 canvas 分隔线发光
+       if (menuActive) {
+         resizeCanvas();
+         canvas.classList.add('active');
+         drawDividerGlow(e.clientX, e.clientY);
+       }
      }
 
      document.addEventListener('pointermove',  handleMove);
@@ -853,6 +930,8 @@
      document.addEventListener('pointerleave', clearAllReveal);
      document.addEventListener('mouseleave',   clearAllReveal);
      window.addEventListener('blur',           clearAllReveal);
+     // 菜单关闭时清除 canvas
+     window.addEventListener('resize',         resizeCanvas);
 
      } // end isDesktop
 
