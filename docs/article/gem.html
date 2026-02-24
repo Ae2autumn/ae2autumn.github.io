@@ -360,6 +360,15 @@
          z-index: 1;
       }
 
+      body.light-mode .side-menu-wrapper::before {
+         background: radial-gradient(
+            150px circle at var(--rx, -9999px) var(--ry, -9999px),
+            rgba(80, 80, 180, 0.9),
+            rgba(60, 60, 160, 0.4) 45%,
+            transparent 70%
+         );
+      }
+
       /* ==================== 亚克力侧边菜单 ==================== */
       .side-menu {
          /* 不再 fixed，由 wrapper 控制位置 */
@@ -425,6 +434,15 @@
          mask-composite: exclude;
          pointer-events: none;
          z-index: 2;
+      }
+
+      body.light-mode .menu-left::before {
+         background: radial-gradient(
+            60px circle at var(--rx, -9999px) var(--ry, -9999px),
+            rgba(80, 80, 180, 0.85),
+            rgba(60, 60, 160, 0.35) 45%,
+            transparent 70%
+         );
       }
 
       /* Canvas 叠加层：fixed 定位，跟随视口，专门画章节分隔线的发光 */
@@ -525,6 +543,15 @@
          z-index: 2;
       }
 
+      body.light-mode .menu-right::before {
+         background: radial-gradient(
+            130px circle at var(--rx, -9999px) var(--ry, -9999px),
+            rgba(80, 80, 180, 0.65),
+            rgba(60, 60, 160, 0.25) 45%,
+            transparent 70%
+         );
+      }
+
       .menu-buttons {
          flex: 1;
          display: flex;
@@ -533,7 +560,6 @@
          align-items: center;
          padding: 20px 0;
          width: 100%;
-         margin-left: 1px;
       }
 
       /* 红色按钮保留 */
@@ -544,10 +570,10 @@
          cursor: pointer;
          transition: all 0.2s;
          font-size: 20px;
-         width: 47px;
+         width: 50px;
          height: 47px;
          text-align: center;
-         border-radius: 5px;
+         border-radius: 0;
          display: flex;
          justify-content: center;
          align-items: center;
@@ -566,7 +592,6 @@
          font-size: 16px;
          transition: background 0.2s, color 0.2s;
          width: 100%;
-         margin-left: 1px;
       }
 
       body.light-mode .close-btn {
@@ -596,6 +621,15 @@
          -webkit-mask-composite: xor;
          mask-composite: exclude;
          pointer-events: none;
+      }
+
+      body.light-mode .floating-btn::before {
+         background: radial-gradient(
+            80px circle at var(--rx, -9999px) var(--ry, -9999px),
+            rgba(80, 80, 180, 0.9),
+            rgba(60, 60, 160, 0.4) 45%,
+            transparent 70%
+         );
       }
 
       .header, .floating-btn, .side-menu, .comments {
@@ -4062,20 +4096,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
        ctx.clearRect(0, 0, canvas.width, canvas.height);
        if (!sideMenuWrapper.classList.contains('active')) return;
 
+       // 日夜模式适配发光颜色
+       const isLight  = document.body.classList.contains('light-mode');
+       const colorHi  = isLight ? '80,80,180'   : '180,205,255';
+       const colorMid = isLight ? '60,60,160'   : '108,143,255';
+
        const menuRect = menuLeftEl.getBoundingClientRect();
-       const items    = menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)'); // 最后一个没有分割线
+       const items    = menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)');
        const radius   = 80;
 
-       // 先检查鼠标是否在 menu-left 范围内（含感应距离）
-       const mdx  = Math.max(menuRect.left - mouseX, 0, mouseX - menuRect.right);
-       const mdy  = Math.max(menuRect.top  - mouseY, 0, mouseY - menuRect.bottom);
+       const mdx   = Math.max(menuRect.left - mouseX, 0, mouseX - menuRect.right);
+       const mdy   = Math.max(menuRect.top  - mouseY, 0, mouseY - menuRect.bottom);
        const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-       if (mdist > radius) return; // 超出范围直接跳过
+       if (mdist > radius) return;
 
        items.forEach(item => {
-         const itemRect = item.getBoundingClientRect();
-         const lineY    = itemRect.bottom - menuRect.top;
-         // 分割线左右各留 8px 空隙，与 CSS ::after 保持一致
+         const itemRect  = item.getBoundingClientRect();
+         const lineY     = itemRect.bottom - menuRect.top;
          const lineLeft  = itemRect.left  - menuRect.left + 8;
          const lineRight = itemRect.right - menuRect.left - 8;
          const nearestX  = Math.max(lineLeft, Math.min(mouseX - menuRect.left, lineRight));
@@ -4089,9 +4126,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          const intensity = 1 - dist / radius;
          const gx   = mouseX - menuRect.left;
          const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
-         grad.addColorStop(0,   `rgba(180,205,255,${0.9 * intensity})`);
-         grad.addColorStop(0.4, `rgba(108,143,255,${0.4 * intensity})`);
-         grad.addColorStop(1,   'rgba(108,143,255,0)');
+         grad.addColorStop(0,   `rgba(${colorHi},${0.9 * intensity})`);
+         grad.addColorStop(0.4, `rgba(${colorMid},${0.4 * intensity})`);
+         grad.addColorStop(1,   `rgba(${colorMid},0)`);
 
          ctx.beginPath();
          ctx.moveTo(lineLeft,  lineY);
