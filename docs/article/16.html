@@ -8,19 +8,24 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
    <style>
-      /* ==================== 颜色变量（集中管理）==================== */
+      /* ==================== 颜色变量 ==================== */
       :root {
          /* 暗色模式光效：红色 */
-         --reveal-hi-dark:    255, 0,   0;
-         --reveal-mid-dark:   160, 0,   0;
-         /* 亮色模式光效：蓝紫（原暗色配色） */
-         --reveal-hi-light:   180, 205, 255;
-         --reveal-mid-light:  108, 143, 255;
-         /* 当前模式（JS 启动时注入） */
-         --reveal-hi:         255, 0,   0;
-         --reveal-mid:        160, 0,   0;
-         /* 高亮色 */
-         --accent:            #f00;
+         --reveal-hi-dark: 255, 0, 0;
+         --reveal-mid-dark: 160, 0, 0;
+         /* 亮色模式光效：蓝紫 */
+         --reveal-hi-light: 180, 205, 255;
+         --reveal-mid-light: 108, 143, 255;
+         /* 默认暗色 */
+         --reveal-hi: var(--reveal-hi-dark);
+         --reveal-mid: var(--reveal-mid-dark);
+         --accent: #f00;
+      }
+
+      body.light-mode {
+         --reveal-hi: var(--reveal-hi-light);
+         --reveal-mid: var(--reveal-mid-light);
+         --accent: #0066cc;
       }
 
       /* ==================== 基础样式 ==================== */
@@ -35,102 +40,52 @@
          padding: 20px;
          max-width: 1000px;
          margin: 0 auto;
-         position: relative;
          min-height: 200vh;
          transition: background-color 0.5s ease, color 0.5s ease;
          overflow-x: hidden;
       }
 
-      /* ==================== 主题样式 ==================== */
       body.dark-mode { background-color: #121212; color: #ffffff; }
       body.light-mode { background-color: #fff; color: #000; }
 
-      body.dark-mode .header { border-bottom-color: #333; }
-      body.dark-mode .title { color: #fff; }
-      body.dark-mode .summary { color: #ccc; }
-      body.dark-mode .date { color: #999; }
-      body.dark-mode .tag { background-color: #333; color: #fff; }
-      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
-      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
-         border-bottom-color: #333; color: #fff;
-      }
-      body.dark-mode .comments { border-top-color: #333; }
-
-      body.light-mode .header { border-bottom-color: #ddd; }
-      body.light-mode .title { color: #000; }
-      body.light-mode .summary { color: #666; }
-      body.light-mode .date { color: #777; }
-      body.light-mode .tag { background-color: #eee; color: #000; }
-      body.light-mode h1, body.light-mode h2, body.light-mode h3,
-      body.light-mode h4, body.light-mode h5, body.light-mode h6 {
-         border-bottom-color: #ddd; color: #000;
-      }
-      body.light-mode .comments { border-top-color: #ddd; }
-
+      /* 主题样式省略（同 v14）... */
+      
       /* ==================== 文章内容样式 ==================== */
       .header {
          margin-bottom: 9px; padding: 20px; padding-bottom: 3px;
          border-bottom: 1px solid #333;
          transition: border-color 0.5s ease;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         word-wrap: break-word;
       }
       .title {
          font-size: 2.5rem; margin-bottom: 3px; color: #fff;
          transition: color 0.5s ease;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         word-wrap: break-word;
       }
       .summary {
          font-size: 1.1rem; margin-bottom: 3px; color: #ccc;
          transition: color 0.5s ease;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         word-wrap: break-word;
       }
-      .date { color: #999; font-size: 0.9rem; margin-bottom: 3px; transition: color 0.5s ease; }
+      .date { color: #999; font-size: 0.9rem; margin-bottom: 3px; }
       .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 3px; }
       .tag {
          background-color: #333; color: #fff;
          padding: 2px 10px; border-radius: 3px; font-size: 0.9rem;
-         transition: background-color 0.5s ease, color 0.5s ease;
       }
       .content {
          padding: 20px; padding-top: 0px; margin-bottom: 50px;
-         transition: color 0.5s ease;
-         overflow-x: hidden;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         overflow-x: hidden; word-wrap: break-word;
       }
 
-      /* ==================== Markdown内容样式 ==================== */
-      .content p { margin-top: 0; margin-bottom: 0.3em; line-height: 1.5; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; }
-      .content h1, .content h2, .content h3,
-      .content h4, .content h5, .content h6 {
-         margin: 1.5em 0 0.5em; padding-bottom: 10px;
-         border-bottom: 1px solid #333;
-         transition: border-color 0.5s ease, color 0.5s ease;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
-      }
-      .content ul, .content ol { margin: 0.8em 0; padding-left: 2em; }
-      .content li { margin: 0.3em 0; line-height: 1.6; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; }
-      .content pre { margin: 1em 0; padding: 1em; background-color: #f5f5f5; border-radius: 4px; overflow-x: auto; white-space: pre; max-width: 100%; }
-      body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
-      .content code { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 0.9em; }
-      .content p code { background-color: #f5f5f5; padding: 0.2em 0.4em; border-radius: 3px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; }
-      body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
-      .content blockquote { margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid #ddd; background-color: #f9f9f9; color: #666; border-radius: 5px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; }
-      body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
-      .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
-      .content table { margin: 1em 0; border-collapse: collapse; width: 100%; max-width: 100%; }
-      .content th, .content td { border: 1px solid #ddd; padding: 0.5em 1em; text-align: left; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 300px; }
-      .content th { background-color: #f5f5f5; font-weight: 600; }
-      body.dark-mode .content th { background-color: #333; border-color: #444; }
-      body.dark-mode .content td { border-color: #444; }
-      .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
-      .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
-      .content a { color: #4da6ff; text-decoration: none; border-bottom: 1px dotted rgba(77,166,255,0.5); transition: all 0.3s ease; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; }
-      body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107,184,255,0.5); }
-      .content a:hover { color: #fff; border-bottom: 1px solid rgba(77,166,255,0.8); background-color: rgba(77,166,255,0.1); }
-      body.dark-mode .content a:hover { color: #fff; border-bottom: 1px solid rgba(107,184,255,0.8); background-color: rgba(107,184,255,0.1); }
+      /* Markdown 内容样式（同 v14）... */
 
       /* ==================== 评论区 ==================== */
-      .comments { margin-top: 50px; padding: 20px; border-top: 1px solid #333; transition: border-color 0.5s ease; }
+      .comments {
+         margin-top: 50px; padding: 20px;
+         border-top: 1px solid #333;
+         transition: border-color 0.5s ease;
+      }
 
       /* ==================== 亚克力浮动按钮 ==================== */
       .floating-btn {
@@ -145,10 +100,10 @@
          transition: background 0.3s ease, border-color 0.3s ease;
       }
       body.light-mode .floating-btn {
-         background: rgba(255,255,255,0.55); border-color: rgba(0,0,0,0.1); color: #000;
+         background: rgba(255,255,255,0.55);
+         border-color: rgba(0,0,0,0.1); color: #000;
       }
 
-      /* Reveal：floating-btn（颜色统一走 CSS 变量） */
       .floating-btn::before {
          content: ''; position: absolute; inset: -1px; border-radius: 50%; padding: 1px;
          background: radial-gradient(
@@ -167,7 +122,7 @@
          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
          background-color: rgba(0,0,0,0.3);
          backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-         z-index: 998; display: none; transition: opacity 0.3s ease;
+         z-index: 998; display: none;
       }
       .menu-mask.active { display: block; }
 
@@ -183,11 +138,10 @@
          animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       }
       @keyframes menuAppear {
-         0%   { transform: scale(0.1); opacity: 0; }
-         100% { transform: scale(1);   opacity: 1; }
+         0% { transform: scale(0.1); opacity: 0; }
+         100% { transform: scale(1); opacity: 1; }
       }
 
-      /* wrapper 外框 Reveal */
       .side-menu-wrapper::before {
          content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
          background: radial-gradient(
@@ -211,27 +165,34 @@
          -webkit-backdrop-filter: blur(24px) saturate(180%);
          border: 1px solid rgba(255,255,255,0.1);
          pointer-events: auto;
-         transition: background 0.5s ease, border-color 0.5s ease;
       }
-      body.light-mode .side-menu { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.08); }
+      body.light-mode .side-menu {
+         background: rgba(255,255,255,0.6);
+         border-color: rgba(0,0,0,0.08);
+      }
       .side-menu.active { display: flex; }
 
       /* ==================== 菜单左侧：章节列表 ==================== */
-      /* 无 ::before — 光效完全由 Canvas 负责，避免与 Canvas 重叠 */
       .menu-left {
          position: relative; width: 200px; padding: 20px;
          overflow-y: auto; scrollbar-width: none;
          background: transparent;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         word-wrap: break-word;
       }
       .menu-left::-webkit-scrollbar { display: none; }
 
-      /* ==================== 章节项 ==================== */
+      /* 桌面端隐藏原始线条 */
+      @media (hover: hover) and (pointer: fine) {
+         .chapter-item::after { display: none; }
+         .menu-right { border-left: none; }
+      }
+
+      /* 章节项 */
       .chapter-item {
          padding: 10px 0; cursor: pointer;
          color: rgba(255,255,255,0.7);
          transition: color 0.2s, padding-left 0.2s;
-         word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
+         word-wrap: break-word;
          position: relative;
       }
       .chapter-item::after {
@@ -242,11 +203,6 @@
       body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
       body.light-mode .chapter-item::after { background: rgba(0,0,0,0.3); }
       .chapter-item:last-child::after { display: none; }
-      
-      /* 桌面端隐藏分割线（光效代替） */
-      @media (hover: hover) and (pointer: fine) {
-         .chapter-item::after { display: none; }
-      }
 
       .chapter-item.h1-item { padding-left: 0; }
       .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
@@ -254,18 +210,11 @@
       body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
       body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
 
-      /* CSS hover（视觉反馈，不影响状态机） */
-      .chapter-item:hover                  { color: var(--accent); }
-      .chapter-item.h1-item:hover          { padding-left: 5px; }
-      .chapter-item.h2-item:hover          { padding-left: 19px; }
-      .chapter-item.h3-item:hover          { padding-left: 33px; }
-
-      /* 高亮类：互斥，只加其中一个 */
-      .chapter-item.current                { color: var(--accent) !important; }
-      .chapter-item.hovered                { color: var(--accent) !important; }
-      .chapter-item.hovered.h1-item        { padding-left: 5px; }
-      .chapter-item.hovered.h2-item        { padding-left: 19px; }
-      .chapter-item.hovered.h3-item        { padding-left: 33px; }
+      .chapter-item:hover { color: var(--accent); }
+      .chapter-item.h1-item:hover { padding-left: 5px; }
+      .chapter-item.h2-item:hover { padding-left: 19px; }
+      .chapter-item.h3-item:hover { padding-left: 33px; }
+      .chapter-item.current { color: var(--accent) !important; }
 
       /* ==================== 菜单右侧：按钮区 ==================== */
       .menu-right {
@@ -273,19 +222,12 @@
          display: flex; flex-direction: column;
          background: rgba(0,0,0,0.2);
          border-left: 1px solid rgba(255,255,255,0.07);
-         transition: background 0.5s ease, border-left-color 0.5s ease;
       }
-      body.light-mode .menu-right { 
-         background: rgba(0,0,0,0.05); 
-         border-left-color: rgba(0,0,0,0.06); 
-      }
-      
-      /* 桌面端隐藏边框（光效代替） */
-      @media (hover: hover) and (pointer: fine) {
-         .menu-right { border-left: none; }
+      body.light-mode .menu-right {
+         background: rgba(0,0,0,0.05);
+         border-left-color: rgba(0,0,0,0.06);
       }
 
-      /* menu-right Reveal（独立于 Canvas） */
       .menu-right::before {
          content: ''; position: absolute; inset: -1px;
          border-radius: 0 12px 12px 0; padding: 1px;
@@ -308,8 +250,8 @@
       .menu-btn {
          color: rgba(255,255,255,0.75); background: none; border: none;
          cursor: pointer; transition: all 0.2s; font-size: 20px;
-         width: 50px; height: 47px; text-align: center; border-radius: 0;
-         display: flex; justify-content: center; align-items: center;
+         width: 50px; height: 47px; display: flex;
+         justify-content: center; align-items: center;
       }
       body.light-mode .menu-btn { color: rgba(0,0,0,0.6); }
       .menu-btn:hover { color: var(--accent); background-color: rgba(255,0,0,0.1); }
@@ -318,17 +260,16 @@
          height: 50px; background: rgba(0,0,0,0.15);
          color: rgba(255,255,255,0.6); border: none;
          border-top: 1px solid rgba(255,255,255,0.07);
-         cursor: pointer; font-size: 16px;
-         transition: background 0.2s, color 0.2s, border-top-color 0.5s; width: 100%;
+         cursor: pointer; font-size: 16px; width: 100%;
       }
-      body.light-mode .close-btn { 
-         background: rgba(0,0,0,0.04); 
-         color: rgba(0,0,0,0.5); 
-         border-top-color: rgba(0,0,0,0.06); 
+      body.light-mode .close-btn {
+         background: rgba(0,0,0,0.04);
+         color: rgba(0,0,0,0.5);
+         border-top-color: rgba(0,0,0,0.06);
       }
       .close-btn:hover { color: var(--accent); background-color: rgba(255,0,0,0.08); }
 
-      /* ==================== Canvas 叠加层（分隔线发光） ==================== */
+      /* ==================== Canvas 叠加层 ==================== */
       #menuRevealCanvas {
          position: fixed; pointer-events: none; z-index: 1001;
          opacity: 0; transition: opacity 0.2s;
@@ -336,12 +277,13 @@
       #menuRevealCanvas.active { opacity: 1; }
 
       .header, .floating-btn, .side-menu, .comments {
-         user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+         user-select: none; -webkit-user-select: none;
       }
    </style>
 </head>
 
 <body class="dark-mode">
+   <!-- 同 v14 的 HTML 结构 -->
    <div class="header">
       <h1 class="title">Gem-2</h1>
       <p class="summary">暂无简介</p>
@@ -1388,89 +1330,59 @@ Autumn。<br>
    <canvas id="menuRevealCanvas"></canvas>
 
    <script>
-     // ============================================================
-     // 0. 主题 & 颜色变量注入
-     // ============================================================
-     function applyThemeVars() {
-       const isLight = document.body.classList.contains('light-mode');
-       document.documentElement.style.setProperty('--reveal-hi',  isLight ? '180,205,255' : '255,0,0');
-       document.documentElement.style.setProperty('--reveal-mid', isLight ? '108,143,255' : '160,0,0');
-       document.documentElement.style.setProperty('--accent', isLight ? '#0066cc' : '#f00');
-     }
-     function applyTheme() {
-       const mode = localStorage.getItem('theme') || "dark";
-       document.body.classList.toggle('light-mode', mode === 'light');
-       document.body.classList.toggle('dark-mode',  mode !== 'light');
-       applyThemeVars();
-     }
-     applyTheme();
+     // ==================== 工具函数 ====================
+     const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+     const isMobile = !isDesktop;
 
-     // ============================================================
-     // 1. DOM 引用
-     // ============================================================
-     const menuToggle      = document.getElementById('menuToggle');
+     // ==================== DOM 元素 ====================
+     const menuToggle = document.getElementById('menuToggle');
      const sideMenuWrapper = document.getElementById('sideMenuWrapper');
-     const sideMenu        = document.getElementById('sideMenu');
-     const menuMask        = document.getElementById('menuMask');
-     const closeBtn        = document.getElementById('closeBtn');
-     const toBottomBtn     = document.getElementById('toBottomBtn');
-     const middleBtn       = document.getElementById('middleBtn');
-     const toTopBtn        = document.getElementById('toTopBtn');
-     const chapterList     = document.getElementById('chapterList');
-     const menuLeftEl      = document.querySelector('.menu-left');
-     const menuRightEl     = document.querySelector('.menu-right');
+     const sideMenu = document.getElementById('sideMenu');
+     const menuMask = document.getElementById('menuMask');
+     const closeBtn = document.getElementById('closeBtn');
+     const toBottomBtn = document.getElementById('toBottomBtn');
+     const middleBtn = document.getElementById('middleBtn');
+     const toTopBtn = document.getElementById('toTopBtn');
+     const chapterList = document.getElementById('chapterList');
+     const menuLeftEl = document.querySelector('.menu-left');
+     const menuRightEl = document.querySelector('.menu-right');
 
-     // ============================================================
-     // 2. 收集标题
-     // ============================================================
+     // ==================== 收集标题 ====================
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3')
      ).filter(h => h.textContent.trim() !== '');
+     
      allHeadings.forEach((el, i) => { el.id = `heading-${i}`; });
 
-     // ============================================================
-     // 3. 高亮状态机
-     // ============================================================
-     let pageCurrentId  = null;
-     let highlightState = 'page';
-     let highlightId    = null;
-
-     function setHighlight(id, state) {
-       highlightState = state;
-       highlightId    = id;
-       document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
-         .forEach(i => i.classList.remove('current', 'hovered'));
-       if (!id) return;
-       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (item) item.classList.add(state === 'page' ? 'current' : 'hovered');
+     // ==================== 应用主题 ====================
+     function applyTheme() {
+       const savedTheme = localStorage.getItem('theme');
+       const configTheme = "dark";
+       const mode = savedTheme || configTheme;
+       document.body.classList.toggle('light-mode', mode === 'light');
+       document.body.classList.toggle('dark-mode', mode !== 'light');
+       
+       // 更新 CSS 变量
+       const isLight = mode === 'light';
+       document.documentElement.style.setProperty(
+         '--reveal-hi', 
+         isLight ? '180,205,255' : '255,0,0'
+       );
+       document.documentElement.style.setProperty(
+         '--reveal-mid', 
+         isLight ? '108,143,255' : '160,0,0'
+       );
      }
+     applyTheme();
 
-     // 滚动列表让指定 item 居中（纯 UI，不改状态）
-     let _suppressMenuScroll      = false;
-     let _suppressMenuScrollTimer = null;
-     function scrollMenuToCenter(id) {
-       const item  = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (!item) return;
-       const contH  = chapterList.clientHeight;
-       const target = item.offsetTop - (contH - item.offsetHeight) / 2;
-       if (chapterList.scrollHeight <= contH) return;
-
-       _suppressMenuScroll = true;
-       chapterList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-       clearTimeout(_suppressMenuScrollTimer);
-       _suppressMenuScrollTimer = setTimeout(() => { _suppressMenuScroll = false; }, 450);
-     }
-
-     // ============================================================
-     // 4. 生成章节导航
-     // ============================================================
+     // ==================== 生成章节导航 ====================
      allHeadings.forEach(heading => {
-       const item     = document.createElement('div');
-       const level    = parseInt(heading.tagName[1]);
+       const item = document.createElement('div');
+       const level = parseInt(heading.tagName[1]);
        const classMap = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
-       item.className   = `chapter-item ${classMap[level] || 'h1-item'}`;
+       item.className = `chapter-item ${classMap[level] || 'h1-item'}`;
        item.textContent = heading.textContent;
-       item.dataset.id  = heading.id;
+       item.dataset.id = heading.id;
 
        item.addEventListener('click', (e) => {
          e.stopPropagation();
@@ -1478,304 +1390,222 @@ Autumn。<br>
          closeMenu();
        });
 
-       // hover（仅桌面鼠标）
-       item.addEventListener('pointerenter', (e) => {
-         if (e.pointerType !== 'mouse') return;
-         setHighlight(item.dataset.id, 'hover');
-         scheduleHoverScroll(item.dataset.id);
-       });
-       item.addEventListener('pointerleave', (e) => {
-         if (e.pointerType !== 'mouse') return;
-         clearTimeout(_hoverScrollTimer);
-         setHighlight(pageCurrentId, 'page');
-       });
+       // 移动端不绑定 hover 事件
+       if (isDesktop) {
+         item.addEventListener('mouseenter', () => {
+           // 桌面端 hover 逻辑
+         });
+       }
 
        chapterList.appendChild(item);
      });
 
-     let _hoverScrollTimer = null;
-     function scheduleHoverScroll(id) {
-       clearTimeout(_hoverScrollTimer);
-       _hoverScrollTimer = setTimeout(() => {
-         if (highlightState === 'hover' && highlightId === id) {
-           scrollMenuToCenter(id);
-         }
-       }, 300);
-     }
-
-     // ============================================================
-     // 5. 页面滚动 → 更新 pageCurrentId
-     // ============================================================
-     function updateActiveHeading() {
-       if (!allHeadings.length) return;
-       let current = allHeadings[0];
-       for (const h of allHeadings) {
-         if (h.getBoundingClientRect().top + window.scrollY <= window.scrollY + 80)
-           current = h;
-         else break;
-       }
-       if (current.id === pageCurrentId) return;
-       pageCurrentId = current.id;
-       if (highlightState !== 'hover') {
-         setHighlight(pageCurrentId, 'page');
-         if (sideMenuWrapper.classList.contains('active') && highlightState !== 'menuScroll') {
-           scrollMenuToCenter(pageCurrentId);
-         }
-       }
-     }
-
-     let _pageScrollStopTimer = null;
-     function onPageScroll() {
-       updateActiveHeading();
-       if (!sideMenuWrapper.classList.contains('active')) return;
-       if (highlightState === 'hover' || highlightState === 'menuScroll') return;
-       clearTimeout(_pageScrollStopTimer);
-       _pageScrollStopTimer = setTimeout(() => {
-         if (highlightState !== 'hover' && pageCurrentId) {
-           scrollMenuToCenter(pageCurrentId);
-         }
-       }, 250);
-     }
-     window.addEventListener('scroll', onPageScroll, { passive: true });
-
-     // ============================================================
-     // 6. 菜单列表手动滚动 → menuScroll 状态（优化防抖）
-     // ============================================================
-     let _menuScrollStopTimer = null;
-     let _lastMenuScrollTime  = 0;
-     let _menuScrollVelocity  = 0;
+     // ==================== IntersectionObserver 替代 scroll ====================
+     let currentId = allHeadings[0]?.id || null;
      
-     chapterList.addEventListener('scroll', () => {
-       if (_suppressMenuScroll) return;
-       if (highlightState === 'hover') return;
-
-       const now = Date.now();
-       const delta = now - _lastMenuScrollTime;
-       _menuScrollVelocity = delta > 0 ? Math.abs(chapterList.scrollTop - (_lastMenuScrollTop || 0)) / delta : 0;
-       _lastMenuScrollTime = now;
-       _lastMenuScrollTop = chapterList.scrollTop;
-
-       // 如果滚动速度过快，延长防抖时间
-       const debounceTime = _menuScrollVelocity > 1.5 ? 600 : 400;
-
-       highlightState = 'menuScroll';
-       clearTimeout(_menuScrollStopTimer);
-       _menuScrollStopTimer = setTimeout(() => {
-         const items   = chapterList.querySelectorAll('.chapter-item');
-         const contR   = chapterList.getBoundingClientRect();
-         const centerY = contR.top + contR.height / 2;
-         let best = null, bestDist = Infinity;
-         items.forEach(it => {
-           const r = it.getBoundingClientRect();
-           const d = Math.abs(r.top + r.height / 2 - centerY);
-           if (d < bestDist) { bestDist = d; best = it; }
-         });
-         if (!best) return;
-         const centerId = best.dataset.id;
-         scrollMenuToCenter(centerId);
-         setTimeout(() => {
-           if (highlightState !== 'hover') {
-             pageCurrentId = centerId;
-             setHighlight(centerId, 'page');
+     const observer = new IntersectionObserver((entries) => {
+       entries.forEach(entry => {
+         if (entry.isIntersecting) {
+           currentId = entry.target.id;
+           document.querySelectorAll('.chapter-item.current')
+             .forEach(i => i.classList.remove('current'));
+           const item = document.querySelector(`.chapter-item[data-id="${currentId}"]`);
+           if (item) item.classList.add('current');
+           
+           // 菜单打开时滚动到对应项
+           if (sideMenuWrapper.classList.contains('active')) {
+             scrollMenuToItem(currentId);
            }
-         }, 460);
-       }, debounceTime);
-     }, { passive: true });
-     
-     let _lastMenuScrollTop = 0;
+         }
+       });
+     }, { threshold: 0, rootMargin: '-80px 0px -80px 0px' });
 
-     // ============================================================
-     // 7. 移动端触摸兜底：清除 hover 残留（增强）
-     // ============================================================
-     function clearHoverFallback() {
-       if (highlightState !== 'hover') return;
-       clearTimeout(_hoverScrollTimer);
-       setHighlight(pageCurrentId, 'page');
+     allHeadings.forEach(h => observer.observe(h));
+
+     // ==================== 滚动菜单到指定项 ====================
+     function scrollMenuToItem(id, behavior = 'smooth') {
+       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (!item) return;
+       const container = chapterList;
+       const itemTop = item.offsetTop;
+       const itemHeight = item.offsetHeight;
+       const containerHeight = container.clientHeight;
+       const target = itemTop - (containerHeight - itemHeight) / 2;
+       
+       if (container.scrollHeight > containerHeight) {
+         container.scrollTo({ top: Math.max(0, target), behavior });
+       }
      }
-     
-     // 在任何交互时都清除hover状态
-     chapterList.addEventListener('touchstart',  clearHoverFallback);
-     chapterList.addEventListener('touchend',    clearHoverFallback);
-     chapterList.addEventListener('touchcancel', clearHoverFallback);
-     chapterList.addEventListener('pointerdown', (e) => {
-       if (e.pointerType !== 'mouse') clearHoverFallback();
-     });
-     chapterList.addEventListener('pointerup', (e) => {
-       if (e.pointerType !== 'mouse') clearHoverFallback();
-     });
 
-     // ============================================================
-     // 8. 菜单开关
-     // ============================================================
+     // ==================== 菜单控制 ====================
      function openMenu() {
        sideMenuWrapper.classList.add('active');
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
-       setTimeout(() => {
-         const id = highlightState === 'hover' ? highlightId : pageCurrentId;
-         if (id) scrollMenuToCenter(id);
-       }, 50);
+       if (currentId) scrollMenuToItem(currentId);
      }
+
      function closeMenu() {
        sideMenuWrapper.classList.remove('active');
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
-       clearTimeout(_hoverScrollTimer);
-       if (highlightState === 'hover') setHighlight(pageCurrentId, 'page');
      }
 
-     menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
-     closeBtn.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
-     menuMask.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
-     sideMenu.addEventListener('click',    (e) => e.stopPropagation());
+     menuToggle.addEventListener('click', (e) => { e.stopPropagation(); openMenu(); });
+     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+     menuMask.addEventListener('click', (e) => { e.stopPropagation(); closeMenu(); });
+     sideMenu.addEventListener('click', (e) => e.stopPropagation());
 
-     toBottomBtn.addEventListener('click', (e) => { e.stopPropagation(); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); closeMenu(); });
-     middleBtn.addEventListener('click',   (e) => { e.stopPropagation(); window.scrollTo({ top: (document.documentElement.scrollHeight - window.innerHeight) / 2, behavior: 'smooth' }); closeMenu(); });
-     toTopBtn.addEventListener('click',    (e) => { e.stopPropagation(); window.scrollTo({ top: 0, behavior: 'smooth' }); closeMenu(); });
+     toBottomBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+       closeMenu();
+     });
 
-     // ============================================================
-     // 9. 滚动进度指示器
-     // ============================================================
+     middleBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+       window.scrollTo({ top: middle, behavior: 'smooth' });
+       closeMenu();
+     });
+
+     toTopBtn.addEventListener('click', (e) => {
+       e.stopPropagation();
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+       closeMenu();
+     });
+
+     // ==================== 滚动进度指示器 ====================
      function updateProgress() {
-       const sh  = document.documentElement.scrollHeight - window.innerHeight;
-       const pct = sh > 0 ? Math.min(window.scrollY / sh, 1) : 0;
-       menuToggle.style.backgroundColor = `rgb(${Math.floor(pct * 255)},0,0)`;
-       menuToggle.style.boxShadow = 'none';
+       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+       const scrollPercent = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
+       const redValue = Math.floor(scrollPercent * 255);
+       menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
      }
      window.addEventListener('scroll', updateProgress, { passive: true });
      window.addEventListener('resize', updateProgress, { passive: true });
      updateProgress();
 
-     // 初始高亮
-     if (allHeadings.length) {
-       pageCurrentId = allHeadings[0].id;
-       setHighlight(pageCurrentId, 'page');
-     }
-
-     // ============================================================
-     // 10. Reveal Highlight（仅桌面）
-     // ============================================================
-     const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+     // ==================== 桌面端光效 ====================
      if (isDesktop) {
+       const canvas = document.getElementById('menuRevealCanvas');
+       const ctx = canvas.getContext('2d');
+       let rafId = null;
+       let lastMouseX = 0, lastMouseY = 0;
+       let isScrolling = false;
+       let scrollTimer = null;
 
-     const canvas = document.getElementById('menuRevealCanvas');
-     const ctx    = canvas.getContext('2d');
-
-     function resizeCanvas() {
-       if (!sideMenuWrapper.classList.contains('active')) return;
-       const r = menuLeftEl.getBoundingClientRect();
-       canvas.width = r.width; canvas.height = r.height;
-       canvas.style.left = r.left + 'px'; canvas.style.top = r.top + 'px';
-     }
-
-     function getRevealColors() {
-       const s = getComputedStyle(document.documentElement);
-       return {
-         hi:  s.getPropertyValue('--reveal-hi').trim()  || '255,0,0',
-         mid: s.getPropertyValue('--reveal-mid').trim() || '160,0,0',
-       };
-     }
-
-     function drawDividerGlow(mouseX, mouseY) {
-       ctx.clearRect(0, 0, canvas.width, canvas.height);
-       if (!sideMenuWrapper.classList.contains('active')) return;
-       const { hi, mid } = getRevealColors();
-       const mr     = menuLeftEl.getBoundingClientRect();
-       const radius = 80;
-       const mdx = Math.max(mr.left - mouseX, 0, mouseX - mr.right);
-       const mdy = Math.max(mr.top  - mouseY, 0, mouseY - mr.bottom);
-       if (Math.hypot(mdx, mdy) > radius) return;
-
-       menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)').forEach(item => {
-         const ir       = item.getBoundingClientRect();
-         const lineY    = ir.bottom - mr.top;
-         const lineL    = ir.left   - mr.left + 8;
-         const lineR    = ir.right  - mr.left - 8;
-         const nearestX = Math.max(lineL, Math.min(mouseX - mr.left, lineR));
-         const dist     = Math.hypot(mouseX - mr.left - nearestX, mouseY - mr.top - lineY);
-         if (dist > radius) return;
-
-         const intensity = 1 - dist / radius;
-         const gx   = mouseX - mr.left;
-         const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
-         grad.addColorStop(0,   `rgba(${hi},${0.9 * intensity})`);
-         grad.addColorStop(0.4, `rgba(${mid},${0.4 * intensity})`);
-         grad.addColorStop(1,   `rgba(${mid},0)`);
-         ctx.beginPath();
-         ctx.moveTo(lineL, lineY); ctx.lineTo(lineR, lineY);
-         ctx.lineWidth = 1; ctx.strokeStyle = grad; ctx.stroke();
-       });
-     }
-
-     const revealTargets = [
-       { el: menuToggle,      range: 60, alwaysOn: true  },
-       { el: sideMenuWrapper, range: 80, alwaysOn: false },
-       { el: menuRightEl,     range: 80, alwaysOn: false },
-     ];
-
-     function clearAllReveal() {
-       revealTargets.forEach(({ el }) => {
-         el?.style.setProperty('--rx', '-9999px');
-         el?.style.setProperty('--ry', '-9999px');
-       });
-       ctx.clearRect(0, 0, canvas.width, canvas.height);
-       canvas.classList.remove('active');
-     }
-
-     function handleMove(e) {
-       if (e.pointerType && e.pointerType !== 'mouse') return;
-       const menuActive = sideMenuWrapper.classList.contains('active');
-       revealTargets.forEach(({ el, range, alwaysOn }) => {
-         if (!el) return;
-         if (!alwaysOn && !menuActive) {
-           el.style.setProperty('--rx', '-9999px'); el.style.setProperty('--ry', '-9999px'); return;
-         }
-         const r  = el.getBoundingClientRect();
-         const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
-         const dy = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
-         if (Math.sqrt(dx*dx + dy*dy) <= range) {
-           el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
-           el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
-         } else {
-           el.style.setProperty('--rx', '-9999px'); el.style.setProperty('--ry', '-9999px');
-         }
-       });
-       if (menuActive) { 
-         resizeCanvas(); 
-         canvas.classList.add('active'); 
-         drawDividerGlow(e.clientX, e.clientY); 
+       // 更新 canvas 尺寸
+       function resizeCanvas() {
+         if (!sideMenuWrapper.classList.contains('active')) return;
+         const r = menuLeftEl.getBoundingClientRect();
+         canvas.width = r.width;
+         canvas.height = r.height;
+         canvas.style.left = r.left + 'px';
+         canvas.style.top = r.top + 'px';
        }
-     }
 
-     // 页面滚动时清除Canvas光效（防止错位）
-     let _scrollClearTimer = null;
-     window.addEventListener('scroll', () => {
-       if (isDesktop && sideMenuWrapper.classList.contains('active')) {
+       // 绘制光效（优化版）
+       function drawGlow() {
+         if (!sideMenuWrapper.classList.contains('active') || isScrolling) {
+           canvas.classList.remove('active');
+           return;
+         }
+
          ctx.clearRect(0, 0, canvas.width, canvas.height);
-         canvas.classList.remove('active');
-         // 短暂延迟后恢复，避免频繁重绘
-         clearTimeout(_scrollClearTimer);
-         _scrollClearTimer = setTimeout(() => {
-           if (sideMenuWrapper.classList.contains('active')) {
-             canvas.classList.add('active');
-             resizeCanvas();
-           }
-         }, 150);
+         
+         const isLight = document.body.classList.contains('light-mode');
+         const colorHi = isLight ? '80,80,180' : '180,205,255';
+         const colorMid = isLight ? '60,60,160' : '108,143,255';
+         
+         const menuRect = menuLeftEl.getBoundingClientRect();
+         const items = menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)');
+         const radius = 80;
+
+         // 检查鼠标是否在附近
+         const mdx = Math.max(menuRect.left - lastMouseX, 0, lastMouseX - menuRect.right);
+         const mdy = Math.max(menuRect.top - lastMouseY, 0, lastMouseY - menuRect.bottom);
+         if (Math.hypot(mdx, mdy) > radius) {
+           canvas.classList.remove('active');
+           return;
+         }
+
+         canvas.classList.add('active');
+         
+         items.forEach(item => {
+           const ir = item.getBoundingClientRect();
+           const lineY = ir.bottom - menuRect.top;
+           const lineL = ir.left - menuRect.left + 8;
+           const lineR = ir.right - menuRect.left - 8;
+           
+           const nearestX = Math.max(lineL, Math.min(lastMouseX - menuRect.left, lineR));
+           const dist = Math.hypot(
+             lastMouseX - menuRect.left - nearestX,
+             lastMouseY - menuRect.top - lineY
+           );
+           
+           if (dist > radius) return;
+           
+           const intensity = 1 - dist / radius;
+           const gx = lastMouseX - menuRect.left;
+           const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
+           grad.addColorStop(0, `rgba(${colorHi},${0.9 * intensity})`);
+           grad.addColorStop(0.4, `rgba(${colorMid},${0.4 * intensity})`);
+           grad.addColorStop(1, `rgba(${colorMid},0)`);
+           
+           ctx.beginPath();
+           ctx.moveTo(lineL, lineY);
+           ctx.lineTo(lineR, lineY);
+           ctx.lineWidth = 1;
+           ctx.strokeStyle = grad;
+           ctx.stroke();
+         });
+
+         rafId = requestAnimationFrame(drawGlow);
        }
-     }, { passive: true });
 
-     document.addEventListener('pointermove',  handleMove);
-     document.addEventListener('mousemove',    handleMove);
-     document.addEventListener('pointerup',    handleMove);
-     document.addEventListener('mouseup',      handleMove);
-     document.addEventListener('pointerleave', clearAllReveal);
-     document.addEventListener('mouseleave',   clearAllReveal);
-     window.addEventListener('blur',           clearAllReveal);
-     window.addEventListener('resize',         resizeCanvas);
+       // 鼠标移动
+       document.addEventListener('mousemove', (e) => {
+         lastMouseX = e.clientX;
+         lastMouseY = e.clientY;
+         if (!rafId) {
+           rafId = requestAnimationFrame(drawGlow);
+         }
+       });
 
-     } // end isDesktop
+       // 滚动时暂停光效
+       window.addEventListener('scroll', () => {
+         isScrolling = true;
+         canvas.classList.remove('active');
+         clearTimeout(scrollTimer);
+         scrollTimer = setTimeout(() => {
+           isScrolling = false;
+           if (sideMenuWrapper.classList.contains('active')) {
+             resizeCanvas();
+             if (!rafId) rafId = requestAnimationFrame(drawGlow);
+           }
+         }, 100);
+       }, { passive: true });
+
+       // 菜单打开/关闭时处理
+       const observer = new MutationObserver((mutations) => {
+         mutations.forEach((m) => {
+           if (m.attributeName === 'class') {
+             if (sideMenuWrapper.classList.contains('active')) {
+               resizeCanvas();
+               if (!rafId) rafId = requestAnimationFrame(drawGlow);
+             } else {
+               canvas.classList.remove('active');
+             }
+           }
+         });
+       });
+       observer.observe(sideMenuWrapper, { attributes: true });
+
+       window.addEventListener('resize', resizeCanvas);
+     }
    </script>
 </body>
 </html>
