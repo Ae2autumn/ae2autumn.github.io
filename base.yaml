@@ -10,6 +10,15 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '18'
+  title: '"我"'
+  date: '2026-02-24'
+  tags:
+  - 记录
+  - 回忆
+  content: 暂无简介
+  url: article/18.html
+  verticalTitle: '"我"'
 - id: c1
   title: c1
   date: '2026-02-24'
