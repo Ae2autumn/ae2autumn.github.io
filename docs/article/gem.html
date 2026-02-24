@@ -8,29 +8,19 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
    <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
    <style>
-
-      /* ==================== 主题色彩变量（集中管理） ==================== */
+      /* ==================== 颜色变量（集中管理）==================== */
       :root {
-         /* 暗色模式：红色光效 */
-         --reveal-hi-dark:    180, 0, 0;       /* #b40000 */
-         --reveal-mid-dark:   120, 0, 0;       /* #780000 */
-
-         /* 亮色模式：蓝紫色光效（原暗色模式颜色） */
-         --reveal-hi-light:   180, 205, 255;   /* #b4cdff */
-         --reveal-mid-light:  108, 143, 255;   /* #6c8fff */
-
-         /* 激活态颜色（章节高亮、按钮 hover 等） */
+         /* 暗色模式光效：红色 */
+         --reveal-hi-dark:    255, 0,   0;
+         --reveal-mid-dark:   160, 0,   0;
+         /* 亮色模式光效：蓝紫（原暗色配色） */
+         --reveal-hi-light:   180, 205, 255;
+         --reveal-mid-light:  108, 143, 255;
+         /* 当前模式（JS 启动时注入） */
+         --reveal-hi:         255, 0,   0;
+         --reveal-mid:        160, 0,   0;
+         /* 高亮色 */
          --accent:            #f00;
-
-         /* 菜单背景透明度 */
-         --menu-bg-dark:      rgba(18, 18, 18, 0.6);
-         --menu-bg-light:     rgba(255, 255, 255, 0.6);
-         --menu-right-bg-dark:  rgba(0, 0, 0, 0.2);
-         --menu-right-bg-light: rgba(0, 0, 0, 0.05);
-
-         /* 分割线颜色 */
-         --divider-dark:      rgba(255, 255, 255, 0.3);
-         --divider-light:     rgba(0, 0, 0, 0.3);
       }
 
       /* ==================== 基础样式 ==================== */
@@ -154,9 +144,11 @@
          -webkit-backdrop-filter: blur(20px) saturate(180%);
          transition: background 0.3s ease, border-color 0.3s ease;
       }
-      body.light-mode .floating-btn { background: rgba(255,255,255,0.55); border-color: rgba(0,0,0,0.1); color: #000; }
+      body.light-mode .floating-btn {
+         background: rgba(255,255,255,0.55); border-color: rgba(0,0,0,0.1); color: #000;
+      }
 
-      /* Reveal 边框：floating-btn */
+      /* Reveal：floating-btn（颜色统一走 CSS 变量） */
       .floating-btn::before {
          content: ''; position: absolute; inset: -1px; border-radius: 50%; padding: 1px;
          background: radial-gradient(
@@ -182,8 +174,7 @@
       /* ==================== 侧边菜单 wrapper ==================== */
       .side-menu-wrapper {
          position: fixed; bottom: 30px; right: 30px;
-         width: 250px; height: 400px;
-         max-width: calc(100vw - 60px);
+         width: 250px; height: 400px; max-width: calc(100vw - 60px);
          border-radius: 12px; z-index: 999;
          display: none; pointer-events: none;
       }
@@ -196,7 +187,7 @@
          100% { transform: scale(1);   opacity: 1; }
       }
 
-      /* wrapper 外框 Reveal — 只保留整体外框光效 */
+      /* wrapper 外框 Reveal */
       .side-menu-wrapper::before {
          content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
          background: radial-gradient(
@@ -215,72 +206,73 @@
          position: relative; width: 100%; height: 100%;
          border-radius: 12px; display: none; flex-direction: row;
          overflow: hidden;
-         background: var(--menu-bg-dark);
+         background: rgba(18, 18, 18, 0.6);
          backdrop-filter: blur(24px) saturate(180%);
          -webkit-backdrop-filter: blur(24px) saturate(180%);
          border: 1px solid rgba(255,255,255,0.1);
          pointer-events: auto;
          transition: background 0.5s ease, border-color 0.5s ease;
       }
-      body.light-mode .side-menu { background: var(--menu-bg-light); border-color: rgba(0,0,0,0.08); }
+      body.light-mode .side-menu { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.08); }
       .side-menu.active { display: flex; }
 
       /* ==================== 菜单左侧：章节列表 ==================== */
+      /* 无 ::before — 光效完全由 Canvas 负责，避免与 Canvas 重叠 */
       .menu-left {
          position: relative; width: 200px; padding: 20px;
          overflow-y: auto; scrollbar-width: none;
          background: transparent;
-         /* scroll-snap 让列表滚动后自动吸附 */
-         scroll-snap-type: y proximity;
          word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
       }
       .menu-left::-webkit-scrollbar { display: none; }
 
       /* ==================== 章节项 ==================== */
       .chapter-item {
-         padding: 10px 0;
-         cursor: pointer;
-         color: rgba(255, 255, 255, 0.7);
+         padding: 10px 0; cursor: pointer;
+         color: rgba(255,255,255,0.7);
          transition: color 0.2s, padding-left 0.2s;
          word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;
          position: relative;
-         scroll-snap-align: center;
       }
       .chapter-item::after {
          content: ''; position: absolute; bottom: 0;
          left: 8px; right: 8px; height: 1px;
-         background: var(--divider-dark);
+         background: rgba(255,255,255,0.3);
       }
-      body.light-mode .chapter-item::after { background: var(--divider-light); }
+      body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
+      body.light-mode .chapter-item::after { background: rgba(0,0,0,0.3); }
       .chapter-item:last-child::after { display: none; }
 
       .chapter-item.h1-item { padding-left: 0; }
       .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
       .chapter-item.h3-item { padding-left: 28px; color: rgba(255,255,255,0.3); font-size: 0.85em; }
-      body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
       body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
       body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
 
-      .chapter-item:hover { color: var(--accent); }
-      .chapter-item.h1-item:hover { padding-left: 5px; }
-      .chapter-item.h2-item:hover { padding-left: 19px; }
-      .chapter-item.h3-item:hover { padding-left: 33px; }
+      /* CSS hover（视觉反馈，不影响状态机） */
+      .chapter-item:hover                  { color: var(--accent); }
+      .chapter-item.h1-item:hover          { padding-left: 5px; }
+      .chapter-item.h2-item:hover          { padding-left: 19px; }
+      .chapter-item.h3-item:hover          { padding-left: 33px; }
 
-      /* 互斥高亮：current 和 hovered 不会同时出现 */
-      .chapter-item.current { color: var(--accent) !important; }
-      .chapter-item.hovered { color: var(--accent) !important; }
+      /* 高亮类：互斥，只加其中一个 */
+      .chapter-item.current                { color: var(--accent) !important; }
+      .chapter-item.hovered                { color: var(--accent) !important; }
+      .chapter-item.hovered.h1-item        { padding-left: 5px; }
+      .chapter-item.hovered.h2-item        { padding-left: 19px; }
+      .chapter-item.hovered.h3-item        { padding-left: 33px; }
 
       /* ==================== 菜单右侧：按钮区 ==================== */
       .menu-right {
          position: relative; width: 50px; height: 100%;
          display: flex; flex-direction: column;
-         background: var(--menu-right-bg-dark);
+         background: rgba(0,0,0,0.2);
          border-left: 1px solid rgba(255,255,255,0.07);
          transition: background 0.5s ease;
       }
-      body.light-mode .menu-right { background: var(--menu-right-bg-light); border-left-color: rgba(0,0,0,0.06); }
+      body.light-mode .menu-right { background: rgba(0,0,0,0.05); border-left-color: rgba(0,0,0,0.06); }
 
-      /* menu-right 的 Reveal — 仅右侧面板有独立光效 */
+      /* menu-right Reveal（独立于 Canvas） */
       .menu-right::before {
          content: ''; position: absolute; inset: -1px;
          border-radius: 0 12px 12px 0; padding: 1px;
@@ -319,7 +311,7 @@
       body.light-mode .close-btn { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.5); border-top-color: rgba(0,0,0,0.06); }
       .close-btn:hover { color: var(--accent); background-color: rgba(255,0,0,0.08); }
 
-      /* ==================== Canvas 叠加层 ==================== */
+      /* ==================== Canvas 叠加层（分隔线发光） ==================== */
       #menuRevealCanvas {
          position: fixed; pointer-events: none; z-index: 1001;
          opacity: 0; transition: opacity 0.2s;
@@ -329,7 +321,6 @@
       .header, .floating-btn, .side-menu, .comments {
          user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
       }
-
    </style>
 </head>
 
@@ -3587,21 +3578,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
    <script>
      // ============================================================
-     // 0. 颜色变量注入（CSS变量 + JS同步，集中管理）
+     // 0. 主题 & 颜色变量注入
      // ============================================================
      function applyThemeVars() {
        const isLight = document.body.classList.contains('light-mode');
-       // 暗色：红色光效  亮色：蓝紫光效
-       const hi  = isLight ? '180,205,255' : '180,0,0';
-       const mid = isLight ? '108,143,255' : '100,0,0';
-       document.documentElement.style.setProperty('--reveal-hi',  hi);
-       document.documentElement.style.setProperty('--reveal-mid', mid);
+       document.documentElement.style.setProperty('--reveal-hi',  isLight ? '180,205,255' : '255,0,0');
+       document.documentElement.style.setProperty('--reveal-mid', isLight ? '108,143,255' : '160,0,0');
      }
-
      function applyTheme() {
-       const savedTheme  = localStorage.getItem('theme');
-       const configTheme = "dark";
-       const mode = savedTheme || configTheme;
+       const mode = localStorage.getItem('theme') || "dark";
        document.body.classList.toggle('light-mode', mode === 'light');
        document.body.classList.toggle('dark-mode',  mode !== 'light');
        applyThemeVars();
@@ -3624,222 +3609,210 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      const menuRightEl     = document.querySelector('.menu-right');
 
      // ============================================================
-     // 2. 收集标题，生成唯一 ID
+     // 2. 收集标题
      // ============================================================
      const allHeadings = Array.from(
        document.querySelectorAll('.content h1, .content h2, .content h3')
      ).filter(h => h.textContent.trim() !== '');
-
-     allHeadings.forEach((el, index) => { el.id = `heading-${index}`; });
+     allHeadings.forEach((el, i) => { el.id = `heading-${i}`; });
 
      // ============================================================
-     // 3. 高亮状态（互斥）
-     //    规则：hoveredItem 优先；无 hover 时显示 currentId
+     // 3. 高亮状态机
+     //
+     //  highlightState 三种值（同时只存在一种）：
+     //    'page'       — 默认，由页面滚动位置驱动
+     //    'hover'      — 鼠标悬停某个 item（优先级最高）
+     //    'menuScroll' — 用户手动滑动菜单列表
+     //
+     //  核心规则：
+     //    1. setHighlight() 是唯一修改高亮的入口
+     //    2. hover 进入时锁定状态，page/menuScroll 不可覆盖
+     //    3. hover 离开时立即恢复 page，不触发任何额外滚动
+     //    4. scrollMenuToCenter() 只移动列表 UI，不改状态
+     //       且会短暂屏蔽 chapterList 的 scroll 事件，
+     //       防止程序滚动被误判为 menuScroll
      // ============================================================
-     let currentId   = allHeadings.length > 0 ? allHeadings[0].id : null;
-     let hoveredItem = null;   // 当前鼠标/触摸悬停的 chapter-item
-     let isPointerInList = false; // 鼠标是否在列表区域内
+     let pageCurrentId  = null;      // 页面滚动确定的当前标题 id
+     let highlightState = 'page';    // 'page' | 'hover' | 'menuScroll'
+     let highlightId    = null;      // 当前高亮的 id
 
-     function refreshHighlight() {
+     function setHighlight(id, state) {
+       highlightState = state;
+       highlightId    = id;
        document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
          .forEach(i => i.classList.remove('current', 'hovered'));
+       if (!id) return;
+       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (item) item.classList.add(state === 'page' ? 'current' : 'hovered');
+     }
 
-       if (hoveredItem) {
-         hoveredItem.classList.add('hovered');
-       } else if (currentId) {
-         const item = document.querySelector(`.chapter-item[data-id="${currentId}"]`);
-         if (item) item.classList.add('current');
-       }
+     // 滚动列表让指定 item 居中（纯 UI，不改状态）
+     // 滚动期间屏蔽 chapterList scroll 事件，防止误触 menuScroll
+     let _suppressMenuScroll      = false;
+     let _suppressMenuScrollTimer = null;
+     function scrollMenuToCenter(id) {
+       const item  = document.querySelector(`.chapter-item[data-id="${id}"]`);
+       if (!item) return;
+       const contH  = chapterList.clientHeight;
+       const target = item.offsetTop - (contH - item.offsetHeight) / 2;
+       if (chapterList.scrollHeight <= contH) return;
+
+       _suppressMenuScroll = true;
+       chapterList.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+       clearTimeout(_suppressMenuScrollTimer);
+       // smooth 动画通常 ≤ 300ms，留 450ms 余量
+       _suppressMenuScrollTimer = setTimeout(() => { _suppressMenuScroll = false; }, 450);
      }
 
      // ============================================================
      // 4. 生成章节导航
      // ============================================================
      allHeadings.forEach(heading => {
-       const listItem = document.createElement('div');
-       const level    = parseInt(heading.tagName.substring(1));
+       const item     = document.createElement('div');
+       const level    = parseInt(heading.tagName[1]);
        const classMap = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
-       listItem.className   = `chapter-item ${classMap[level] || 'h1-item'}`;
-       listItem.textContent = heading.textContent;
-       listItem.dataset.id  = heading.id;
+       item.className   = `chapter-item ${classMap[level] || 'h1-item'}`;
+       item.textContent = heading.textContent;
+       item.dataset.id  = heading.id;
 
-       // 点击跳转
-       listItem.addEventListener('click', (e) => {
+       item.addEventListener('click', (e) => {
          e.stopPropagation();
          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
          closeMenu();
        });
 
-       // ---- hover 互斥（仅桌面鼠标）----
-       listItem.addEventListener('pointerenter', (e) => {
+       // hover（仅桌面鼠标）
+       item.addEventListener('pointerenter', (e) => {
          if (e.pointerType !== 'mouse') return;
-         hoveredItem = listItem;
-         isPointerInList = true;
-         refreshHighlight();
-         // hover 时自动将该项滚到列表中央（防抖）
-         scheduleScrollToItem(listItem.dataset.id, false);
+         setHighlight(item.dataset.id, 'hover');
+         scheduleHoverScroll(item.dataset.id);
        });
-       listItem.addEventListener('pointerleave', (e) => {
+       item.addEventListener('pointerleave', (e) => {
          if (e.pointerType !== 'mouse') return;
-         hoveredItem = null;
-         refreshHighlight();
+         // 离开：立即恢复 page，不滚动（避免与 scrollMenuToCenter 循环）
+         clearTimeout(_hoverScrollTimer);
+         setHighlight(pageCurrentId, 'page');
        });
 
-       chapterList.appendChild(listItem);
+       chapterList.appendChild(item);
      });
 
-     // 初始高亮
-     refreshHighlight();
+     // hover 居中防抖（300ms），只在仍处于同一 hover 时执行
+     let _hoverScrollTimer = null;
+     function scheduleHoverScroll(id) {
+       clearTimeout(_hoverScrollTimer);
+       _hoverScrollTimer = setTimeout(() => {
+         if (highlightState === 'hover' && highlightId === id) {
+           scrollMenuToCenter(id);
+         }
+       }, 300);
+     }
 
      // ============================================================
-     // 5. 滚动追踪（页面滚动 → 更新 currentId）
+     // 5. 页面滚动 → 更新 pageCurrentId
      // ============================================================
      function updateActiveHeading() {
-       if (allHeadings.length === 0) return;
-       const scrollY  = window.scrollY;
-       const offset   = 80;
-       let current    = allHeadings[0];
-
-       for (let i = 0; i < allHeadings.length; i++) {
-         const top = allHeadings[i].getBoundingClientRect().top + scrollY;
-         if (top <= scrollY + offset) current = allHeadings[i];
+       if (!allHeadings.length) return;
+       let current = allHeadings[0];
+       for (const h of allHeadings) {
+         if (h.getBoundingClientRect().top + window.scrollY <= window.scrollY + 80)
+           current = h;
          else break;
        }
-
-       if (current.id !== currentId) {
-         currentId = current.id;
-         refreshHighlight();
-         // 页面滚动时，将高亮项居中（仅当鼠标不在列表内）
-         if (!isPointerInList) {
-           scrollMenuToCenter(currentId);
+       if (current.id === pageCurrentId) return;
+       pageCurrentId = current.id;
+       // hover 期间不覆盖高亮，pageCurrentId 已更新备用
+       if (highlightState !== 'hover') {
+         setHighlight(pageCurrentId, 'page');
+         if (sideMenuWrapper.classList.contains('active') && highlightState !== 'menuScroll') {
+           scrollMenuToCenter(pageCurrentId);
          }
        }
      }
 
-     window.addEventListener('scroll', updateActiveHeading, { passive: true });
-
-     // 页面滚动停止后，将高亮项居中到列表（仅菜单打开时生效）
-     let pageScrollTimer = null;
-     window.addEventListener('scroll', () => {
+     // 页面滚动停止后再次居中（防抖 250ms）
+     let _pageScrollStopTimer = null;
+     function onPageScroll() {
+       updateActiveHeading();
        if (!sideMenuWrapper.classList.contains('active')) return;
-       if (pageScrollTimer) clearTimeout(pageScrollTimer);
-       pageScrollTimer = setTimeout(() => {
-         if (!isPointerInList && currentId) {
-           scrollMenuToCenter(currentId);
+       if (highlightState === 'hover' || highlightState === 'menuScroll') return;
+       clearTimeout(_pageScrollStopTimer);
+       _pageScrollStopTimer = setTimeout(() => {
+         if (highlightState !== 'hover' && pageCurrentId) {
+           scrollMenuToCenter(pageCurrentId);
          }
-       }, 200);
-     }, { passive: true });
-
-     // ============================================================
-     // 6. 列表居中滚动（防抖版本）
-     //    scrollMenuToCenter：立即执行（页面滚动追踪）
-     //    scheduleScrollToItem：防抖版（hover 触发）
-     // ============================================================
-     function scrollMenuToCenter(id) {
-       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (!item) return;
-       const container       = menuLeftEl;
-       const itemTop         = item.offsetTop;
-       const itemHeight      = item.offsetHeight;
-       const containerHeight = container.clientHeight;
-       const scrollTarget    = itemTop - (containerHeight - itemHeight) / 2;
-       if (container.scrollHeight > containerHeight) {
-         container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
-       }
+       }, 250);
      }
-
-     let hoverScrollTimer = null;
-     function scheduleScrollToItem(id, immediate = false) {
-       if (hoverScrollTimer) clearTimeout(hoverScrollTimer);
-       const delay = immediate ? 0 : 120;
-       hoverScrollTimer = setTimeout(() => { scrollMenuToCenter(id); }, delay);
-     }
+     window.addEventListener('scroll', onPageScroll, { passive: true });
 
      // ============================================================
-     // 7. 列表内部滚动停止后，吸附到最近居中项（仅桌面）
+     // 6. 菜单列表手动滚动 → menuScroll 状态
      // ============================================================
-     let listScrollTimer = null;
+     let _menuScrollStopTimer = null;
      chapterList.addEventListener('scroll', () => {
-       if (listScrollTimer) clearTimeout(listScrollTimer);
-       listScrollTimer = setTimeout(() => {
-         snapToNearestCenter();
-       }, 200);
+       if (_suppressMenuScroll) return; // 程序触发的滚动，忽略
+       if (highlightState === 'hover')  return; // hover 期间屏蔽
+
+       highlightState = 'menuScroll';
+       clearTimeout(_menuScrollStopTimer);
+       _menuScrollStopTimer = setTimeout(() => {
+         // 找最靠近列表中心的 item
+         const items   = chapterList.querySelectorAll('.chapter-item');
+         const contR   = chapterList.getBoundingClientRect();
+         const centerY = contR.top + contR.height / 2;
+         let best = null, bestDist = Infinity;
+         items.forEach(it => {
+           const r = it.getBoundingClientRect();
+           const d = Math.abs(r.top + r.height / 2 - centerY);
+           if (d < bestDist) { bestDist = d; best = it; }
+         });
+         if (!best) return;
+         const centerId = best.dataset.id;
+         scrollMenuToCenter(centerId);
+         // 等居中动画完成后再高亮，确认没被 hover 打断
+         setTimeout(() => {
+           if (highlightState !== 'hover') {
+             pageCurrentId = centerId; // 同步，保持一致
+             setHighlight(centerId, 'page');
+           }
+         }, 460);
+       }, 300);
      }, { passive: true });
 
-     function snapToNearestCenter() {
-       // 鼠标在列表内时不触发，避免与 hover 冲突
-       if (isPointerInList) return;
-       const container = menuLeftEl;
-       const centerY   = container.scrollTop + container.clientHeight / 2;
-       const items     = container.querySelectorAll('.chapter-item');
-       let bestItem    = null;
-       let bestDist    = Infinity;
-
-       items.forEach(item => {
-         const itemCenter = item.offsetTop + item.offsetHeight / 2;
-         const dist       = Math.abs(itemCenter - centerY);
-         if (dist < bestDist) { bestDist = dist; bestItem = item; }
-       });
-
-       if (bestItem) {
-         scrollMenuToCenter(bestItem.dataset.id);
-       }
+     // ============================================================
+     // 7. 移动端触摸兜底：清除 hover 残留
+     // ============================================================
+     function clearHoverFallback() {
+       if (highlightState !== 'hover') return;
+       clearTimeout(_hoverScrollTimer);
+       setHighlight(pageCurrentId, 'page');
      }
-
-     // ============================================================
-     // 8. 移动端触摸：清除 hoveredItem
-     // ============================================================
-     chapterList.addEventListener('touchend', () => {
-       hoveredItem = null;
-       isPointerInList = false;
-       refreshHighlight();
-     });
-     chapterList.addEventListener('touchcancel', () => {
-       hoveredItem = null;
-       isPointerInList = false;
-       refreshHighlight();
-     });
+     chapterList.addEventListener('touchend',    clearHoverFallback);
+     chapterList.addEventListener('touchcancel', clearHoverFallback);
      chapterList.addEventListener('pointerup', (e) => {
-       if (e.pointerType !== 'mouse') {
-         hoveredItem = null;
-         isPointerInList = false;
-         refreshHighlight();
-       }
-     });
-
-     // 跟踪鼠标是否在列表区域内（用于阻止 snapToNearestCenter 干扰）
-     menuLeftEl.addEventListener('pointerenter', (e) => {
-       if (e.pointerType === 'mouse') isPointerInList = true;
-     });
-     menuLeftEl.addEventListener('pointerleave', (e) => {
-       if (e.pointerType === 'mouse') {
-         isPointerInList = false;
-         hoveredItem = null;
-         refreshHighlight();
-       }
+       if (e.pointerType !== 'mouse') clearHoverFallback();
      });
 
      // ============================================================
-     // 9. 菜单控制
+     // 8. 菜单开关
      // ============================================================
      function openMenu() {
        sideMenuWrapper.classList.add('active');
        sideMenu.classList.add('active');
        menuMask.classList.add('active');
        menuToggle.style.display = 'none';
-       // 打开时居中当前高亮项
-       if (currentId) setTimeout(() => scrollMenuToCenter(currentId), 50);
+       setTimeout(() => {
+         const id = highlightState === 'hover' ? highlightId : pageCurrentId;
+         if (id) scrollMenuToCenter(id);
+       }, 50);
      }
-
      function closeMenu() {
        sideMenuWrapper.classList.remove('active');
        sideMenu.classList.remove('active');
        menuMask.classList.remove('active');
        menuToggle.style.display = 'flex';
-       // 关闭时清除 hover 状态，避免残留
-       hoveredItem     = null;
-       isPointerInList = false;
-       refreshHighlight();
+       clearTimeout(_hoverScrollTimer);
+       if (highlightState === 'hover') setHighlight(pageCurrentId, 'page');
      }
 
      menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
@@ -3847,44 +3820,33 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      menuMask.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
      sideMenu.addEventListener('click',    (e) => e.stopPropagation());
 
-     toBottomBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-       closeMenu();
-     });
-     middleBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-       window.scrollTo({ top: middle, behavior: 'smooth' });
-       closeMenu();
-     });
-     toTopBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: 0, behavior: 'smooth' });
-       closeMenu();
-     });
+     toBottomBtn.addEventListener('click', (e) => { e.stopPropagation(); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); closeMenu(); });
+     middleBtn.addEventListener('click',   (e) => { e.stopPropagation(); window.scrollTo({ top: (document.documentElement.scrollHeight - window.innerHeight) / 2, behavior: 'smooth' }); closeMenu(); });
+     toTopBtn.addEventListener('click',    (e) => { e.stopPropagation(); window.scrollTo({ top: 0, behavior: 'smooth' }); closeMenu(); });
 
      // ============================================================
-     // 10. 滚动进度指示器
+     // 9. 滚动进度指示器
      // ============================================================
      function updateProgress() {
-       const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
-       const scrollPosition = window.scrollY;
-       const scrollPercent  = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
-       const redValue       = Math.floor(scrollPercent * 255);
-       menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
-       menuToggle.style.boxShadow       = 'none';
+       const sh  = document.documentElement.scrollHeight - window.innerHeight;
+       const pct = sh > 0 ? Math.min(window.scrollY / sh, 1) : 0;
+       menuToggle.style.backgroundColor = `rgb(${Math.floor(pct * 255)},0,0)`;
+       menuToggle.style.boxShadow = 'none';
      }
-
      window.addEventListener('scroll', updateProgress, { passive: true });
      window.addEventListener('resize', updateProgress, { passive: true });
      updateProgress();
 
+     // 初始高亮
+     if (allHeadings.length) {
+       pageCurrentId = allHeadings[0].id;
+       setHighlight(pageCurrentId, 'page');
+     }
+
      // ============================================================
-     // 11. Reveal Highlight（仅桌面端）
+     // 10. Reveal Highlight（仅桌面）
      // ============================================================
      const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
      if (isDesktop) {
 
      const canvas = document.getElementById('menuRevealCanvas');
@@ -3893,68 +3855,54 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      function resizeCanvas() {
        if (!sideMenuWrapper.classList.contains('active')) return;
        const r = menuLeftEl.getBoundingClientRect();
-       canvas.width  = r.width;
-       canvas.height = r.height;
-       canvas.style.left = r.left + 'px';
-       canvas.style.top  = r.top  + 'px';
+       canvas.width = r.width; canvas.height = r.height;
+       canvas.style.left = r.left + 'px'; canvas.style.top = r.top + 'px';
      }
 
-     // 读取当前主题对应的光效颜色（从 CSS 变量）
      function getRevealColors() {
-       const style = getComputedStyle(document.documentElement);
+       const s = getComputedStyle(document.documentElement);
        return {
-         hi:  style.getPropertyValue('--reveal-hi').trim()  || '180,0,0',
-         mid: style.getPropertyValue('--reveal-mid').trim() || '100,0,0',
+         hi:  s.getPropertyValue('--reveal-hi').trim()  || '255,0,0',
+         mid: s.getPropertyValue('--reveal-mid').trim() || '160,0,0',
        };
      }
 
      function drawDividerGlow(mouseX, mouseY) {
        ctx.clearRect(0, 0, canvas.width, canvas.height);
        if (!sideMenuWrapper.classList.contains('active')) return;
-
        const { hi, mid } = getRevealColors();
-       const menuRect    = menuLeftEl.getBoundingClientRect();
-       const items       = menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)');
-       const radius      = 80;
+       const mr     = menuLeftEl.getBoundingClientRect();
+       const radius = 80;
+       const mdx = Math.max(mr.left - mouseX, 0, mouseX - mr.right);
+       const mdy = Math.max(mr.top  - mouseY, 0, mouseY - mr.bottom);
+       if (Math.hypot(mdx, mdy) > radius) return;
 
-       const mdx   = Math.max(menuRect.left - mouseX, 0, mouseX - menuRect.right);
-       const mdy   = Math.max(menuRect.top  - mouseY, 0, mouseY - menuRect.bottom);
-       const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-       if (mdist > radius) return;
-
-       items.forEach(item => {
-         const itemRect  = item.getBoundingClientRect();
-         const lineY     = itemRect.bottom - menuRect.top;
-         const lineLeft  = itemRect.left   - menuRect.left + 8;
-         const lineRight = itemRect.right  - menuRect.left - 8;
-         const nearestX  = Math.max(lineLeft, Math.min(mouseX - menuRect.left, lineRight));
-         const dist      = Math.hypot(
-           mouseX - menuRect.left - nearestX,
-           mouseY - menuRect.top  - lineY
-         );
+       menuLeftEl.querySelectorAll('.chapter-item:not(:last-child)').forEach(item => {
+         const ir       = item.getBoundingClientRect();
+         const lineY    = ir.bottom - mr.top;
+         const lineL    = ir.left   - mr.left + 8;
+         const lineR    = ir.right  - mr.left - 8;
+         const nearestX = Math.max(lineL, Math.min(mouseX - mr.left, lineR));
+         const dist     = Math.hypot(mouseX - mr.left - nearestX, mouseY - mr.top - lineY);
          if (dist > radius) return;
 
          const intensity = 1 - dist / radius;
-         const gx   = mouseX - menuRect.left;
+         const gx   = mouseX - mr.left;
          const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
          grad.addColorStop(0,   `rgba(${hi},${0.9 * intensity})`);
          grad.addColorStop(0.4, `rgba(${mid},${0.4 * intensity})`);
          grad.addColorStop(1,   `rgba(${mid},0)`);
-
          ctx.beginPath();
-         ctx.moveTo(lineLeft,  lineY);
-         ctx.lineTo(lineRight, lineY);
-         ctx.lineWidth   = 1;
-         ctx.strokeStyle = grad;
-         ctx.stroke();
+         ctx.moveTo(lineL, lineY); ctx.lineTo(lineR, lineY);
+         ctx.lineWidth = 1; ctx.strokeStyle = grad; ctx.stroke();
        });
      }
 
-     // Reveal 目标：去掉 menu-left（canvas 代劳），保留 wrapper 和 right
+     // revealTargets：去掉 menuLeftEl（Canvas 代劳）
      const revealTargets = [
-       { el: menuToggle,       range: 60,  alwaysOn: true  },
-       { el: sideMenuWrapper,  range: 80,  alwaysOn: false },
-       { el: menuRightEl,      range: 80,  alwaysOn: false },
+       { el: menuToggle,      range: 60, alwaysOn: true  },
+       { el: sideMenuWrapper, range: 80, alwaysOn: false },
+       { el: menuRightEl,     range: 80, alwaysOn: false },
      ];
 
      function clearAllReveal() {
@@ -3969,32 +3917,22 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
      function handleMove(e) {
        if (e.pointerType && e.pointerType !== 'mouse') return;
        const menuActive = sideMenuWrapper.classList.contains('active');
-
        revealTargets.forEach(({ el, range, alwaysOn }) => {
          if (!el) return;
          if (!alwaysOn && !menuActive) {
-           el.style.setProperty('--rx', '-9999px');
-           el.style.setProperty('--ry', '-9999px');
-           return;
+           el.style.setProperty('--rx', '-9999px'); el.style.setProperty('--ry', '-9999px'); return;
          }
-         const r    = el.getBoundingClientRect();
-         const dx   = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
-         const dy   = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
-         const dist = Math.sqrt(dx * dx + dy * dy);
-         if (dist <= range) {
+         const r  = el.getBoundingClientRect();
+         const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+         const dy = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
+         if (Math.sqrt(dx*dx + dy*dy) <= range) {
            el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
            el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
          } else {
-           el.style.setProperty('--rx', '-9999px');
-           el.style.setProperty('--ry', '-9999px');
+           el.style.setProperty('--rx', '-9999px'); el.style.setProperty('--ry', '-9999px');
          }
        });
-
-       if (menuActive) {
-         resizeCanvas();
-         canvas.classList.add('active');
-         drawDividerGlow(e.clientX, e.clientY);
-       }
+       if (menuActive) { resizeCanvas(); canvas.classList.add('active'); drawDividerGlow(e.clientX, e.clientY); }
      }
 
      document.addEventListener('pointermove',  handleMove);
@@ -4008,6 +3946,5 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
      } // end isDesktop
    </script>
-
 </body>
 </html>
