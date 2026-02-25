@@ -4015,9 +4015,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 350);
         const menuScrollDebounce   = createDebounce(onMenuScrollDebounced, 400);
         const cooldownDebounce     = createDebounce(() => { isInCooldown = false; }, 5000);
+        // 滚轮停止后 300ms 才解除屏蔽，确保惯性滚动期间假事件全部被过滤
+        const wheelEndDebounce     = createDebounce(() => { isWheelScrolling = false; }, 300);
 
         let isInCooldown         = false;
         let isMenuScrolling      = false;
+        // 滚轮滚动标志：只有真实的 wheel 事件才能设置它
+        // 用于屏蔽"元素滑过静止光标"产生的假 pointerenter/pointerleave
+        let isWheelScrolling     = false;
         // 用计数器替换布尔标志，彻底解决嵌套/并发调用时的竞态问题：
         // 每次程序驱动滚动前 +1，滚动结束后 -1，只有计数为0才视为用户手动滚动。
         let programmaticScrollCount  = 0;
@@ -4104,6 +4109,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }
 
         function onItemPointerEnter(item) {
+          if (isWheelScrolling) return;  // 滚轮滚动时忽略假 pointerenter
           hoveredItem = item;
           activeState = 'hover';
           setHighlight(item.dataset.id);
@@ -4114,6 +4120,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }
 
         function onItemPointerLeave() {
+          if (isWheelScrolling) return;  // 滚轮滚动时忽略假 pointerleave，防止弹回
           hoverScrollDebounce.cancel(); // 统一在这里取消，不再遗漏
           hoveredItem = null;
           activeState = 'scroll';
@@ -4124,45 +4131,31 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         if (isDesktop) {
           chapterList.addEventListener('pointerleave', (e) => {
             if (e.pointerType !== 'mouse') return;
+            if (isWheelScrolling) return;  // 滚轮期间飘出去不触发弹回
             if (activeState === 'hover') onItemPointerLeave();
           });
         }
 
-        // === 菜单驱动文章（touch / wheel 共用提交逻辑）===
-        function commitMenuSelection(centerId) {
-          if (activeState !== 'menu' || hoveredItem) return;
-          currentId = centerId;
-          setHighlight(centerId);
-          const targetHeading = document.getElementById(centerId);
-          if (!targetHeading) {
-            activeState = 'scroll';
-            isWheeling = false;
-            setHighlight(currentId);
-            return;
-          }
-          menuDrivingArticleCount++;
-          smoothScrollPromise(
-            () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-            () => window.scrollY
-          ).finally(() => {
-            menuDrivingArticleCount--;
-            if (activeState === 'menu' && !hoveredItem) {
-              activeState = 'scroll';
-              isWheeling = false; // 文章滚完才解除屏蔽，防止 scrollMenuToItem 的 scroll 事件干扰
-              setHighlight(currentId);
+        // === 状态：menu ===
+        // 监听滚轮事件，设置屏蔽标志，防止假 pointer 事件干扰
+        chapterList.addEventListener('wheel', () => {
+          if (!isWheelScrolling) {
+            isWheelScrolling = true;
+            // 如果当前在 hover 状态，立即取消，否则 scroll 事件里 return 掉什么都做不了
+            if (activeState === 'hover') {
+              hoverScrollDebounce.cancel();
+              hoveredItem = null;
             }
-          });
-        }
-
-        // === 状态：menu — touch 路径（chapterList 真实滚动）===
-        let isWheeling = false;
+          }
+          wheelEndDebounce.call();
+        }, { passive: true });
 
         chapterList.addEventListener('scroll', () => {
           if (programmaticScrollCount > 0) return;
           if (activeState === 'hover') return;
-          if (isWheeling) return;
           isMenuScrolling = true;
           activeState = 'menu';
+          // 实时更新高亮跟随菜单中心项，而不是等防抖结束后才跳变
           const realtimeId = getCenteredItemId();
           if (realtimeId) setHighlight(realtimeId);
           menuScrollDebounce.call();
@@ -4172,9 +4165,41 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           isMenuScrolling = false;
           const centerId = getCenteredItemId();
           if (!centerId) return;
-          scrollMenuToItem(centerId).then(() => commitMenuSelection(centerId));
+
+          scrollMenuToItem(centerId).then(() => {
+            if (activeState !== 'menu' || hoveredItem) return;
+
+            // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
+            // 回归 scroll 状态时用的都是正确的新值，不会跳回旧位置。
+            currentId = centerId;
+            setHighlight(centerId);
+
+            const targetHeading = document.getElementById(centerId);
+            if (targetHeading) {
+              menuDrivingArticleCount++;
+              smoothScrollPromise(
+                () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                () => window.scrollY
+              ).finally(() => {
+                menuDrivingArticleCount--;
+                // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
+                // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
+                // 文章 scroll 事件覆盖成其它值，导致再次跳位。
+                if (activeState === 'menu' && !hoveredItem) {
+                  activeState = 'scroll';
+                  setHighlight(currentId);
+                }
+              });
+            } else {
+              // 没有对应标题元素时，直接回归
+              activeState = 'scroll';
+              setHighlight(currentId);
+            }
+          });
         }
 
+        // 移动端：手指离开时立即触发一次防抖（重置计时器到 400ms 后），
+        // 比等惯性滚动自然停止更快响应，同时不会在惯性期间提前吸附。
         function onTouchEnd() {
           if (hoveredItem) hoveredItem = null;
           if (activeState === 'menu') menuScrollDebounce.call();
@@ -4182,46 +4207,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         chapterList.addEventListener('touchend',    onTouchEnd);
         chapterList.addEventListener('touchcancel', onTouchEnd);
 
-        // === 状态：menu — wheel 路径（桌面滚轮）===
-        if (isDesktop) {
-          const wheelEndDebounce = createDebounce(() => {
-            if (activeState !== 'menu') { isWheeling = false; return; }
-            const centerId = getCenteredItemId();
-            if (!centerId) { isWheeling = false; return; }
-            scrollMenuToItem(centerId, 'instant').then(() => commitMenuSelection(centerId));
-          }, 350);
-
-          document.addEventListener('wheel', (e) => {
-            if (!sideMenuWrapper.classList.contains('active')) return;
-
-            const r = sideMenuWrapper.getBoundingClientRect();
-            const inMenu = e.clientX >= r.left && e.clientX <= r.right &&
-                           e.clientY >= r.top  && e.clientY <= r.bottom;
-            if (!inMenu) return;
-
-            isWheeling = true;
-            if (activeState === 'hover') {
-              hoverScrollDebounce.cancel();
-              hoveredItem = null;
-            }
-            activeState = 'menu';
-
-            chapterList.scrollTop += e.deltaY;
-
-            const realtimeId = getCenteredItemId();
-            if (realtimeId) setHighlight(realtimeId);
-
-            wheelEndDebounce.call();
-          }, { passive: true });
-        }
-
         // === 4. 菜单控制 ===
         function openMenu() {
           sideMenuWrapper.classList.add('active');
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
           menuToggle.style.display = 'none';
-          if (isDesktop) document.body.style.overflow = 'hidden';
           if (currentId) scrollMenuToItem(currentId, 'instant');
           if (isDesktop) resizeCanvas();
         }
@@ -4231,7 +4222,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          if (isDesktop) document.body.style.overflow = '';
 
           if (isDesktop) {
             clearAllReveal();
