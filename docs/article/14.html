@@ -1092,27 +1092,22 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           document.addEventListener('wheel', (e) => {
             if (!sideMenuWrapper.classList.contains('active')) return;
 
-            // 坐标命中检测：鼠标是否在菜单面板范围内
             const r = sideMenuWrapper.getBoundingClientRect();
             const inMenu = e.clientX >= r.left && e.clientX <= r.right &&
                            e.clientY >= r.top  && e.clientY <= r.bottom;
             if (!inMenu) return;
 
-            // 命中菜单：拦截，不让页面滚动
-            e.preventDefault();
-
             if (activeState === 'hover') return;
             isWheeling = true;
             activeState = 'menu';
 
-            // 手动驱动 chapterList 滚动，保留真实划动的视觉效果
             chapterList.scrollTop += e.deltaY;
 
             const realtimeId = getCenteredItemId();
             if (realtimeId) setHighlight(realtimeId);
 
             wheelEndDebounce.call();
-          }, { passive: false }); // passive:false 才能 preventDefault
+          }, { passive: true });
         }
 
         // === 4. 菜单控制 ===
@@ -1121,6 +1116,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
           menuToggle.style.display = 'none';
+          document.body.style.overflow = 'hidden';
           if (currentId) scrollMenuToItem(currentId, 'instant');
           if (isDesktop) resizeCanvas();
         }
@@ -1130,6 +1126,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
+          document.body.style.overflow = '';
 
           if (isDesktop) {
             clearAllReveal();
