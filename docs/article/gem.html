@@ -4134,7 +4134,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           currentId = centerId;
           setHighlight(centerId);
           const targetHeading = document.getElementById(centerId);
-          if (!targetHeading) { activeState = 'scroll'; setHighlight(currentId); return; }
+          if (!targetHeading) {
+            activeState = 'scroll';
+            isWheeling = false;
+            setHighlight(currentId);
+            return;
+          }
           menuDrivingArticleCount++;
           smoothScrollPromise(
             () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
@@ -4143,6 +4148,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             menuDrivingArticleCount--;
             if (activeState === 'menu' && !hoveredItem) {
               activeState = 'scroll';
+              isWheeling = false; // 文章滚完才解除屏蔽，防止 scrollMenuToItem 的 scroll 事件干扰
               setHighlight(currentId);
             }
           });
@@ -4154,7 +4160,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         chapterList.addEventListener('scroll', () => {
           if (programmaticScrollCount > 0) return;
           if (activeState === 'hover') return;
-          if (isWheeling) return; // wheel 路径自己管理，屏蔽干扰
+          if (isWheeling) return;
           isMenuScrolling = true;
           activeState = 'menu';
           const realtimeId = getCenteredItemId();
@@ -4177,15 +4183,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         chapterList.addEventListener('touchcancel', onTouchEnd);
 
         // === 状态：menu — wheel 路径（桌面滚轮）===
-        // wheel 事件实际上命中的是页面内容元素而非菜单 DOM（菜单是 fixed 浮层，
-        // 底下的内容元素才是 hit-test 目标），所以必须在 document 层监听，
-        // 再用坐标判断鼠标是否在菜单范围内。
         if (isDesktop) {
           const wheelEndDebounce = createDebounce(() => {
-            isWheeling = false;
-            if (activeState !== 'menu') return;
+            if (activeState !== 'menu') { isWheeling = false; return; }
             const centerId = getCenteredItemId();
-            if (!centerId) return;
+            if (!centerId) { isWheeling = false; return; }
+            // isWheeling 保持 true，直到 commitMenuSelection 内文章滚完才释放
             scrollMenuToItem(centerId).then(() => commitMenuSelection(centerId));
           }, 350);
 
