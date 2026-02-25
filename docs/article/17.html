@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -1619,15 +1618,6 @@ Start：是一场无知的冒险。</p>
         const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 350);
         const menuScrollDebounce   = createDebounce(onMenuScrollDebounced, 400);
         const cooldownDebounce     = createDebounce(() => { isInCooldown = false; }, 5000);
-        const backToScrollDebounce = createDebounce(() => {
-          // 菜单滑动后 1.5s 无操作，回归 scroll 状态。
-          // 此时文章已经滚到位，currentId 已是正确值，菜单也在正确位置，
-          // 只需切换状态和高亮，不再调 scrollMenuToItem（否则会用旧 currentId 把菜单拉回去）。
-          if (activeState === 'menu' && !hoveredItem) {
-            activeState = 'scroll';
-            setHighlight(currentId);
-          }
-        }, 1500);
 
         let isInCooldown         = false;
         let isMenuScrolling      = false;
@@ -1760,21 +1750,33 @@ Start：是一场无知的冒险。</p>
 
           scrollMenuToItem(centerId).then(() => {
             if (activeState !== 'menu' || hoveredItem) return;
+
+            // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
+            // 回归 scroll 状态时用的都是正确的新值，不会跳回旧位置。
+            currentId = centerId;
             setHighlight(centerId);
 
             const targetHeading = document.getElementById(centerId);
             if (targetHeading) {
               menuDrivingArticleCount++;
-              currentId = centerId; // 先同步，防止文章滚完后 backToScrollDebounce 用旧值
               smoothScrollPromise(
                 () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
                 () => window.scrollY
               ).finally(() => {
                 menuDrivingArticleCount--;
+                // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
+                // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
+                // 文章 scroll 事件覆盖成其它值，导致再次跳位。
+                if (activeState === 'menu' && !hoveredItem) {
+                  activeState = 'scroll';
+                  setHighlight(currentId);
+                }
               });
+            } else {
+              // 没有对应标题元素时，直接回归
+              activeState = 'scroll';
+              setHighlight(currentId);
             }
-
-            backToScrollDebounce.call();
           });
         }
 
