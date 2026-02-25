@@ -1335,6 +1335,8 @@
           const canvas = document.getElementById('menuRevealCanvas');
           const ctx    = canvas.getContext('2d');
           let cachedMenuRect = null;
+          let lastMouseX = -9999;
+          let lastMouseY = -9999;
 
           // Reveal 目标列表：每个目标只需声明元素、感应范围、距离策略
           // 新增目标只要在这里加一行即可，handleMove 不需要改动
@@ -1355,12 +1357,20 @@
             cachedMenuRect = r;
           }
 
+          const redrawAfterScroll = createDebounce(() => {
+            if (sideMenuWrapper.classList.contains('active')) {
+              resizeCanvas();
+              drawDividerGlow(lastMouseX, lastMouseY);
+            }
+          }, 150);
+
           chapterList.addEventListener('scroll', () => {
             if (sideMenuWrapper.classList.contains('active')) {
               requestAnimationFrame(() => {
                 resizeCanvas();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
               });
+              redrawAfterScroll.call();
             }
           }, { passive: true });
 
@@ -1428,6 +1438,8 @@
 
           function handleMove(e) {
             if (e.pointerType && e.pointerType !== 'mouse') return;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
             const menuActive = sideMenuWrapper.classList.contains('active');
 
             // 统一循环处理所有 Reveal 目标，无需为每个目标写特判分支
