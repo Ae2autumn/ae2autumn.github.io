@@ -3860,23 +3860,24 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }
 
         /**
-         * 基于 Promise 的 smooth scroll 完成检测，支持外部取消。
-         * 返回 { promise, cancel }。cancel() 立即 resolve，用于用户介入时中断等待。
+         * 基于 Promise 的 smooth scroll 完成检测
+         * 通过轮询位置变化判断滚动是否结束，解决原代码中硬编码超时的竞态问题。
+         * @param {HTMLElement} el - 被滚动的元素（window 传 document.documentElement）
+         * @param {Function} scrollFn - 触发滚动的函数
+         * @param {number} timeout - 最长等待时间（兜底）
          */
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
-          let cancelled = false;
-          const promise = new Promise(resolve => {
+          return new Promise(resolve => {
             scrollFn();
             let lastPos = getPosition();
             let stable = 0;
             const start = performance.now();
 
             function check() {
-              if (cancelled) { resolve(); return; }
               const pos = getPosition();
               if (pos === lastPos) {
                 stable++;
-                if (stable >= 3) { resolve(); return; }
+                if (stable >= 3) { resolve(); return; } // 连续3帧位置不变，视为完成
               } else {
                 stable = 0;
                 lastPos = pos;
@@ -3886,7 +3887,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
             requestAnimationFrame(check);
           });
-          return { promise, cancel() { cancelled = true; } };
         }
 
         /**
@@ -4032,9 +4032,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           if (item) item.classList.add(activeState === 'scroll' ? 'current' : 'hovered');
         }
 
-        // 追踪当前正在进行的菜单程序化滚动，新滚动触发时取消旧的
-        let currentMenuScroll = null;
-
         // 滚动菜单让指定 item 居中（返回 Promise，解决原来硬编码600ms的竞态）
         function scrollMenuToItem(id, behavior = 'smooth') {
           const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
@@ -4042,21 +4039,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const target = item.offsetTop - (chapterList.clientHeight - item.offsetHeight) / 2;
           if (chapterList.scrollHeight <= chapterList.clientHeight) return Promise.resolve();
 
-          // 取消上一次尚未完成的程序化滚动，立即释放 programmaticScrollCount
-          if (currentMenuScroll) {
-            currentMenuScroll.cancel();
-            currentMenuScroll = null;
-            programmaticScrollCount--;
-          }
-
           programmaticScrollCount++;
-          const handle = smoothScrollPromise(
+          return smoothScrollPromise(
             () => chapterList.scrollTo({ top: Math.max(0, target), behavior }),
             () => chapterList.scrollTop
-          );
-          currentMenuScroll = handle;
-          return handle.promise.finally(() => {
-            if (currentMenuScroll === handle) currentMenuScroll = null;
+          ).finally(() => {
             programmaticScrollCount--;
           });
         }
@@ -4158,7 +4145,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const centerId = getCenteredItemId();
           if (!centerId) return;
 
+          // 吸附居中：programmaticScrollCount 保护期间产生的 scroll 事件会被过滤，
+          // 计数归零后等一帧再判断是否有新的用户输入，避免归零瞬间的竞态。
           scrollMenuToItem(centerId).then(() => {
+            return new Promise(resolve => requestAnimationFrame(resolve));
+          }).then(() => {
+            // 如果吸附完成后状态已被新的用户滚动重置，放弃本次流程
             if (activeState !== 'menu' || hoveredItem) return;
 
             // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
@@ -4172,7 +4164,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               smoothScrollPromise(
                 () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
                 () => window.scrollY
-              ).promise.finally(() => {
+              ).finally(() => {
                 menuDrivingArticleCount--;
                 // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
                 // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
@@ -4198,6 +4190,17 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }
         chapterList.addEventListener('touchend',    onTouchEnd);
         chapterList.addEventListener('touchcancel', onTouchEnd);
+
+        // 桌面端滚轮：wheel 事件停止后视为"手离开"，和 touchend 对称。
+        // 用独立的 wheelDebounce 而非 menuScrollDebounce，是为了不干扰
+        // chapterList scroll 事件内已在计时的防抖（两者共同保证：
+        // 滚轮停转后 400ms 内一定会触发一次 onMenuScrollDebounced）。
+        const wheelEndDebounce = createDebounce(() => {
+          if (activeState === 'menu') menuScrollDebounce.call();
+        }, 200);
+        chapterList.addEventListener('wheel', () => {
+          if (activeState === 'menu') wheelEndDebounce.call();
+        }, { passive: true });
 
         // === 4. 菜单控制 ===
         function openMenu() {
