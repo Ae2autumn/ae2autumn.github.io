@@ -2804,7 +2804,7 @@ Fu~fu~<br>
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
           menuToggle.style.display = 'none';
-          document.body.style.overflow = 'hidden';
+          if (isDesktop) document.body.style.overflow = 'hidden';
           if (currentId) scrollMenuToItem(currentId, 'instant');
           if (isDesktop) resizeCanvas();
         }
@@ -2814,7 +2814,7 @@ Fu~fu~<br>
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          document.body.style.overflow = '';
+          if (isDesktop) document.body.style.overflow = '';
 
           if (isDesktop) {
             clearAllReveal();
