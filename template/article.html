@@ -673,7 +673,7 @@
                   // 움직임 후 멈춤 → 진짜 완료
                   stable++;
                   if (stable >= 3) { resolve(); return; }
-                } else if (now - start > 150) {
+                } else if (now - start > 300) {
                   // 150ms 동안 움직임 없음 → 이미 목적지에 있었던 것
                   resolve(); return;
                 }
