@@ -39,40 +39,52 @@
          body.dark-mode {
             background-color: #121212;
             color: #ffffff;
-            --reveal-hi:  255, 0, 0;
-            --reveal-mid: 180, 30, 30;
+            --reveal-hi:         255, 0, 0;
+            --reveal-mid:        180, 30, 30;
+            --color-text-primary:   #fff;
+            --color-text-secondary: #ccc;
+            --color-text-muted:     #999;
+            --color-border:         #333;
+            --color-tag-bg:         #333;
+            --color-tag-text:       #fff;
+            --color-link:           #6bb8ff;
+            --color-link-border:    rgba(107, 184, 255, 0.5);
+            --color-link-border-hv: rgba(107, 184, 255, 0.8);
+            --color-link-bg-hv:     rgba(107, 184, 255, 0.1);
+            --color-code-bg:        #3a3a3a;
+            --color-code-text:      #f8f8f2;
+            --color-pre-bg:         #2d2d2d;
+            --color-blockquote-border: #555;
+            --color-blockquote-bg:     #2a2a2a;
+            --color-blockquote-text:   #ccc;
+            --color-th-bg:          #333;
+            --color-td-border:      #444;
          }
    
          body.light-mode {
             background-color: #fff;
             color: #000;
-            --reveal-hi:  80, 80, 180;
-            --reveal-mid: 60, 60, 160;
+            --reveal-hi:         80, 80, 180;
+            --reveal-mid:        60, 60, 160;
+            --color-text-primary:   #000;
+            --color-text-secondary: #666;
+            --color-text-muted:     #777;
+            --color-border:         #ddd;
+            --color-tag-bg:         #eee;
+            --color-tag-text:       #000;
+            --color-link:           #4da6ff;
+            --color-link-border:    rgba(77, 166, 255, 0.5);
+            --color-link-border-hv: rgba(77, 166, 255, 0.8);
+            --color-link-bg-hv:     rgba(77, 166, 255, 0.1);
+            --color-code-bg:        #f5f5f5;
+            --color-code-text:      inherit;
+            --color-pre-bg:         #f5f5f5;
+            --color-blockquote-border: #ddd;
+            --color-blockquote-bg:     #f9f9f9;
+            --color-blockquote-text:   #666;
+            --color-th-bg:          #f5f5f5;
+            --color-td-border:      #ddd;
          }
-   
-         body.dark-mode .header { border-bottom-color: #333; }
-         body.dark-mode .title { color: #fff; }
-         body.dark-mode .summary { color: #ccc; }
-         body.dark-mode .date { color: #999; }
-         body.dark-mode .tag { background-color: #333; color: #fff; }
-         body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
-         body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
-            border-bottom-color: #333;
-            color: #fff;
-         }
-         body.dark-mode .comments { border-top-color: #333; }
-   
-         body.light-mode .header { border-bottom-color: #ddd; }
-         body.light-mode .title { color: #000; }
-         body.light-mode .summary { color: #666; }
-         body.light-mode .date { color: #777; }
-         body.light-mode .tag { background-color: #eee; color: #000; }
-         body.light-mode h1, body.light-mode h2, body.light-mode h3,
-         body.light-mode h4, body.light-mode h5, body.light-mode h6 {
-            border-bottom-color: #ddd;
-            color: #000;
-         }
-         body.light-mode .comments { border-top-color: #ddd; }
    
          /* ==================== Reveal ::before 公共结构 ==================== */
          .side-menu-wrapper::before,
@@ -96,26 +108,26 @@
             margin-bottom: 9px;
             padding: 20px;
             padding-bottom: 3px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--color-border);
             transition: border-color 0.5s ease;
          }
    
          .title {
             font-size: 2.5rem;
             margin-bottom: 3px;
-            color: #fff;
+            color: var(--color-text-primary);
             transition: color 0.5s ease;
          }
    
          .summary {
             font-size: 1.1rem;
             margin-bottom: 3px;
-            color: #ccc;
+            color: var(--color-text-secondary);
             transition: color 0.5s ease;
          }
    
          .date {
-            color: #999;
+            color: var(--color-text-muted);
             font-size: 0.9rem;
             margin-bottom: 3px;
             transition: color 0.5s ease;
@@ -129,8 +141,8 @@
          }
    
          .tag {
-            background-color: #333;
-            color: #fff;
+            background-color: var(--color-tag-bg);
+            color: var(--color-tag-text);
             padding: 2px 10px;
             border-radius: 3px;
             font-size: 0.9rem;
@@ -156,7 +168,8 @@
          .content h4, .content h5, .content h6 {
             margin: 1.5em 0 0.5em;
             padding-bottom: 10px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
             transition: border-color 0.5s ease, color 0.5s ease;
          }
    
@@ -173,14 +186,13 @@
          .content pre {
             margin: 1em 0;
             padding: 1em;
-            background-color: #f5f5f5;
+            background-color: var(--color-pre-bg);
+            color: var(--color-code-text);
             border-radius: 4px;
             overflow-x: auto;
             white-space: pre;
             max-width: 100%;
          }
-   
-         body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
    
          .content code {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -188,23 +200,20 @@
          }
    
          .content p code {
-            background-color: #f5f5f5;
+            background-color: var(--color-code-bg);
+            color: var(--color-code-text);
             padding: 0.2em 0.4em;
             border-radius: 3px;
          }
    
-         body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
-   
          .content blockquote {
             margin: 1em 0;
             padding: 0.5em 1em;
-            border-left: 4px solid #ddd;
-            background-color: #f9f9f9;
-            color: #666;
+            border-left: 4px solid var(--color-blockquote-border);
+            background-color: var(--color-blockquote-bg);
+            color: var(--color-blockquote-text);
             border-radius: 5px;
          }
-   
-         body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
    
          .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
    
@@ -216,45 +225,36 @@
          }
    
          .content th, .content td {
-            border: 1px solid #ddd;
+            border: 1px solid var(--color-td-border);
             padding: 0.5em 1em;
             text-align: left;
             max-width: 300px;
          }
    
-         .content th { background-color: #f5f5f5; font-weight: 600; }
-         body.dark-mode .content th { background-color: #333; border-color: #444; }
+         .content th { background-color: var(--color-th-bg); font-weight: 600; }
          body.dark-mode .content td { border-color: #444; }
    
          .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
-         .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
+         .content hr { margin: 2em 0; border: none; border-top: 1px solid var(--color-border); }
    
          .content a {
-            color: #4da6ff;
+            color: var(--color-link);
             text-decoration: none;
-            border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+            border-bottom: 1px dotted var(--color-link-border);
             transition: all 0.3s ease;
          }
    
-         body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107, 184, 255, 0.5); }
-   
          .content a:hover {
-            color: #fff;
-            border-bottom: 1px solid rgba(77, 166, 255, 0.8);
-            background-color: rgba(77, 166, 255, 0.1);
-         }
-   
-         body.dark-mode .content a:hover {
-            color: #fff;
-            border-bottom: 1px solid rgba(107, 184, 255, 0.8);
-            background-color: rgba(107, 184, 255, 0.1);
+            color: var(--color-text-primary);
+            border-bottom: 1px solid var(--color-link-border-hv);
+            background-color: var(--color-link-bg-hv);
          }
    
          /* ==================== 评论区 ==================== */
          .comments {
             margin-top: 50px;
             padding: 20px;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--color-border);
             transition: border-color 0.5s ease;
          }
    
@@ -304,7 +304,7 @@
             display: none;
             transition: opacity 0.3s ease;
          }
-         .menu-mask.active { display: block; }
+         body.menu-open .menu-mask { display: block; }
    
          /* ==================== 亚克力侧边菜单 wrapper ==================== */
          .side-menu-wrapper {
@@ -320,7 +320,7 @@
             pointer-events: none;
          }
    
-         .side-menu-wrapper.active {
+         body.menu-open .side-menu-wrapper {
             display: block;
             animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
          }
@@ -368,15 +368,12 @@
             border-color: rgba(0, 0, 0, 0.12);
          }
    
-         body.is-desktop .side-menu {
-            border: none;
-         }
-   
+         body.is-desktop .side-menu,
          body.is-desktop.light-mode .side-menu {
             border: none;
          }
    
-         .side-menu.active {
+         body.menu-open .side-menu {
             display: flex;
          }
    
@@ -407,10 +404,18 @@
          .chapter-item {
             padding: 10px 0;
             cursor: pointer;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(var(--reveal-hi), 0.7);  /* 复用主题 hi 色但透明度低 */
             transition: color 0.2s, padding-left 0.2s;
             position: relative;
          }
+
+         /* dark / light 下章节文字颜色 */
+         body.dark-mode  .chapter-item          { color: rgba(255, 255, 255, 0.70); }
+         body.dark-mode  .chapter-item.h2-item  { color: rgba(255, 255, 255, 0.45); }
+         body.dark-mode  .chapter-item.h3-item  { color: rgba(255, 255, 255, 0.30); }
+         body.light-mode .chapter-item          { color: rgba(0,   0,   0,   0.70); }
+         body.light-mode .chapter-item.h2-item  { color: rgba(0,   0,   0,   0.45); }
+         body.light-mode .chapter-item.h3-item  { color: rgba(0,   0,   0,   0.30); }
    
          .chapter-item::after {
             content: '';
@@ -434,12 +439,8 @@
          .chapter-item:last-child::after { display: none; }
    
          .chapter-item.h1-item { padding-left: 0; }
-         .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
-         .chapter-item.h3-item { padding-left: 28px; color: rgba(255,255,255,0.3);  font-size: 0.85em; }
-   
-         body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
-         body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
-         body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
+         .chapter-item.h2-item { padding-left: 14px; font-size: 0.9em; }
+         .chapter-item.h3-item { padding-left: 28px; font-size: 0.85em; }
    
          body.is-desktop .chapter-item:hover { color: #f00; }
          body.is-desktop .chapter-item.h1-item:hover { padding-left: 5px; }
@@ -615,7 +616,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
    
       <div class="comments"></div>
    
-      <button class="floating-btn" id="menuToggle" style="color: #fff">☰</button>
+      <button class="floating-btn" id="menuToggle">☰</button>
    
       <div class="menu-mask" id="menuMask"></div>
    
@@ -674,7 +675,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
             scrollFn();
             let lastPos = getPosition();
             let stable = 0;
-            let animationStarted = false;  // 실제로 움직임이 감지됐는지
+            let animationStarted = false;  // 是否已检测到真实位移
             const start = performance.now();
 
             function check() {
@@ -682,17 +683,17 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
               const pos = getPosition();
 
               if (pos !== lastPos) {
-                // 애니메이션이 실제로 시작됨
+                // 动画已真正开始
                 animationStarted = true;
                 stable = 0;
                 lastPos = pos;
               } else {
                 if (animationStarted) {
-                  // 움직임 후 멈춤 → 진짜 완료
+                  // 运动后停止 → 真正完成
                   stable++;
                   if (stable >= 3) { resolve(); return; }
                 } else if (now - start > 300) {
-                  // 150ms 동안 움직임 없음 → 이미 목적지에 있었던 것
+                  // 300ms 内无位移 → 已经在目标位置，无需滚动
                   resolve(); return;
                 }
               }
@@ -780,6 +781,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         });
 
         // === 2. 应用主题 ===
+        // applyTheme 统一决定主题类和按钮颜色，HTML 中无需 inline style
         function applyTheme() {
           const savedTheme  = localStorage.getItem('theme');
           const configTheme = "dark";
@@ -822,34 +824,38 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         // ==================== 高亮状态机 ====================
         // 三个互斥状态：scroll（滚动驱动）| hover（鼠标悬停）| menu（菜单列表滑动）
 
-        let currentId   = null;
-        let hoveredItem = null;
-        let activeState = 'scroll';
+        // 将所有互相关联的状态变量收拢到一个对象，便于整体追踪和调试
+        const st = {
+          currentId:              null,   // 当前激活的 heading id
+          hoveredItem:            null,   // 当前悬停的 chapter-item 元素
+          activeState:            'scroll',
+          isMenuScrolling:        false,
+          isWheelScrolling:       false,  // 滚轮滚动标志，用于屏蔽假 pointer 事件
+          isHoverScrolling:       false,  // hover 触发文章滚动期间屏蔽假 pointer 事件
+          programmaticScrollCount: 0,     // 程序驱动滚动计数，>0 时忽略菜单 scroll 事件
+          menuDrivingArticleCount: 0,     // 菜单驱动文章滚动计数
+        };
 
         // 用 createDebounce 替换原来的裸 timer 变量，集中管理
         const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 1500);
         const menuScrollDebounce   = createDebounce(onMenuScrollDebounced, 400);
 
-        let isMenuScrolling      = false;
-        // 滚轮滚动标志：只有真实的 wheel 事件才能设置它
-        // 用于屏蔽"元素滑过静止光标"产生的假 pointerenter/pointerleave
-        let isWheelScrolling     = false;
-        // hover触发文章滚动期间，同样需要屏蔽假pointer事件
-        let isHoverScrolling     = false;
-        // 用计数器替换布尔标志，彻底解决嵌套/并发调用时的竞态问题：
-        // 每次程序驱动滚动前 +1，滚动结束后 -1，只有计数为0才视为用户手动滚动。
-        let programmaticScrollCount  = 0;
-        let menuDrivingArticleCount  = 0;
+        // 缓存当前高亮元素引用，避免 setHighlight 每次都查询 DOM
+        let currentHighlightEl = null;
 
         // 唯一高亮入口
         function setHighlight(id) {
-          document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
-            .forEach(i => i.classList.remove('current', 'hovered'));
-          if (!id) return;
-          const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-          if (item) item.classList.add(activeState === 'scroll' ? 'current' : 'hovered');
+          currentHighlightEl?.classList.remove('current', 'hovered');
+          currentHighlightEl = id
+            ? document.querySelector(`.chapter-item[data-id="${id}"]`)
+            : null;
+          if (currentHighlightEl) {
+            currentHighlightEl.classList.add(st.activeState === 'scroll' ? 'current' : 'hovered');
+          }
         }
 
+        // 滚动菜单让指定 item 居中（返回 Promise，解决原来硬编码600ms的竞态）
+        function scrollMenuToItem(id, behavior = 'smooth') {
         // 滚动菜单让指定 item 居中（返回 Promise，解决原来硬编码600ms的竞态）
         function scrollMenuToItem(id, behavior = 'smooth') {
           const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
@@ -857,12 +863,12 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
           const target = item.offsetTop - (chapterList.clientHeight - item.offsetHeight) / 2;
           if (chapterList.scrollHeight <= chapterList.clientHeight) return Promise.resolve();
 
-          programmaticScrollCount++;
+          st.programmaticScrollCount++;
           return smoothScrollPromise(
             () => chapterList.scrollTo({ top: Math.max(0, target), behavior }),
             () => chapterList.scrollTop
           ).finally(() => {
-            programmaticScrollCount--;
+            st.programmaticScrollCount--;
           });
         }
 
@@ -882,17 +888,17 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
 
         // === 状态：scroll ===
         function applyScrollState(id) {
-          if (activeState === 'hover' || activeState === 'menu') return;
-          activeState = 'scroll';
-          currentId   = id;
+          if (st.activeState === 'hover' || st.activeState === 'menu') return;
+          st.activeState = 'scroll';
+          st.currentId   = id;
           setHighlight(id);
-          if (!isMenuScrolling) scrollMenuToItem(id);
+          if (!st.isMenuScrolling) scrollMenuToItem(id);
         }
 
         function updateActiveHeading() {
           if (allHeadings.length === 0) return;
-          if (menuDrivingArticleCount > 0) return;
-          if (isHoverScrolling) return;
+          if (st.menuDrivingArticleCount > 0) return;
+          if (st.isHoverScrolling) return;
           const scrollY = window.scrollY;
           const offset  = 80;
           let current   = allHeadings[0];
@@ -901,94 +907,94 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
             if (top <= scrollY + offset) current = allHeadings[i];
             else break;
           }
-          if (current.id !== currentId || activeState !== 'scroll') {
+          if (current.id !== st.currentId || st.activeState !== 'scroll') {
             applyScrollState(current.id);
           }
         }
 
         if (allHeadings.length > 0) {
-          currentId = allHeadings[0].id;
-          applyScrollState(currentId);
+          st.currentId = allHeadings[0].id;
+          applyScrollState(st.currentId);
         }
 
         window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
         // === 状态：hover ===
         async function onHoverScrollDebounced(item) {
-          if (activeState !== 'hover' || hoveredItem !== item) return;
+          if (st.activeState !== 'hover' || st.hoveredItem !== item) return;
           setHighlight(item.dataset.id);
 
           // 先等菜单居中完成，再跳转文章，避免两个 smoothScrollPromise 并发竞争
-          isHoverScrolling = true;
+          st.isHoverScrolling = true;
           await scrollMenuToItem(item.dataset.id);
 
           // 居中完成后短暂释放，让浏览器补发的 pointerenter 能进来重新触发防抖
           // （鼠标静止时 DOM 位移后浏览器会补发，但 isHoverScrolling=true 时会被拦）
-          isHoverScrolling = false;
+          st.isHoverScrolling = false;
 
           // 居中结束后留 150ms 让残留 pointer 事件消化完毕，状态稳定后再跳转
           await new Promise(resolve => setTimeout(resolve, 150));
 
           // await 后重新校验：若状态已被其他交互重置则放弃跳转
-          if (activeState !== 'hover' || hoveredItem !== item) {
+          if (st.activeState !== 'hover' || st.hoveredItem !== item) {
             return;
           }
 
           const targetHeading = document.getElementById(item.dataset.id);
           if (targetHeading) {
-            isHoverScrolling = true;
-            menuDrivingArticleCount++;
+            st.isHoverScrolling = true;
+            st.menuDrivingArticleCount++;
             try {
               await smoothScrollPromise(
                 () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
                 () => window.scrollY
               );
             } finally {
-              menuDrivingArticleCount--;
-              isHoverScrolling = false;
-              if (activeState === 'hover' && hoveredItem === item) {
-                currentId = item.dataset.id;
+              st.menuDrivingArticleCount--;
+              st.isHoverScrolling = false;
+              if (st.activeState === 'hover' && st.hoveredItem === item) {
+                st.currentId = item.dataset.id;
               }
             }
           } else {
-            isHoverScrolling = false;
+            st.isHoverScrolling = false;
           }
         }
 
         function onItemPointerEnter(item) {
-          if (isWheelScrolling || isHoverScrolling) return;
-          hoveredItem = item;
-          activeState = 'hover';
+          if (st.isWheelScrolling || st.isHoverScrolling) return;
+          st.hoveredItem = item;
+          st.activeState = 'hover';
           setHighlight(item.dataset.id);
           hoverScrollDebounce.call(item);
         }
 
         function onItemPointerLeave() {
-          if (isWheelScrolling || isHoverScrolling) return;
+          if (st.isWheelScrolling || st.isHoverScrolling) return;
           hoverScrollDebounce.cancel();
-          hoveredItem = null;
-          activeState = 'scroll';
-          setHighlight(currentId);
-          scrollMenuToItem(currentId);
+          st.hoveredItem = null;
+          st.activeState = 'scroll';
+          setHighlight(st.currentId);
+          scrollMenuToItem(st.currentId);
         }
 
         if (isDesktop) {
           chapterList.addEventListener('pointerleave', (e) => {
             if (e.pointerType !== 'mouse') return;
-            if (isWheelScrolling || isHoverScrolling) return;
-            if (activeState === 'hover') onItemPointerLeave();
+            if (st.isWheelScrolling || st.isHoverScrolling) return;
+            if (st.activeState === 'hover') onItemPointerLeave();
           });
         }
 
         // === 状态：menu ===
         // 监听滚轮事件，设置屏蔽标志，防止假 pointer 事件干扰
         chapterList.addEventListener('wheel', () => {
-          if (!isWheelScrolling) {
-            isWheelScrolling = true;
-            if (activeState === 'hover') {
+          if (!st.isWheelScrolling) {
+            st.isWheelScrolling = true;
+            if (st.activeState === 'hover') {
               hoverScrollDebounce.cancel();
-              hoveredItem = null;
-              activeState = 'scroll';
+              st.hoveredItem = null;
+              st.activeState = 'scroll';
             }
           }
           // isWheelScrolling 不用计时器清除
@@ -996,10 +1002,10 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         }, { passive: true });
 
         chapterList.addEventListener('scroll', () => {
-          if (programmaticScrollCount > 0) return;
-          if (activeState === 'hover') return;
-          isMenuScrolling = true;
-          activeState = 'menu';
+          if (st.programmaticScrollCount > 0) return;
+          if (st.activeState === 'hover') return;
+          st.isMenuScrolling = true;
+          st.activeState = 'menu';
           // 实时更新高亮跟随菜单中心项，而不是等防抖结束后才跳变
           const realtimeId = getCenteredItemId();
           if (realtimeId) setHighlight(realtimeId);
@@ -1007,34 +1013,34 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         }, { passive: true });
 
         function onMenuScrollDebounced() {
-          isMenuScrolling = false;
+          st.isMenuScrolling = false;
           const centerId = getCenteredItemId();
-          if (!centerId) { isWheelScrolling = false; return; }
+          if (!centerId) { st.isWheelScrolling = false; return; }
 
           scrollMenuToItem(centerId).then(() => {
-            if (activeState !== 'menu' || hoveredItem) { isWheelScrolling = false; return; }
+            if (st.activeState !== 'menu' || st.hoveredItem) { st.isWheelScrolling = false; return; }
 
-            currentId = centerId;
+            st.currentId = centerId;
             setHighlight(centerId);
 
             const targetHeading = document.getElementById(centerId);
             if (targetHeading) {
-              menuDrivingArticleCount++;
+              st.menuDrivingArticleCount++;
               smoothScrollPromise(
                 () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
                 () => window.scrollY
               ).finally(() => {
-                menuDrivingArticleCount--;
-                isWheelScrolling = false;  // 文章滚完才释放，整个流程结束
-                if (activeState === 'menu' && !hoveredItem) {
-                  activeState = 'scroll';
-                  setHighlight(currentId);
+                st.menuDrivingArticleCount--;
+                st.isWheelScrolling = false;  // 文章滚完才释放，整个流程结束
+                if (st.activeState === 'menu' && !st.hoveredItem) {
+                  st.activeState = 'scroll';
+                  setHighlight(st.currentId);
                 }
               });
             } else {
-              isWheelScrolling = false;
-              activeState = 'scroll';
-              setHighlight(currentId);
+              st.isWheelScrolling = false;
+              st.activeState = 'scroll';
+              setHighlight(st.currentId);
             }
           });
         }
@@ -1042,35 +1048,32 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         // 移动端：手指离开时立即触发一次防抖（重置计时器到 400ms 后），
         // 比等惯性滚动自然停止更快响应，同时不会在惯性期间提前吸附。
         function onTouchEnd() {
-          if (hoveredItem) hoveredItem = null;
-          if (activeState === 'menu') menuScrollDebounce.call();
+          if (st.hoveredItem) st.hoveredItem = null;
+          if (st.activeState === 'menu') menuScrollDebounce.call();
         }
         chapterList.addEventListener('touchend',    onTouchEnd);
         chapterList.addEventListener('touchcancel', onTouchEnd);
 
         // === 4. 菜单控制 ===
+        // 改为只操作 body.menu-open，显隐逻辑全部由 CSS 处理
         function openMenu() {
-          sideMenuWrapper.classList.add('active');
-          sideMenu.classList.add('active');
-          menuMask.classList.add('active');
+          document.body.classList.add('menu-open');
           menuToggle.style.display = 'none';
-          if (currentId) scrollMenuToItem(currentId, 'instant');
+          if (st.currentId) scrollMenuToItem(st.currentId, 'instant');
           if (isDesktop) resizeCanvas();
         }
 
         function closeMenu() {
-          sideMenuWrapper.classList.remove('active');
-          sideMenu.classList.remove('active');
-          menuMask.classList.remove('active');
+          document.body.classList.remove('menu-open');
           menuToggle.style.display = 'flex';
 
           if (isDesktop) {
             clearAllReveal();
             hoverScrollDebounce.cancel();
-            hoveredItem  = null;
-            if (activeState === 'hover') {
-              activeState = 'scroll';
-              setHighlight(currentId);
+            st.hoveredItem  = null;
+            if (st.activeState === 'hover') {
+              st.activeState = 'scroll';
+              setHighlight(st.currentId);
             }
           }
         }
@@ -1163,7 +1166,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
           ];
 
           function resizeCanvas() {
-            if (!sideMenuWrapper.classList.contains('active')) return;
+            if (!document.body.classList.contains('menu-open')) return;
             const r = chapterList.getBoundingClientRect();
             canvas.width       = r.width;
             canvas.height      = r.height;
@@ -1173,19 +1176,14 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
           }
 
           const redrawAfterScroll = createDebounce(() => {
-            if (sideMenuWrapper.classList.contains('active')) {
+            if (document.body.classList.contains('menu-open')) {
               resizeCanvas();
-              if (lastMouseX !== -9999) {
-                chapterList.style.pointerEvents = 'none';
-                canvas.classList.add('active');
-                drawDividerGlow(lastMouseX, lastMouseY);
-                requestAnimationFrame(() => { chapterList.style.pointerEvents = ''; });
-              }
+              drawDividerGlow(lastMouseX, lastMouseY);
             }
           }, 150);
 
           chapterList.addEventListener('scroll', () => {
-            if (sideMenuWrapper.classList.contains('active')) {
+            if (document.body.classList.contains('menu-open')) {
               requestAnimationFrame(() => {
                 resizeCanvas();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1196,23 +1194,14 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
 
           function drawDividerGlow(mouseX, mouseY) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!sideMenuWrapper.classList.contains('active')) return;
+            if (!document.body.classList.contains('menu-open')) return;
 
             const style    = getComputedStyle(document.body);
             const colorHi  = style.getPropertyValue('--reveal-hi').trim();
             const colorMid = style.getPropertyValue('--reveal-mid').trim();
 
-            const menuRect = chapterList.getBoundingClientRect();
-            if (canvas.width  !== Math.round(menuRect.width)  ||
-                canvas.height !== Math.round(menuRect.height) ||
-                parseFloat(canvas.style.left) !== menuRect.left ||
-                parseFloat(canvas.style.top)  !== menuRect.top) {
-              canvas.width      = menuRect.width;
-              canvas.height     = menuRect.height;
-              canvas.style.left = menuRect.left + 'px';
-              canvas.style.top  = menuRect.top  + 'px';
-              cachedMenuRect    = menuRect;
-            }
+            // resizeCanvas 已负责尺寸同步，此处直接使用 cachedMenuRect
+            const menuRect = cachedMenuRect || chapterList.getBoundingClientRect();
 
             // 用封装好的 distToRect 判断鼠标是否在感应范围内
             const radius = 80;
@@ -1260,7 +1249,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
             if (e.pointerType && e.pointerType !== 'mouse') return;
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
-            const menuActive = sideMenuWrapper.classList.contains('active');
+            const menuActive = document.body.classList.contains('menu-open');
 
             // 统一循环处理所有 Reveal 目标，无需为每个目标写特判分支
             revealTargets.forEach(({ el, range, alwaysOn, distFn }) => {
