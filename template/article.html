@@ -635,7 +635,7 @@
          * 通用防抖函数
          * @param {Function} fn - 要防抖的函数
          * @param {number} delay - 延迟毫秒数
-         * @returns {{ call: Function, cancel: Function }} - 防抖控制器
+         * @returns 防抖控制器对象，包含 call / cancel / pending 三个属性
          *
          * 使用对象而非直接返回函数，是为了在需要时能精确 cancel，
          * 避免原始代码里到处 clearTimeout(someTimer) 的散乱写法。
