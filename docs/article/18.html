@@ -944,10 +944,10 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
         chapterList.addEventListener('wheel', () => {
           if (!isWheelScrolling) {
             isWheelScrolling = true;
-            // 如果当前在 hover 状态，立即取消，否则 scroll 事件里 return 掉什么都做不了
             if (activeState === 'hover') {
               hoverScrollDebounce.cancel();
               hoveredItem = null;
+              activeState = 'scroll';  // 解锁 scroll 事件里的 hover 早返回
             }
           }
           wheelEndDebounce.call();

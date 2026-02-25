@@ -4141,10 +4141,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         chapterList.addEventListener('wheel', () => {
           if (!isWheelScrolling) {
             isWheelScrolling = true;
-            // 如果当前在 hover 状态，立即取消，否则 scroll 事件里 return 掉什么都做不了
             if (activeState === 'hover') {
               hoverScrollDebounce.cancel();
               hoveredItem = null;
+              activeState = 'scroll';  // 解锁 scroll 事件里的 hover 早返回
             }
           }
           wheelEndDebounce.call();
