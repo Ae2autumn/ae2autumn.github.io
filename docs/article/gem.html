@@ -4240,10 +4240,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           if (isDesktop) {
             clearAllReveal();
-            // 不管当前是什么状态，关闭时统一清理 hover 相关计时器
             hoverScrollDebounce.cancel();
-            cooldownDebounce.cancel();
-            isInCooldown = false;
             hoveredItem  = null;
             if (activeState === 'hover') {
               activeState = 'scroll';

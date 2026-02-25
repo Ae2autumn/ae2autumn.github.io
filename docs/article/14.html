@@ -1140,10 +1140,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
 
           if (isDesktop) {
             clearAllReveal();
-            // 不管当前是什么状态，关闭时统一清理 hover 相关计时器
             hoverScrollDebounce.cancel();
-            cooldownDebounce.cancel();
-            isInCooldown = false;
             hoveredItem  = null;
             if (activeState === 'hover') {
               activeState = 'scroll';
