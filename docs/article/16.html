@@ -1815,7 +1815,6 @@ Autumn。<br>
         // 用计数器替换布尔标志，彻底解决嵌套/并发调用时的竞态问题：
         // 每次程序驱动滚动前 +1，滚动结束后 -1，只有计数为0才视为用户手动滚动。
         let programmaticScrollCount  = 0;
-        let menuDrivingArticleCount  = 0;
 
         // 唯一高亮入口
         function setHighlight(id) {
@@ -1867,7 +1866,6 @@ Autumn。<br>
 
         function updateActiveHeading() {
           if (allHeadings.length === 0) return;
-          if (menuDrivingArticleCount > 0) return;
           const scrollY = window.scrollY;
           const offset  = 80;
           let current   = allHeadings[0];
@@ -1923,6 +1921,20 @@ Autumn。<br>
         }
 
         // === 状态：menu ===
+
+        // 标记当前用户滚动是否由滚轮发起（滚轮不产生 touchend，需单独处理吸附时机）
+        let isWheelScrolling = false;
+        const wheelEndDebounce = createDebounce(() => {
+          isWheelScrolling = false;
+          // 滚轮停止后立即触发一次菜单防抖，完成吸附
+          if (activeState === 'menu') menuScrollDebounce.call();
+        }, 150);
+
+        chapterList.addEventListener('wheel', () => {
+          isWheelScrolling = true;
+          wheelEndDebounce.call();
+        }, { passive: true });
+
         chapterList.addEventListener('scroll', () => {
           if (programmaticScrollCount > 0) return;
           if (activeState === 'hover') return;
@@ -1931,7 +1943,8 @@ Autumn。<br>
           // 实时更新高亮跟随菜单中心项，而不是等防抖结束后才跳变
           const realtimeId = getCenteredItemId();
           if (realtimeId) setHighlight(realtimeId);
-          menuScrollDebounce.call();
+          // 滚轮滚动时由 wheelEndDebounce 负责触发，避免每格滚动都重置计时器导致延迟过长
+          if (!isWheelScrolling) menuScrollDebounce.call();
         }, { passive: true });
 
         function onMenuScrollDebounced() {
@@ -1939,35 +1952,15 @@ Autumn。<br>
           const centerId = getCenteredItemId();
           if (!centerId) return;
 
+          // currentId 必须在吸附前同步，回归 scroll 后不会跳回旧位置
+          currentId = centerId;
+          setHighlight(centerId);
+
+          // 仅做视觉吸附居中，不驱动文章滚动（文章联动只在点击 item 时发生）
           scrollMenuToItem(centerId).then(() => {
             if (activeState !== 'menu' || hoveredItem) return;
-
-            // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
-            // 回归 scroll 状态时用的都是正确的新值，不会跳回旧位置。
-            currentId = centerId;
-            setHighlight(centerId);
-
-            const targetHeading = document.getElementById(centerId);
-            if (targetHeading) {
-              menuDrivingArticleCount++;
-              smoothScrollPromise(
-                () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                () => window.scrollY
-              ).finally(() => {
-                menuDrivingArticleCount--;
-                // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
-                // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
-                // 文章 scroll 事件覆盖成其它值，导致再次跳位。
-                if (activeState === 'menu' && !hoveredItem) {
-                  activeState = 'scroll';
-                  setHighlight(currentId);
-                }
-              });
-            } else {
-              // 没有对应标题元素时，直接回归
-              activeState = 'scroll';
-              setHighlight(currentId);
-            }
+            activeState = 'scroll';
+            setHighlight(currentId);
           });
         }
 
