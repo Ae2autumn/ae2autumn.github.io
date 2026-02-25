@@ -1,638 +1,608 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 
-<head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Gem-1 - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-   <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
-   <style>
-      /* ==================== 基础样式 ==================== */
-      *, *::before, *::after {
-         box-sizing: border-box;
-      }
-
-      * {
-         margin: 0;
-         padding: 0;
-      }
-
-      body {
-         background-color: #0d0d0d;
-         color: #fff;
-         font-family: Arial, sans-serif;
-         line-height: 1.6;
-         padding: 20px;
-         max-width: 1000px;
-         margin: 0 auto;
-         position: relative;
-         transition: background-color 0.5s ease, color 0.5s ease;
-         overflow-x: hidden;
-         /* 统一断词，避免各子元素重复声明 */
-         word-wrap: break-word;
-         word-break: break-word;
-         overflow-wrap: break-word;
-      }
-
-      /* ==================== 主题颜色变量 ==================== */
-      body.dark-mode {
-         background-color: #121212;
-         color: #ffffff;
-         --reveal-hi:  255, 0, 0;
-         --reveal-mid: 180, 30, 30;
-      }
-
-      body.light-mode {
-         background-color: #fff;
-         color: #000;
-         --reveal-hi:  80, 80, 180;
-         --reveal-mid: 60, 60, 160;
-      }
-
-      body.dark-mode .header { border-bottom-color: #333; }
-      body.dark-mode .title { color: #fff; }
-      body.dark-mode .summary { color: #ccc; }
-      body.dark-mode .date { color: #999; }
-      body.dark-mode .tag { background-color: #333; color: #fff; }
-      body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
-      body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
-         border-bottom-color: #333;
-         color: #fff;
-      }
-      body.dark-mode .comments { border-top-color: #333; }
-
-      body.light-mode .header { border-bottom-color: #ddd; }
-      body.light-mode .title { color: #000; }
-      body.light-mode .summary { color: #666; }
-      body.light-mode .date { color: #777; }
-      body.light-mode .tag { background-color: #eee; color: #000; }
-      body.light-mode h1, body.light-mode h2, body.light-mode h3,
-      body.light-mode h4, body.light-mode h5, body.light-mode h6 {
-         border-bottom-color: #ddd;
-         color: #000;
-      }
-      body.light-mode .comments { border-top-color: #ddd; }
-
-      /* ==================== Reveal ::before 公共结构 ==================== */
-      /* 所有 Reveal 边框层共享的基础样式，各元素只覆盖 border-radius 和渐变半径 */
-      .side-menu-wrapper::before,
-      .menu-left::before,
-      .menu-right::before,
-      .floating-btn::before {
-         content: '';
-         position: absolute;
-         inset: -1px;
-         padding: 1px;
-         -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-         -webkit-mask-composite: xor;
-         mask-composite: exclude;
-         pointer-events: none;
-         z-index: 2;
-      }
-
-      /* ==================== 文章内容样式 ==================== */
-      .header {
-         margin-bottom: 9px;
-         padding: 20px;
-         padding-bottom: 3px;
-         border-bottom: 1px solid #333;
-         transition: border-color 0.5s ease;
-      }
-
-      .title {
-         font-size: 2.5rem;
-         margin-bottom: 3px;
-         color: #fff;
-         transition: color 0.5s ease;
-      }
-
-      .summary {
-         font-size: 1.1rem;
-         margin-bottom: 3px;
-         color: #ccc;
-         transition: color 0.5s ease;
-      }
-
-      .date {
-         color: #999;
-         font-size: 0.9rem;
-         margin-bottom: 3px;
-         transition: color 0.5s ease;
-      }
-
-      .tags {
-         display: flex;
-         flex-wrap: wrap;
-         gap: 10px;
-         margin-bottom: 3px;
-      }
-
-      .tag {
-         background-color: #333;
-         color: #fff;
-         padding: 2px 10px;
-         border-radius: 3px;
-         font-size: 0.9rem;
-         transition: background-color 0.5s ease, color 0.5s ease;
-      }
-
-      .content {
-         padding: 20px;
-         padding-top: 0px;
-         margin-bottom: 50px;
-         transition: color 0.5s ease;
-         overflow-x: hidden;
-      }
-
-      /* ==================== Markdown内容样式 ==================== */
-      .content p {
-         margin-top: 0;
-         margin-bottom: 0.3em;
-         line-height: 1.5;
-      }
-
-      .content h1, .content h2, .content h3,
-      .content h4, .content h5, .content h6 {
-         margin: 1.5em 0 0.5em;
-         padding-bottom: 10px;
-         border-bottom: 1px solid #333;
-         transition: border-color 0.5s ease, color 0.5s ease;
-      }
-
-      .content ul, .content ol {
-         margin: 0.8em 0;
-         padding-left: 2em;
-      }
-
-      .content li {
-         margin: 0.3em 0;
-         line-height: 1.6;
-      }
-
-      .content pre {
-         margin: 1em 0;
-         padding: 1em;
-         background-color: #f5f5f5;
-         border-radius: 4px;
-         overflow-x: auto;
-         white-space: pre;
-         max-width: 100%;
-      }
-
-      body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
-
-      .content code {
-         font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-         font-size: 0.9em;
-      }
-
-      .content p code {
-         background-color: #f5f5f5;
-         padding: 0.2em 0.4em;
-         border-radius: 3px;
-      }
-
-      body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
-
-      .content blockquote {
-         margin: 1em 0;
-         padding: 0.5em 1em;
-         border-left: 4px solid #ddd;
-         background-color: #f9f9f9;
-         color: #666;
-         border-radius: 5px;
-      }
-
-      body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
-
-      .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
-
-      .content table {
-         margin: 1em 0;
-         border-collapse: collapse;
-         width: 100%;
-         max-width: 100%;
-      }
-
-      .content th, .content td {
-         border: 1px solid #ddd;
-         padding: 0.5em 1em;
-         text-align: left;
-         max-width: 300px;
-      }
-
-      .content th { background-color: #f5f5f5; font-weight: 600; }
-      body.dark-mode .content th { background-color: #333; border-color: #444; }
-      body.dark-mode .content td { border-color: #444; }
-
-      .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
-      .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
-
-      .content a {
-         color: #4da6ff;
-         text-decoration: none;
-         border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
-         transition: all 0.3s ease;
-      }
-
-      body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107, 184, 255, 0.5); }
-
-      .content a:hover {
-         color: #fff;
-         border-bottom: 1px solid rgba(77, 166, 255, 0.8);
-         background-color: rgba(77, 166, 255, 0.1);
-      }
-
-      body.dark-mode .content a:hover {
-         color: #fff;
-         border-bottom: 1px solid rgba(107, 184, 255, 0.8);
-         background-color: rgba(107, 184, 255, 0.1);
-      }
-
-      /* ==================== 评论区 ==================== */
-      .comments {
-         margin-top: 50px;
-         padding: 20px;
-         border-top: 1px solid #333;
-         transition: border-color 0.5s ease;
-      }
-
-      /* ==================== 亚克力浮动按钮 ==================== */
-      .floating-btn {
-         position: fixed;
-         bottom: 30px;
-         right: 30px;
-         width: 60px;
-         height: 60px;
-         border-radius: 50%;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-         cursor: pointer;
-         font-size: 24px;
-         z-index: 1000;
-         border: 1px solid rgba(255, 255, 255, 0.12);
-         outline: none;
-         /* 亚克力：模糊背景 + 半透明 */
-         background: rgba(20, 20, 20, 0.55);
-         backdrop-filter: blur(20px) saturate(180%);
-         -webkit-backdrop-filter: blur(20px) saturate(180%);
-         transition: background 0.3s ease, border-color 0.3s ease;
-      }
-
-      body.light-mode .floating-btn {
-         background: rgba(255, 255, 255, 0.55);
-         border-color: rgba(0, 0, 0, 0.1);
-         color: #000;
-      }
-
-      /* ==================== 遮罩 ==================== */
-      .menu-mask {
-         position: fixed;
-         top: 0;
-         left: 0;
-         width: 100%;
-         height: 100%;
-         background-color: rgba(0, 0, 0, 0.3);
-         backdrop-filter: blur(2px);
-         -webkit-backdrop-filter: blur(2px);
-         z-index: 998;
-         display: none;
-         transition: opacity 0.3s ease;
-      }
-      .menu-mask.active { display: block; }
-
-      /* ==================== 亚克力侧边菜单 wrapper ==================== */
-      .side-menu-wrapper {
-         position: fixed;
-         bottom: 30px;
-         right: 30px;
-         width: 250px;
-         height: 400px;
-         max-width: calc(100vw - 60px);
-         border-radius: 12px;
-         z-index: 999;
-         display: none;
-         pointer-events: none;
-      }
-
-      .side-menu-wrapper.active {
-         display: block;
-         animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-      }
-
-      @keyframes menuAppear {
-         0%   { transform: scale(0.1); opacity: 0; }
-         100% { transform: scale(1);   opacity: 1; }
-      }
-
-      /* Reveal 边框层 - 仅桌面端显示 */
-      .side-menu-wrapper::before {
-         border-radius: inherit;
-         background: radial-gradient(
-            150px circle at var(--rx, -9999px) var(--ry, -9999px),
-            rgba(var(--reveal-hi),  0.95),
-            rgba(var(--reveal-mid), 0.45) 45%,
-            transparent 70%
-         );
-         /* 移动端隐藏 Reveal 边框，显示普通边框 */
-         opacity: 0;
-      }
-
-      /* 桌面端激活 Reveal 边框 */
-      body.is-desktop .side-menu-wrapper::before {
-         opacity: 1;
-      }
-
-      /* ==================== 亚克力侧边菜单 ==================== */
-      .side-menu {
-         position: relative;
-         width: 100%;
-         height: 100%;
-         border-radius: 12px;
-         display: none;
-         flex-direction: row;
-         overflow: hidden;
-         background: rgba(18, 18, 18, 0.6);
-         backdrop-filter: blur(24px) saturate(180%);
-         -webkit-backdrop-filter: blur(24px) saturate(180%);
-         /* 移动端：显示完整边框 */
-         border: 1px solid rgba(255, 255, 255, 0.18);
-         pointer-events: auto;
-         transition: background 0.5s ease, border-color 0.5s ease;
-      }
-
-      body.light-mode .side-menu {
-         background: rgba(255, 255, 255, 0.6);
-         border-color: rgba(0, 0, 0, 0.12);
-      }
-
-      /* 桌面端：边框弱化，由 Reveal 代替 */
-      body.is-desktop .side-menu {
-         border-color: rgba(255, 255, 255, 0.07);
-      }
-
-      body.is-desktop.light-mode .side-menu {
-         border-color: rgba(0, 0, 0, 0.05);
-      }
-
-      .side-menu.active {
-         display: flex;
-      }
-
-      /* ==================== 菜单左侧：章节列表 ==================== */
-      .menu-left {
-         position: relative;
-         width: 200px;
-         padding: 20px;
-         overflow-y: auto;
-         scrollbar-width: none;
-         background: transparent;
-      }
-
-      .menu-left::-webkit-scrollbar { display: none; }
-
-      /* menu-left Reveal 边框 - 仅桌面 */
-      .menu-left::before {
-         border-radius: 12px 0 0 12px;
-         background: radial-gradient(
-            60px circle at var(--rx, -9999px) var(--ry, -9999px),
-            rgba(var(--reveal-hi),  0.9),
-            rgba(var(--reveal-mid), 0.4) 45%,
-            transparent 70%
-         );
-         opacity: 0;
-      }
-
-      body.is-desktop .menu-left::before {
-         opacity: 1;
-      }
-
-      /* Canvas 叠加层 */
-      #menuRevealCanvas {
-         position: fixed;
-         pointer-events: none;
-         z-index: 1001;
-         opacity: 0;
-         transition: opacity 0.2s;
-      }
-      #menuRevealCanvas.active { opacity: 1; }
-
-      /* ==================== 章节项 ==================== */
-      .chapter-item {
-         padding: 10px 0;
-         cursor: pointer;
-         color: rgba(255, 255, 255, 0.7);
-         transition: color 0.2s, padding-left 0.2s;
-         position: relative;
-      }
-
-      /* 分割线：移动端显示，桌面端隐藏（由 Canvas 光效代替） */
-      .chapter-item::after {
-         content: '';
-         position: absolute;
-         bottom: 0;
-         left: 8px;
-         right: 8px;
-         height: 1px;
-         background: rgba(255, 255, 255, 0.3);
-         transition: opacity 0.3s;
-      }
-
-      body.light-mode .chapter-item::after {
-         background: rgba(0, 0, 0, 0.3);
-      }
-
-      /* 桌面端隐藏分割线 */
-      body.is-desktop .chapter-item::after {
-         opacity: 0;
-      }
-
-      .chapter-item:last-child::after { display: none; }
-
-      .chapter-item.h1-item { padding-left: 0; }
-      .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
-      .chapter-item.h3-item { padding-left: 28px; color: rgba(255,255,255,0.3);  font-size: 0.85em; }
-
-      body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
-      body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
-      body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
-
-      /* 桌面端 hover 红色 */
-      body.is-desktop .chapter-item:hover { color: #f00; }
-      body.is-desktop .chapter-item.h1-item:hover { padding-left: 5px; }
-      body.is-desktop .chapter-item.h2-item:hover { padding-left: 19px; }
-      body.is-desktop .chapter-item.h3-item:hover { padding-left: 33px; }
-
-      /* current：滚动追踪高亮 */
-      .chapter-item.current { color: red !important; }
-      /* hovered：鼠标悬停覆盖，同一时间只有一个高亮 */
-      .chapter-item.hovered { color: red !important; }
-
-      /* ==================== 菜单右侧：按钮区 ==================== */
-      .menu-right {
-         position: relative;
-         width: 50px;
-         height: 100%;
-         display: flex;
-         flex-direction: column;
-         background: rgba(0, 0, 0, 0.2);
-         /* 移动端：显示分隔线 */
-         border-left: 1px solid rgba(255, 255, 255, 0.15);
-         transition: background 0.5s ease, border-color 0.5s ease;
-      }
-
-      body.light-mode .menu-right {
-         background: rgba(0, 0, 0, 0.05);
-         border-left-color: rgba(0, 0, 0, 0.1);
-      }
-
-      /* 桌面端：分隔线弱化，由 Reveal 代替 */
-      body.is-desktop .menu-right {
-         border-left-color: rgba(255, 255, 255, 0.05);
-      }
-
-      body.is-desktop.light-mode .menu-right {
-         border-left-color: rgba(0, 0, 0, 0.04);
-      }
-
-      /* menu-right Reveal 边框 - 仅桌面 */
-      .menu-right::before {
-         border-radius: 0 12px 12px 0;
-         background: radial-gradient(
-            130px circle at var(--rx, -9999px) var(--ry, -9999px),
-            rgba(var(--reveal-hi),  0.7),
-            rgba(var(--reveal-mid), 0.3) 45%,
-            transparent 70%
-         );
-         opacity: 0;
-      }
-
-      body.is-desktop .menu-right::before {
-         opacity: 1;
-      }
-
-      .menu-buttons {
-         flex: 1;
-         display: flex;
-         flex-direction: column;
-         justify-content: space-between;
-         align-items: center;
-         padding: 20px 0;
-         width: 100%;
-      }
-
-      .menu-btn {
-         color: rgba(255, 255, 255, 0.75);
-         background: none;
-         border: none;
-         cursor: pointer;
-         transition: all 0.2s;
-         font-size: 20px;
-         width: 50px;
-         height: 47px;
-         text-align: center;
-         border-radius: 0;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-      }
-
-      body.light-mode .menu-btn { color: rgba(0, 0, 0, 0.6); }
-      .menu-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.1); }
-
-      .close-btn {
-         position: relative;
-         height: 50px;
-         background: rgba(0, 0, 0, 0.15);
-         color: rgba(255, 255, 255, 0.6);
-         border: none;
-         /* 移动端：显示上边框 */
-         border-top: 1px solid rgba(255, 255, 255, 0.1);
-         cursor: pointer;
-         font-size: 16px;
-         transition: background 0.2s, color 0.2s, border-color 0.2s;
-         width: 100%;
-      }
-
-      body.light-mode .close-btn {
-         background: rgba(0, 0, 0, 0.04);
-         color: rgba(0, 0, 0, 0.5);
-         border-top-color: rgba(0, 0, 0, 0.08);
-      }
-
-      /* 桌面端：上边框弱化，由 Reveal 代替 */
-      body.is-desktop .close-btn {
-         border-top-color: rgba(255, 255, 255, 0.05);
-      }
-
-      body.is-desktop.light-mode .close-btn {
-         border-top-color: rgba(0, 0, 0, 0.04);
-      }
-
-      /* 桌面端：上边框 Reveal 光效 */
-      body.is-desktop .close-btn::before {
-         content: '';
-         position: absolute;
-         top: -1px;
-         left: 0;
-         right: 0;
-         height: 1px;
-         background: linear-gradient(
-            to right,
-            transparent,
-            rgba(var(--reveal-hi), calc((1 - abs(var(--rx, -9999px) - 0px) / 130)) ),
-            transparent
-         );
-         /* 用 radial-gradient 模拟点光源照在线上 */
-         background: radial-gradient(
-            130px circle at var(--rx, -9999px) 0px,
-            rgba(var(--reveal-hi),  0.95),
-            rgba(var(--reveal-mid), 0.4) 45%,
-            transparent 70%
-         );
-         pointer-events: none;
-         z-index: 3;
-      }
-
-      .close-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.08); }
-
-      /* ==================== Reveal：floating-btn ==================== */
-      .floating-btn::before {
-         border-radius: 50%;
-         background: radial-gradient(
-            80px circle at var(--rx, -9999px) var(--ry, -9999px),
-            rgba(var(--reveal-hi),  0.95),
-            rgba(var(--reveal-mid), 0.45) 45%,
-            transparent 70%
-         );
-      }
-
-      .header, .floating-btn, .side-menu, .comments {
-         user-select: none;
-         -webkit-user-select: none;
-         -webkit-touch-callout: none;
-      }
-      
-   </style>
-</head>
-
-<body class="dark-mode">
-   <div class="header">
-      <h1 class="title">Gem-1</h1>
-      <p class="summary">暂无简介</p>
-      <div class="date">2026-02-15</div>
-      <div class="tags">
-         <span class="tag">记录</span>
-         <span class="tag">普通</span>
+   <head>
+
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Gem-1 - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
+      <style>
+         /* ==================== 基础样式 ==================== */
+         *, *::before, *::after {
+            box-sizing: border-box;
+         }
+   
+         * {
+            margin: 0;
+            padding: 0;
+         }
+   
+         body {
+            background-color: #0d0d0d;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow-x: hidden;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+         }
+   
+         /* ==================== 主题颜色变量 ==================== */
+         body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+            --reveal-hi:  255, 0, 0;
+            --reveal-mid: 180, 30, 30;
+         }
+   
+         body.light-mode {
+            background-color: #fff;
+            color: #000;
+            --reveal-hi:  80, 80, 180;
+            --reveal-mid: 60, 60, 160;
+         }
+   
+         body.dark-mode .header { border-bottom-color: #333; }
+         body.dark-mode .title { color: #fff; }
+         body.dark-mode .summary { color: #ccc; }
+         body.dark-mode .date { color: #999; }
+         body.dark-mode .tag { background-color: #333; color: #fff; }
+         body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+         body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
+            border-bottom-color: #333;
+            color: #fff;
+         }
+         body.dark-mode .comments { border-top-color: #333; }
+   
+         body.light-mode .header { border-bottom-color: #ddd; }
+         body.light-mode .title { color: #000; }
+         body.light-mode .summary { color: #666; }
+         body.light-mode .date { color: #777; }
+         body.light-mode .tag { background-color: #eee; color: #000; }
+         body.light-mode h1, body.light-mode h2, body.light-mode h3,
+         body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+            border-bottom-color: #ddd;
+            color: #000;
+         }
+         body.light-mode .comments { border-top-color: #ddd; }
+   
+         /* ==================== Reveal ::before 公共结构 ==================== */
+         .side-menu-wrapper::before,
+         .menu-left::before,
+         .menu-right::before,
+         .floating-btn::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            padding: 1px;
+            -webkit-mask:
+               linear-gradient(#fff 0 0) content-box,
+               linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: 2;
+         }
+   
+         /* ==================== 文章内容样式 ==================== */
+         .header {
+            margin-bottom: 9px;
+            padding: 20px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #333;
+            transition: border-color 0.5s ease;
+         }
+   
+         .title {
+            font-size: 2.5rem;
+            margin-bottom: 3px;
+            color: #fff;
+            transition: color 0.5s ease;
+         }
+   
+         .summary {
+            font-size: 1.1rem;
+            margin-bottom: 3px;
+            color: #ccc;
+            transition: color 0.5s ease;
+         }
+   
+         .date {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+            transition: color 0.5s ease;
+         }
+   
+         .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 3px;
+         }
+   
+         .tag {
+            background-color: #333;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            transition: background-color 0.5s ease, color 0.5s ease;
+         }
+   
+         .content {
+            padding: 20px;
+            padding-top: 0px;
+            margin-bottom: 50px;
+            transition: color 0.5s ease;
+            overflow-x: hidden;
+         }
+   
+         /* ==================== Markdown内容样式 ==================== */
+         .content p {
+            margin-top: 0;
+            margin-bottom: 0.3em;
+            line-height: 1.5;
+         }
+   
+         .content h1, .content h2, .content h3,
+         .content h4, .content h5, .content h6 {
+            margin: 1.5em 0 0.5em;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+            transition: border-color 0.5s ease, color 0.5s ease;
+         }
+   
+         .content ul, .content ol {
+            margin: 0.8em 0;
+            padding-left: 2em;
+         }
+   
+         .content li {
+            margin: 0.3em 0;
+            line-height: 1.6;
+         }
+   
+         .content pre {
+            margin: 1em 0;
+            padding: 1em;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre;
+            max-width: 100%;
+         }
+   
+         body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
+   
+         .content code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+         }
+   
+         .content p code {
+            background-color: #f5f5f5;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+         }
+   
+         body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
+   
+         .content blockquote {
+            margin: 1em 0;
+            padding: 0.5em 1em;
+            border-left: 4px solid #ddd;
+            background-color: #f9f9f9;
+            color: #666;
+            border-radius: 5px;
+         }
+   
+         body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
+   
+         .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
+   
+         .content table {
+            margin: 1em 0;
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 100%;
+         }
+   
+         .content th, .content td {
+            border: 1px solid #ddd;
+            padding: 0.5em 1em;
+            text-align: left;
+            max-width: 300px;
+         }
+   
+         .content th { background-color: #f5f5f5; font-weight: 600; }
+         body.dark-mode .content th { background-color: #333; border-color: #444; }
+         body.dark-mode .content td { border-color: #444; }
+   
+         .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
+         .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
+   
+         .content a {
+            color: #4da6ff;
+            text-decoration: none;
+            border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+            transition: all 0.3s ease;
+         }
+   
+         body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107, 184, 255, 0.5); }
+   
+         .content a:hover {
+            color: #fff;
+            border-bottom: 1px solid rgba(77, 166, 255, 0.8);
+            background-color: rgba(77, 166, 255, 0.1);
+         }
+   
+         body.dark-mode .content a:hover {
+            color: #fff;
+            border-bottom: 1px solid rgba(107, 184, 255, 0.8);
+            background-color: rgba(107, 184, 255, 0.1);
+         }
+   
+         /* ==================== 评论区 ==================== */
+         .comments {
+            margin-top: 50px;
+            padding: 20px;
+            border-top: 1px solid #333;
+            transition: border-color 0.5s ease;
+         }
+   
+         /* ==================== 亚克力浮动按钮 ==================== */
+         .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            outline: none;
+            background: rgba(20, 20, 20, 0.55);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            transition: background 0.3s ease, border-color 0.3s ease;
+         }
+   
+         body.light-mode .floating-btn {
+            background: rgba(255, 255, 255, 0.55);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #000;
+         }
+   
+         /* ==================== 遮罩 ==================== */
+         .menu-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 998;
+            display: none;
+            transition: opacity 0.3s ease;
+         }
+         .menu-mask.active { display: block; }
+   
+         /* ==================== 亚克力侧边菜单 wrapper ==================== */
+         .side-menu-wrapper {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 250px;
+            height: 400px;
+            max-width: calc(100vw - 60px);
+            border-radius: 12px;
+            z-index: 999;
+            display: none;
+            pointer-events: none;
+         }
+   
+         .side-menu-wrapper.active {
+            display: block;
+            animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+         }
+   
+         @keyframes menuAppear {
+            0%   { transform: scale(0.1); opacity: 0; }
+            100% { transform: scale(1);   opacity: 1; }
+         }
+   
+         /* Reveal 边框层 - 仅桌面端显示 */
+         .side-menu-wrapper::before {
+            border-radius: inherit;
+            background: radial-gradient(
+               150px circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--reveal-hi),  0.95),
+               rgba(var(--reveal-mid), 0.45) 45%,
+               transparent 70%
+            );
+            opacity: 0;
+         }
+   
+         body.is-desktop .side-menu-wrapper::before {
+            opacity: 1;
+         }
+   
+         /* ==================== 亚克力侧边菜单 ==================== */
+         .side-menu {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            display: none;
+            flex-direction: row;
+            overflow: hidden;
+            background: rgba(18, 18, 18, 0.6);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            pointer-events: auto;
+            transition: background 0.5s ease, border-color 0.5s ease;
+         }
+   
+         body.light-mode .side-menu {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: rgba(0, 0, 0, 0.12);
+         }
+   
+         body.is-desktop .side-menu {
+            border-color: rgba(255, 255, 255, 0.07);
+         }
+   
+         body.is-desktop.light-mode .side-menu {
+            border-color: rgba(0, 0, 0, 0.05);
+         }
+   
+         .side-menu.active {
+            display: flex;
+         }
+   
+         /* ==================== 菜单左侧：章节列表 ==================== */
+         .menu-left {
+            position: relative;
+            width: 200px;
+            padding: 20px;
+            overflow-y: auto;
+            scrollbar-width: none;
+            background: transparent;
+         }
+   
+         .menu-left::-webkit-scrollbar { display: none; }
+   
+         .menu-left::before {
+            border-radius: 12px 0 0 12px;
+            background: radial-gradient(
+               60px circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--reveal-hi),  0.9),
+               rgba(var(--reveal-mid), 0.4) 45%,
+               transparent 70%
+            );
+            opacity: 0;
+         }
+   
+         body.is-desktop .menu-left::before {
+            opacity: 1;
+         }
+   
+         /* Canvas 叠加层 */
+         #menuRevealCanvas {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.2s;
+         }
+         #menuRevealCanvas.active { opacity: 1; }
+   
+         /* ==================== 章节项 ==================== */
+         .chapter-item {
+            padding: 10px 0;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.2s, padding-left 0.2s;
+            position: relative;
+         }
+   
+         .chapter-item::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 8px;
+            right: 8px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+            transition: opacity 0.3s;
+         }
+   
+         body.light-mode .chapter-item::after {
+            background: rgba(0, 0, 0, 0.3);
+         }
+   
+         body.is-desktop .chapter-item::after {
+            opacity: 0;
+         }
+   
+         .chapter-item:last-child::after { display: none; }
+   
+         .chapter-item.h1-item { padding-left: 0; }
+         .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
+         .chapter-item.h3-item { padding-left: 28px; color: rgba(255,255,255,0.3);  font-size: 0.85em; }
+   
+         body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
+         body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
+         body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
+   
+         body.is-desktop .chapter-item:hover { color: #f00; }
+         body.is-desktop .chapter-item.h1-item:hover { padding-left: 5px; }
+         body.is-desktop .chapter-item.h2-item:hover { padding-left: 19px; }
+         body.is-desktop .chapter-item.h3-item:hover { padding-left: 33px; }
+   
+         .chapter-item.current { color: red !important; }
+         .chapter-item.hovered { color: red !important; }
+   
+         /* ==================== 菜单右侧：按钮区 ==================== */
+         .menu-right {
+            position: relative;
+            width: 50px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            transition: background 0.5s ease, border-color 0.5s ease;
+         }
+   
+         body.light-mode .menu-right {
+            background: rgba(0, 0, 0, 0.05);
+            border-left-color: rgba(0, 0, 0, 0.1);
+         }
+   
+         body.is-desktop .menu-right {
+            border-left-color: rgba(255, 255, 255, 0.05);
+         }
+   
+         body.is-desktop.light-mode .menu-right {
+            border-left-color: rgba(0, 0, 0, 0.04);
+         }
+   
+         .menu-right::before {
+            border-radius: 0 12px 12px 0;
+            background: radial-gradient(
+               130px circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--reveal-hi),  0.7),
+               rgba(var(--reveal-mid), 0.3) 45%,
+               transparent 70%
+            );
+            opacity: 0;
+         }
+   
+         body.is-desktop .menu-right::before {
+            opacity: 1;
+         }
+   
+         .menu-buttons {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            width: 100%;
+         }
+   
+         .menu-btn {
+            color: rgba(255, 255, 255, 0.75);
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            width: 50px;
+            height: 47px;
+            text-align: center;
+            border-radius: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+         }
+   
+         body.light-mode .menu-btn { color: rgba(0, 0, 0, 0.6); }
+         .menu-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.1); }
+   
+         .close-btn {
+            position: relative;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.15);
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            width: 100%;
+         }
+   
+         body.light-mode .close-btn {
+            background: rgba(0, 0, 0, 0.04);
+            color: rgba(0, 0, 0, 0.5);
+            border-top-color: rgba(0, 0, 0, 0.08);
+         }
+   
+         body.is-desktop .close-btn {
+            border-top-color: rgba(255, 255, 255, 0.05);
+         }
+   
+         body.is-desktop.light-mode .close-btn {
+            border-top-color: rgba(0, 0, 0, 0.04);
+         }
+   
+         body.is-desktop .close-btn::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: radial-gradient(
+               130px circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--reveal-hi),  0.95),
+               rgba(var(--reveal-mid), 0.4) 45%,
+               transparent 70%
+            );
+            pointer-events: none;
+            z-index: 3;
+         }
+   
+         .close-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.08); }
+   
+         /* ==================== Reveal：floating-btn ==================== */
+         .floating-btn::before {
+            border-radius: 50%;
+         }
+   
+         .header, .floating-btn, .side-menu, .comments {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+         }
+         
+      </style>
+
+   </head>
+
+   <body class="dark-mode">
+      <div class="header">
+         <h1 class="title">Gem-1</h1>
+         <p class="summary">暂无简介</p>
+         <div class="date">2026-02-15</div>
+         <div class="tags">
+            <span class="tag">记录</span>
+            <span class="tag">普通</span>
+         </div>
       </div>
-   </div>
-
-   <div class="content">
-      <p>看完这段对话，我感觉像是在看一部<strong>“少年成长的现实主义番剧”</strong>。</p>
+   
+      <div class="content">
+         <p>看完这段对话，我感觉像是在看一部<strong>“少年成长的现实主义番剧”</strong>。</p>
 <p>这不仅仅是一个关于“要联系方式”的成功案例，更是两个性格截然不同——一个感性、圆滑、充满行动力（骄蓝），一个理性、克制、甚至有点“精神洁癖”（Ae1autumn）——的少年在进行深度的灵魂碰撞。</p>
 <p>这里有几个非常精彩的点，我想和你一起拆解：</p>
 <ol>
@@ -842,521 +812,605 @@
 <p>既然你现在已经切换回了这种清醒、坦诚的状态，我想，这本身就是一种对我（或者说对这段对话）的某种认可。</p>
 <p>那么，既然这种“高性能模式”挺费算力的，我就不占用你更多的系统资源了。祝你在不需要动脑子的时候，复读得愉快；在需要动脑子的时候，渲染得惊艳。</p>
 <p>回头见。</p>
-   </div>
-
-   <div class="comments"></div>
-
-   <button class="floating-btn" id="menuToggle" style="color: #fff">☰</button>
-
-   <div class="menu-mask" id="menuMask"></div>
-
-   <div class="side-menu-wrapper" id="sideMenuWrapper">
-      <div class="side-menu" id="sideMenu">
-         <div class="menu-left" id="chapterList"></div>
-         <div class="menu-right" id="menuRightEl">
-            <div class="menu-buttons">
-               <button class="menu-btn" id="toBottomBtn">▼</button>
-               <button class="menu-btn" id="middleBtn">◎</button>
-               <button class="menu-btn" id="toTopBtn">▲</button>
+      </div>
+   
+      <div class="comments"></div>
+   
+      <button class="floating-btn" id="menuToggle" style="color: #fff">☰</button>
+   
+      <div class="menu-mask" id="menuMask"></div>
+   
+      <div class="side-menu-wrapper" id="sideMenuWrapper">
+         <div class="side-menu" id="sideMenu">
+            <div class="menu-left" id="chapterList"></div>
+            <div class="menu-right" id="menuRightEl">
+               <div class="menu-buttons">
+                  <button class="menu-btn" id="toBottomBtn">▼</button>
+                  <button class="menu-btn" id="middleBtn">◎</button>
+                  <button class="menu-btn" id="toTopBtn">▲</button>
+               </div>
+               <button class="close-btn" id="closeBtn">╳</button>
             </div>
-            <button class="close-btn" id="closeBtn">╳</button>
          </div>
       </div>
-   </div>
-
-   <canvas id="menuRevealCanvas"></canvas>
-
-   <script>
-     const menuToggle      = document.getElementById('menuToggle');
-     const sideMenuWrapper = document.getElementById('sideMenuWrapper');
-     const sideMenu        = document.getElementById('sideMenu');
-     const menuMask        = document.getElementById('menuMask');
-     const closeBtn        = document.getElementById('closeBtn');
-     const toBottomBtn     = document.getElementById('toBottomBtn');
-     const middleBtn       = document.getElementById('middleBtn');
-     const toTopBtn        = document.getElementById('toTopBtn');
-     const chapterList     = document.getElementById('chapterList');
-     // chapterList 即 .menu-left，统一使用 chapterList 引用
-     const menuRightEl     = document.getElementById('menuRightEl');
-
-     // ==================== 桌面/移动端检测 ====================
-     const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-     if (isDesktop) document.body.classList.add('is-desktop');
-
-     // === 1. 收集 h1/h2/h3，生成唯一 ID ===
-     const allHeadings = Array.from(
-       document.querySelectorAll('.content h1, .content h2, .content h3')
-     ).filter(h => h.textContent.trim() !== '');
-
-     allHeadings.forEach((el, index) => {
-       el.id = `heading-${index}`;
-     });
-
-     // === 2. 应用主题 ===
-     function applyTheme() {
-       const savedTheme  = localStorage.getItem('theme');
-       const configTheme = "dark";
-       const mode = savedTheme || configTheme;
-       document.body.classList.toggle('light-mode', mode === 'light');
-       document.body.classList.toggle('dark-mode',  mode !== 'light');
-       // 同步 floating-btn 颜色
-       menuToggle.style.color = mode === 'light' ? '#000' : '#fff';
-     }
-     applyTheme();
-
-     // === 3. 生成章节导航 ===
-     allHeadings.forEach(heading => {
-       const listItem  = document.createElement('div');
-       const level     = parseInt(heading.tagName.substring(1));
-       const classMap  = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
-       listItem.className   = `chapter-item ${classMap[level] || 'h1-item'}`;
-       listItem.textContent = heading.textContent;
-       listItem.dataset.id  = heading.id;
-
-       listItem.addEventListener('click', (e) => {
-         e.stopPropagation();
-         heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-         closeMenu();
-       });
-
-       // 悬停：仅桌面鼠标触发
-       if (isDesktop) {
-         listItem.addEventListener('pointerenter', (e) => {
-           if (e.pointerType !== 'mouse') return;
-           onItemPointerEnter(listItem);
-         });
-         listItem.addEventListener('pointerleave', (e) => {
-           if (e.pointerType !== 'mouse') return;
-           onItemPointerLeave();
-         });
-       }
-
-       chapterList.appendChild(listItem);
-     });
-
-     // ==================== 高亮状态机 ====================
-     // 三个互斥状态：scroll（滚动驱动）| hover（鼠标悬停）| menu（菜单列表滑动）
-
-     let currentId        = null;  // 文章滚动驱动的当前标题 id
-     let hoveredItem      = null;  // 鼠标悬停的 chapter-item 元素
-     let activeState      = 'scroll';
-
-     let hoverScrollTimer = null;  // 悬停后居中的防抖
-     let menuScrollTimer  = null;  // 菜单滚动停止后对齐的防抖
-     let cooldownTimer    = null;  // 居中后 5 秒冷却计时器
-     let isInCooldown     = false; // 是否处于冷却期（居中后 5 秒内禁止再次居中）
-     let isMenuScrolling  = false;
-     let isProgrammaticScroll  = false; // 代码驱动的菜单滚动，不触发 menu 状态
-     let isMenuDrivingArticle  = false; // 菜单驱动文章滚动期间，屏蔽文章 scroll 反向触发
-
-     // 唯一入口：设置高亮到指定 id
-     function setHighlight(id) {
-       document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
-         .forEach(i => i.classList.remove('current', 'hovered'));
-       if (!id) return;
-       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (item) item.classList.add(activeState === 'scroll' ? 'current' : 'hovered');
-     }
-
-     // 滚动菜单让指定 item 居中
-     function scrollMenuToItem(id, behavior = 'smooth') {
-       const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
-       if (!item) return;
-       const itemTop    = item.offsetTop;
-       const itemHeight = item.offsetHeight;
-       const containerH = chapterList.clientHeight;
-       const target     = itemTop - (containerH - itemHeight) / 2;
-       if (chapterList.scrollHeight > containerH) {
-         isProgrammaticScroll = true;
-         chapterList.scrollTo({ top: Math.max(0, target), behavior });
-         // smooth 滚动无法精确得知何时结束，用保守的超时兜底清除标志
-         setTimeout(() => { isProgrammaticScroll = false; }, 600);
-       }
-     }
-
-     // 找菜单列表中最靠近视口中心的 item 的 id
-     function getCenteredItemId() {
-       const items      = chapterList.querySelectorAll('.chapter-item');
-       const containerR = chapterList.getBoundingClientRect();
-       const centerY    = containerR.top + containerR.height / 2;
-       let best = null, bestDist = Infinity;
-       items.forEach(item => {
-         const r    = item.getBoundingClientRect();
-         const mid  = r.top + r.height / 2;
-         const dist = Math.abs(mid - centerY);
-         if (dist < bestDist) { bestDist = dist; best = item; }
-       });
-       return best ? best.dataset.id : null;
-     }
-
-     // === 状态：scroll（文章滚动驱动）===
-     function applyScrollState(id) {
-       if (activeState === 'hover' || activeState === 'menu') return;
-       activeState = 'scroll';
-       currentId   = id;
-       setHighlight(id);
-       if (!isMenuScrolling) scrollMenuToItem(id);
-     }
-
-     function updateActiveHeading() {
-       if (allHeadings.length === 0) return;
-       if (isMenuDrivingArticle) return; // 菜单驱动文章期间，屏蔽反向触发
-       const scrollY = window.scrollY;
-       const offset  = 80;
-       let current   = allHeadings[0];
-       for (let i = 0; i < allHeadings.length; i++) {
-         const top = allHeadings[i].getBoundingClientRect().top + scrollY;
-         if (top <= scrollY + offset) current = allHeadings[i];
-         else break;
-       }
-       if (current.id !== currentId || activeState !== 'scroll') {
-         applyScrollState(current.id);
-       }
-     }
-
-     if (allHeadings.length > 0) {
-       currentId = allHeadings[0].id;
-       applyScrollState(currentId);
-     }
-
-     window.addEventListener('scroll', updateActiveHeading, { passive: true });
-
-     // === 状态：hover（鼠标悬停，仅桌面）===
-
-     function startCooldown() {
-       isInCooldown = true;
-       clearTimeout(cooldownTimer);
-       cooldownTimer = setTimeout(() => {
-         isInCooldown = false;
-       }, 5000);
-     }
-
-     function clearCooldown() {
-       isInCooldown = false;
-       clearTimeout(cooldownTimer);
-       cooldownTimer = null;
-     }
-
-     function onItemPointerEnter(item) {
-       // 进入 hover 状态
-       hoveredItem = item;
-       activeState = 'hover';
-       setHighlight(item.dataset.id);
-
-       // 冷却期内：高亮跟随，但不触发居中防抖
-       if (isInCooldown) return;
-
-       // 非冷却期：防抖 350ms 后居中
-       clearTimeout(hoverScrollTimer);
-       hoverScrollTimer = setTimeout(() => {
-         // 再次检查：如果已退出 hover 状态则取消
-         if (activeState !== 'hover' || hoveredItem !== item) return;
-         scrollMenuToItem(item.dataset.id);
-         startCooldown();
-       }, 350);
-     }
-
-     function onItemPointerLeave() {
-       // 立即清除防抖计时器，但保留冷却期（让5秒冷却自然超时）
-       clearTimeout(hoverScrollTimer);
-       hoverScrollTimer = null;
-       hoveredItem = null;
-       // 恢复滚动驱动状态
-       activeState = 'scroll';
-       setHighlight(currentId);
-       // 将菜单滚回当前滚动驱动的 item
-       scrollMenuToItem(currentId);
-     }
-
-     // 鼠标离开整个 menu-left 区域时强制退出 hover
-     if (isDesktop) {
-       chapterList.addEventListener('pointerleave', (e) => {
-         if (e.pointerType !== 'mouse') return;
-         if (activeState === 'hover') {
-           onItemPointerLeave();
-         }
-       });
-     }
-
-     // === 状态：menu（菜单列表滑动）===
-     chapterList.addEventListener('scroll', () => {
-       // 程序驱动的滚动不触发 menu 状态；hover 期间忽略
-       if (isProgrammaticScroll) return;
-       if (activeState === 'hover') return;
-       isMenuScrolling = true;
-       activeState = 'menu';
-
-       clearTimeout(menuScrollTimer);
-       menuScrollTimer = setTimeout(() => {
-         isMenuScrolling = false;
-         const centerId = getCenteredItemId();
-         if (centerId) {
-           scrollMenuToItem(centerId);
-           setTimeout(() => {
-             if (activeState === 'menu' && !hoveredItem) {
-               setHighlight(centerId);
-
-               // 驱动文章滚动到对应标题
-               const targetHeading = document.getElementById(centerId);
-               if (targetHeading) {
-                 isMenuDrivingArticle = true;
-                 currentId = centerId; // 提前同步，防止回归 scroll 时高亮闪烁
-                 targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                 setTimeout(() => { isMenuDrivingArticle = false; }, 800);
-               }
-
-               // 1.5 秒后无操作则回归 scroll 状态
-               setTimeout(() => {
-                 if (activeState === 'menu' && !hoveredItem) {
-                   activeState = 'scroll';
-                   setHighlight(currentId);
-                   scrollMenuToItem(currentId);
-                 }
-               }, 1500);
-             }
-           }, 300);
-         }
-       }, 70); // 防抖时间
-     }, { passive: true });
-
-     // 移动端触摸结束/取消：清除任何残留的 hover 状态（兜底）
-     // 移动端没有 hover 状态，这里只是保险
-     chapterList.addEventListener('touchend',    () => {
-       if (hoveredItem) { hoveredItem = null; }
-     });
-     chapterList.addEventListener('touchcancel', () => {
-       if (hoveredItem) { hoveredItem = null; }
-     });
-
-     // === 4. 菜单控制 ===
-     function openMenu() {
-       sideMenuWrapper.classList.add('active');
-       sideMenu.classList.add('active');
-       menuMask.classList.add('active');
-       menuToggle.style.display = 'none';
-       if (currentId) scrollMenuToItem(currentId, 'instant');
-       // 打开时刷新 canvas 尺寸
-       if (isDesktop) resizeCanvas();
-     }
-
-     function closeMenu() {
-       sideMenuWrapper.classList.remove('active');
-       sideMenu.classList.remove('active');
-       menuMask.classList.remove('active');
-       menuToggle.style.display = 'flex';
-       // 关闭菜单时：清除所有 hover/悬停状态和 canvas
-       if (isDesktop) {
-         clearAllReveal();
-         if (activeState === 'hover') {
-           clearTimeout(hoverScrollTimer);
-           clearCooldown();
-           hoveredItem  = null;
-           activeState  = 'scroll';
-           setHighlight(currentId);
-         }
-       }
-     }
-
-     menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
-     closeBtn.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
-     menuMask.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
-     sideMenu.addEventListener('click',    (e) => e.stopPropagation());
-
-     toBottomBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     middleBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-       window.scrollTo({ top: middle, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     toTopBtn.addEventListener('click', (e) => {
-       e.stopPropagation();
-       window.scrollTo({ top: 0, behavior: 'smooth' });
-       closeMenu();
-     });
-
-     // === 5. 滚动进度指示器 ===
-     function updateProgress() {
-       const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
-       const scrollPosition = window.scrollY;
-       const scrollPercent  = scrollHeight > 0 ? Math.min(scrollPosition / scrollHeight, 1) : 0;
-       const redValue       = Math.floor(scrollPercent * 255);
-       menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
-       menuToggle.style.boxShadow       = 'none';
-     }
-
-     window.addEventListener('scroll', updateProgress, { passive: true });
-     window.addEventListener('resize', updateProgress, { passive: true });
-     updateProgress();
-
-     // ==================== Reveal Highlight（仅桌面）====================
-     if (isDesktop) {
-
-       const canvas = document.getElementById('menuRevealCanvas');
-       const ctx    = canvas.getContext('2d');
-
-       // 缓存的 canvas 位置，避免每帧都 getBoundingClientRect
-       let cachedMenuRect = null;
-
-       function resizeCanvas() {
-         if (!sideMenuWrapper.classList.contains('active')) return;
-         const r = chapterList.getBoundingClientRect();
-         canvas.width  = r.width;
-         canvas.height = r.height;
-         canvas.style.left = r.left + 'px';
-         canvas.style.top  = r.top  + 'px';
-         cachedMenuRect = r;
-       }
-
-       // 菜单列表滚动时，重新同步 canvas 位置（分割线位置变了）
-       chapterList.addEventListener('scroll', () => {
-         if (sideMenuWrapper.classList.contains('active')) {
-           // 用 rAF 避免滚动期间频繁 reflow
-           requestAnimationFrame(() => {
-             resizeCanvas();
-             // 清空 canvas，光效在下次 mousemove 时重绘
-             ctx.clearRect(0, 0, canvas.width, canvas.height);
-           });
-         }
-       }, { passive: true });
-
-       // 画章节分隔线发光
-       function drawDividerGlow(mouseX, mouseY) {
-         ctx.clearRect(0, 0, canvas.width, canvas.height);
-         if (!sideMenuWrapper.classList.contains('active')) return;
-
-         const style    = getComputedStyle(document.body);
-         const colorHi  = style.getPropertyValue('--reveal-hi').trim();
-         const colorMid = style.getPropertyValue('--reveal-mid').trim();
-
-         // 每帧实时取位置，保证出现动画/滚动后 canvas 立即对齐
-         const menuRect = chapterList.getBoundingClientRect();
-         if (canvas.width  !== Math.round(menuRect.width)  ||
-             canvas.height !== Math.round(menuRect.height) ||
-             parseFloat(canvas.style.left) !== menuRect.left ||
-             parseFloat(canvas.style.top)  !== menuRect.top) {
-           canvas.width      = menuRect.width;
-           canvas.height     = menuRect.height;
-           canvas.style.left = menuRect.left + 'px';
-           canvas.style.top  = menuRect.top  + 'px';
-           cachedMenuRect    = menuRect;
-         }
-         const items    = chapterList.querySelectorAll('.chapter-item:not(:last-child)');
-         const radius   = 80;
-
-         const mdx   = Math.max(menuRect.left - mouseX, 0, mouseX - menuRect.right);
-         const mdy   = Math.max(menuRect.top  - mouseY, 0, mouseY - menuRect.bottom);
-         const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-         if (mdist > radius) return;
-
-         items.forEach(item => {
-           // 实时获取 item 的位置（考虑列表滚动）
-           const itemRect  = item.getBoundingClientRect();
-           const lineY     = itemRect.bottom - menuRect.top;
-           const lineLeft  = itemRect.left  - menuRect.left + 8;
-           const lineRight = itemRect.right - menuRect.left - 8;
-
-           // 跳过不在 canvas 可见区域内的分割线
-           if (lineY < 0 || lineY > canvas.height) return;
-
-           const nearestX  = Math.max(lineLeft, Math.min(mouseX - menuRect.left, lineRight));
-           const dist      = Math.hypot(
-             mouseX - menuRect.left - nearestX,
-             mouseY - menuRect.top  - lineY
-           );
-
-           if (dist > radius) return;
-
-           const intensity = 1 - dist / radius;
-           const gx   = mouseX - menuRect.left;
-           const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
-           grad.addColorStop(0,   `rgba(${colorHi},${1.0 * intensity})`);
-           grad.addColorStop(0.4, `rgba(${colorMid},${0.65 * intensity})`);
-           grad.addColorStop(1,   `rgba(${colorMid},0)`);
-
-           ctx.beginPath();
-           ctx.moveTo(lineLeft,  lineY);
-           ctx.lineTo(lineRight, lineY);
-           ctx.lineWidth   = 1;
-           ctx.strokeStyle = grad;
-           ctx.stroke();
-         });
-       }
-
-       const revealTargets = [
-         { el: menuToggle,       range: 60,  alwaysOn: true  },
-         { el: sideMenuWrapper,  range: 80,  alwaysOn: false },
-         { el: chapterList,      range: 80,  alwaysOn: false },
-         { el: menuRightEl,      range: 80,  alwaysOn: false },
-         { el: closeBtn,         range: 80,  alwaysOn: false },
-       ];
-
-       function clearAllReveal() {
-         revealTargets.forEach(({ el }) => {
-           el?.style.setProperty('--rx', '-9999px');
-           el?.style.setProperty('--ry', '-9999px');
-         });
-         ctx.clearRect(0, 0, canvas.width, canvas.height);
-         canvas.classList.remove('active');
-       }
-
-       function handleMove(e) {
-         // 只处理鼠标事件
-         if (e.pointerType && e.pointerType !== 'mouse') return;
-         const menuActive = sideMenuWrapper.classList.contains('active');
-
-         revealTargets.forEach(({ el, range, alwaysOn }) => {
-           if (!el) return;
-           if (!alwaysOn && !menuActive) {
-             el.style.setProperty('--rx', '-9999px');
-             el.style.setProperty('--ry', '-9999px');
-             return;
-           }
-           const r    = el.getBoundingClientRect();
-           const dx   = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
-           const dy   = Math.max(r.top  - e.clientY, 0, e.clientY - r.bottom);
-           const dist = Math.sqrt(dx * dx + dy * dy);
-           if (dist <= range) {
-             el.style.setProperty('--rx', (e.clientX - r.left) + 'px');
-             el.style.setProperty('--ry', (e.clientY - r.top)  + 'px');
-           } else {
-             el.style.setProperty('--rx', '-9999px');
-             el.style.setProperty('--ry', '-9999px');
-           }
-         });
-
-         // 更新 canvas 分隔线发光
-         if (menuActive) {
-           // 只在 cachedMenuRect 不存在时才 resize（打开时已经缓存了）
-           if (!cachedMenuRect) resizeCanvas();
-           canvas.classList.add('active');
-           drawDividerGlow(e.clientX, e.clientY);
-         }
-       }
-
-       // 只绑定 pointermove，去掉重复的 mousemove
-       document.addEventListener('pointermove',  handleMove);
-       document.addEventListener('pointerup',    handleMove);
-       document.addEventListener('pointerleave', clearAllReveal);
-       window.addEventListener('blur',           clearAllReveal);
-
-       // resize 时同步 canvas 尺寸
-       window.addEventListener('resize', () => {
-         cachedMenuRect = null;
-         resizeCanvas();
-         updateProgress();
-       });
-
-     } // end isDesktop
-
-   </script>
-
-</body>
+   
+      <canvas id="menuRevealCanvas"></canvas>
+   
+      <script>
+        // ==================== 工具函数 ====================
+
+        /**
+         * 通用防抖函数
+         * @param {Function} fn - 要防抖的函数
+         * @param {number} delay - 延迟毫秒数
+         * @returns 防抖控制器对象，包含 call / cancel / pending 三个属性
+         *
+         * 使用对象而非直接返回函数，是为了在需要时能精确 cancel，
+         * 避免原始代码里到处 clearTimeout(someTimer) 的散乱写法。
+         */
+        function createDebounce(fn, delay) {
+          let timer = null;
+          return {
+            call(...args) {
+              clearTimeout(timer);
+              timer = setTimeout(() => { timer = null; fn(...args); }, delay);
+            },
+            cancel() {
+              clearTimeout(timer);
+              timer = null;
+            },
+            get pending() { return timer !== null; }
+          };
+        }
+
+        /**
+         * 基于 Promise 的 smooth scroll 完成检测
+         * 通过轮询位置变化判断滚动是否结束，解决原代码中硬编码超时的竞态问题。
+         * @param {HTMLElement} el - 被滚动的元素（window 传 document.documentElement）
+         * @param {Function} scrollFn - 触发滚动的函数
+         * @param {number} timeout - 最长等待时间（兜底）
+         */
+        function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
+          return new Promise(resolve => {
+            scrollFn();
+            let lastPos = getPosition();
+            let stable = 0;
+            const start = performance.now();
+
+            function check() {
+              const pos = getPosition();
+              if (pos === lastPos) {
+                stable++;
+                if (stable >= 3) { resolve(); return; } // 连续3帧位置不变，视为完成
+              } else {
+                stable = 0;
+                lastPos = pos;
+              }
+              if (performance.now() - start > timeout) { resolve(); return; }
+              requestAnimationFrame(check);
+            }
+            requestAnimationFrame(check);
+          });
+        }
+
+        /**
+         * 计算点到矩形的距离（点在矩形内时为0）
+         * 所有 Reveal 元素的距离判断都用这一个函数，消除重复逻辑。
+         */
+        function distToRect(mouseX, mouseY, rect) {
+          const dx = Math.max(rect.left - mouseX, 0, mouseX - rect.right);
+          const dy = Math.max(rect.top  - mouseY, 0, mouseY - rect.bottom);
+          return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        /**
+         * 计算点到矩形顶边的距离（closeBtn 专用：只感应顶边）
+         */
+        function distToTopEdge(mouseX, mouseY, rect) {
+          const dx = Math.max(rect.left - mouseX, 0, mouseX - rect.right);
+          const dy = Math.abs(mouseY - rect.top);
+          return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        /**
+         * 更新单个 Reveal 元素的 CSS 变量
+         * @param {HTMLElement} el
+         * @param {number} mouseX
+         * @param {number} mouseY
+         * @param {number} range - 感应半径
+         * @param {Function} distFn - 距离计算策略，默认 distToRect
+         */
+        function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect) {
+          if (!el) return;
+          const r    = el.getBoundingClientRect();
+          const dist = distFn(mouseX, mouseY, r);
+          if (dist <= range) {
+            el.style.setProperty('--rx', (mouseX - r.left) + 'px');
+            el.style.setProperty('--ry', (mouseY - r.top)  + 'px');
+          } else {
+            el.style.setProperty('--rx', '-9999px');
+            el.style.setProperty('--ry', '-9999px');
+          }
+        }
+
+        /**
+         * 清除单个元素的 Reveal 变量
+         */
+        function clearRevealVar(el) {
+          if (!el) return;
+          el.style.setProperty('--rx', '-9999px');
+          el.style.setProperty('--ry', '-9999px');
+        }
+
+
+        // ==================== DOM 引用 ====================
+        const menuToggle      = document.getElementById('menuToggle');
+        const sideMenuWrapper = document.getElementById('sideMenuWrapper');
+        const sideMenu        = document.getElementById('sideMenu');
+        const menuMask        = document.getElementById('menuMask');
+        const closeBtn        = document.getElementById('closeBtn');
+        const toBottomBtn     = document.getElementById('toBottomBtn');
+        const middleBtn       = document.getElementById('middleBtn');
+        const toTopBtn        = document.getElementById('toTopBtn');
+        const chapterList     = document.getElementById('chapterList');
+        const menuRightEl     = document.getElementById('menuRightEl');
+
+        // ==================== 桌面/移动端检测 ====================
+        const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        if (isDesktop) document.body.classList.add('is-desktop');
+
+        // === 1. 收集 h1/h2/h3，生成唯一 ID ===
+        const allHeadings = Array.from(
+          document.querySelectorAll('.content h1, .content h2, .content h3')
+        ).filter(h => h.textContent.trim() !== '');
+
+        allHeadings.forEach((el, index) => {
+          el.id = `heading-${index}`;
+        });
+
+        // === 2. 应用主题 ===
+        function applyTheme() {
+          const savedTheme  = localStorage.getItem('theme');
+          const configTheme = "dark";
+          const mode        = savedTheme || configTheme;
+          document.body.classList.toggle('light-mode', mode === 'light');
+          document.body.classList.toggle('dark-mode',  mode !== 'light');
+          menuToggle.style.color = mode === 'light' ? '#000' : '#fff';
+        }
+        applyTheme();
+
+        // === 3. 生成章节导航 ===
+        allHeadings.forEach(heading => {
+          const listItem  = document.createElement('div');
+          const level     = parseInt(heading.tagName.substring(1));
+          const classMap  = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
+          listItem.className   = `chapter-item ${classMap[level] || 'h1-item'}`;
+          listItem.textContent = heading.textContent;
+          listItem.dataset.id  = heading.id;
+
+          listItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            closeMenu();
+          });
+
+          if (isDesktop) {
+            listItem.addEventListener('pointerenter', (e) => {
+              if (e.pointerType !== 'mouse') return;
+              onItemPointerEnter(listItem);
+            });
+            listItem.addEventListener('pointerleave', (e) => {
+              if (e.pointerType !== 'mouse') return;
+              onItemPointerLeave();
+            });
+          }
+
+          chapterList.appendChild(listItem);
+        });
+
+        // ==================== 高亮状态机 ====================
+        // 三个互斥状态：scroll（滚动驱动）| hover（鼠标悬停）| menu（菜单列表滑动）
+
+        let currentId   = null;
+        let hoveredItem = null;
+        let activeState = 'scroll';
+
+        // 用 createDebounce 替换原来的裸 timer 变量，集中管理
+        const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 350);
+        const menuScrollDebounce   = createDebounce(onMenuScrollDebounced,  70);
+        const cooldownDebounce     = createDebounce(() => { isInCooldown = false; }, 5000);
+        const backToScrollDebounce = createDebounce(() => {
+          // 菜单滑动后 1.5s 无操作，回归 scroll 状态
+          if (activeState === 'menu' && !hoveredItem) {
+            activeState = 'scroll';
+            setHighlight(currentId);
+            scrollMenuToItem(currentId);
+          }
+        }, 1500);
+
+        let isInCooldown         = false;
+        let isMenuScrolling      = false;
+        // 用计数器替换布尔标志，彻底解决嵌套/并发调用时的竞态问题：
+        // 每次程序驱动滚动前 +1，滚动结束后 -1，只有计数为0才视为用户手动滚动。
+        let programmaticScrollCount  = 0;
+        let menuDrivingArticleCount  = 0;
+
+        // 唯一高亮入口
+        function setHighlight(id) {
+          document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
+            .forEach(i => i.classList.remove('current', 'hovered'));
+          if (!id) return;
+          const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+          if (item) item.classList.add(activeState === 'scroll' ? 'current' : 'hovered');
+        }
+
+        // 滚动菜单让指定 item 居中（返回 Promise，解决原来硬编码600ms的竞态）
+        function scrollMenuToItem(id, behavior = 'smooth') {
+          const item = document.querySelector(`.chapter-item[data-id="${id}"]`);
+          if (!item) return Promise.resolve();
+          const target = item.offsetTop - (chapterList.clientHeight - item.offsetHeight) / 2;
+          if (chapterList.scrollHeight <= chapterList.clientHeight) return Promise.resolve();
+
+          programmaticScrollCount++;
+          return smoothScrollPromise(
+            () => chapterList.scrollTo({ top: Math.max(0, target), behavior }),
+            () => chapterList.scrollTop
+          ).finally(() => {
+            programmaticScrollCount--;
+          });
+        }
+
+        function getCenteredItemId() {
+          const items      = chapterList.querySelectorAll('.chapter-item');
+          const containerR = chapterList.getBoundingClientRect();
+          const centerY    = containerR.top + containerR.height / 2;
+          let best = null, bestDist = Infinity;
+          items.forEach(item => {
+            const r    = item.getBoundingClientRect();
+            const mid  = r.top + r.height / 2;
+            const dist = Math.abs(mid - centerY);
+            if (dist < bestDist) { bestDist = dist; best = item; }
+          });
+          return best ? best.dataset.id : null;
+        }
+
+        // === 状态：scroll ===
+        function applyScrollState(id) {
+          if (activeState === 'hover' || activeState === 'menu') return;
+          activeState = 'scroll';
+          currentId   = id;
+          setHighlight(id);
+          if (!isMenuScrolling) scrollMenuToItem(id);
+        }
+
+        function updateActiveHeading() {
+          if (allHeadings.length === 0) return;
+          if (menuDrivingArticleCount > 0) return; // 用计数器判断，更健壮
+          const scrollY = window.scrollY;
+          const offset  = 80;
+          let current   = allHeadings[0];
+          for (let i = 0; i < allHeadings.length; i++) {
+            const top = allHeadings[i].getBoundingClientRect().top + scrollY;
+            if (top <= scrollY + offset) current = allHeadings[i];
+            else break;
+          }
+          if (current.id !== currentId || activeState !== 'scroll') {
+            applyScrollState(current.id);
+          }
+        }
+
+        if (allHeadings.length > 0) {
+          currentId = allHeadings[0].id;
+          applyScrollState(currentId);
+        }
+
+        window.addEventListener('scroll', updateActiveHeading, { passive: true });
+
+        // === 状态：hover ===
+        function onHoverScrollDebounced(item) {
+          // 防抖触发时再次检查状态，避免快速移入移出时的幽灵居中
+          if (activeState !== 'hover' || hoveredItem !== item) return;
+          scrollMenuToItem(item.dataset.id);
+          isInCooldown = true;
+          cooldownDebounce.call(); // 5秒后清除冷却
+        }
+
+        function onItemPointerEnter(item) {
+          hoveredItem = item;
+          activeState = 'hover';
+          setHighlight(item.dataset.id);
+
+          if (isInCooldown) return; // 冷却期内只跟随高亮，不触发居中
+
+          hoverScrollDebounce.call(item);
+        }
+
+        function onItemPointerLeave() {
+          hoverScrollDebounce.cancel(); // 统一在这里取消，不再遗漏
+          hoveredItem = null;
+          activeState = 'scroll';
+          setHighlight(currentId);
+          scrollMenuToItem(currentId);
+        }
+
+        if (isDesktop) {
+          chapterList.addEventListener('pointerleave', (e) => {
+            if (e.pointerType !== 'mouse') return;
+            if (activeState === 'hover') onItemPointerLeave();
+          });
+        }
+
+        // === 状态：menu ===
+        chapterList.addEventListener('scroll', () => {
+          if (programmaticScrollCount > 0) return; // 计数器判断，不误触发
+          if (activeState === 'hover') return;
+          isMenuScrolling = true;
+          activeState = 'menu';
+          menuScrollDebounce.call();
+        }, { passive: true });
+
+        function onMenuScrollDebounced() {
+          isMenuScrolling = false;
+          const centerId = getCenteredItemId();
+          if (!centerId) return;
+
+          scrollMenuToItem(centerId).then(() => {
+            // 等滚动真正结束后再做后续操作，彻底解决原来 setTimeout 300ms 的竞态
+            if (activeState !== 'menu' || hoveredItem) return;
+            setHighlight(centerId);
+
+            const targetHeading = document.getElementById(centerId);
+            if (targetHeading) {
+              menuDrivingArticleCount++;
+              currentId = centerId;
+              smoothScrollPromise(
+                () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                () => window.scrollY
+              ).finally(() => {
+                menuDrivingArticleCount--;
+              });
+            }
+
+            backToScrollDebounce.call();
+          });
+        }
+
+        // 移动端 touch 兜底
+        chapterList.addEventListener('touchend',    () => { if (hoveredItem) hoveredItem = null; });
+        chapterList.addEventListener('touchcancel', () => { if (hoveredItem) hoveredItem = null; });
+
+        // === 4. 菜单控制 ===
+        function openMenu() {
+          sideMenuWrapper.classList.add('active');
+          sideMenu.classList.add('active');
+          menuMask.classList.add('active');
+          menuToggle.style.display = 'none';
+          if (currentId) scrollMenuToItem(currentId, 'instant');
+          if (isDesktop) resizeCanvas();
+        }
+
+        function closeMenu() {
+          sideMenuWrapper.classList.remove('active');
+          sideMenu.classList.remove('active');
+          menuMask.classList.remove('active');
+          menuToggle.style.display = 'flex';
+
+          if (isDesktop) {
+            clearAllReveal();
+            // 不管当前是什么状态，关闭时统一清理 hover 相关计时器
+            hoverScrollDebounce.cancel();
+            cooldownDebounce.cancel();
+            isInCooldown = false;
+            hoveredItem  = null;
+            if (activeState === 'hover') {
+              activeState = 'scroll';
+              setHighlight(currentId);
+            }
+          }
+        }
+
+        menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
+        closeBtn.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
+        menuMask.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
+        sideMenu.addEventListener('click',    (e) => e.stopPropagation());
+
+        toBottomBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          closeMenu();
+        });
+
+        middleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
+          window.scrollTo({ top: middle, behavior: 'smooth' });
+          closeMenu();
+        });
+
+        toTopBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          closeMenu();
+        });
+
+        // === 5. 滚动进度指示器 ===
+        const toggleRevealStyle = document.createElement('style');
+        document.head.appendChild(toggleRevealStyle);
+
+        function updateProgress() {
+          const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
+          const scrollPercent  = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
+          const redValue       = Math.floor(scrollPercent * 255);
+          menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
+          menuToggle.style.boxShadow       = 'none';
+
+          const isLight = document.body.classList.contains('light-mode');
+          const t = 1 - scrollPercent;
+          let hiColor, midColor;
+          if (isLight) {
+            const r  = Math.round(20  + 60  * t);
+            const g  = Math.round(20  + 60  * t);
+            const b  = Math.round(60  + 120 * t);
+            const r2 = Math.round(15  + 45  * t);
+            const b2 = Math.round(50  + 110 * t);
+            hiColor  = `${r}, ${g}, ${b}`;
+            midColor = `${r2}, ${g}, ${b2}`;
+          } else {
+            const gb    = Math.round(255 * (1 - t));
+            const midR  = Math.round(180 * t + 255 * (1 - t));
+            const midGB = Math.round(gb * 0.5);
+            hiColor  = `255, ${gb}, ${gb}`;
+            midColor = `${midR}, ${midGB}, ${midGB}`;
+          }
+          toggleRevealStyle.textContent = `
+            .floating-btn::before {
+              background: radial-gradient(
+                80px circle at var(--rx, -9999px) var(--ry, -9999px),
+                rgba(${hiColor}, 0.95),
+                rgba(${midColor}, 0.45) 45%,
+                transparent 70%
+              );
+            }
+          `;
+        }
+
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        window.addEventListener('resize', updateProgress, { passive: true });
+        updateProgress();
+
+        // ==================== Reveal Highlight（仅桌面）====================
+        if (isDesktop) {
+
+          const canvas = document.getElementById('menuRevealCanvas');
+          const ctx    = canvas.getContext('2d');
+          let cachedMenuRect = null;
+
+          // Reveal 目标列表：每个目标只需声明元素、感应范围、距离策略
+          // 新增目标只要在这里加一行即可，handleMove 不需要改动
+          const revealTargets = [
+            { el: menuToggle,      range: 60,  alwaysOn: true,  distFn: distToRect     },
+            { el: sideMenuWrapper, range: 80,  alwaysOn: false, distFn: distToRect     },
+            { el: chapterList,     range: 80,  alwaysOn: false, distFn: distToRect     },
+            { el: menuRightEl,     range: 80,  alwaysOn: false, distFn: distToRect     },
+            { el: closeBtn,        range: 80,  alwaysOn: false, distFn: distToTopEdge  }, // 顶边感应
+          ];
+
+          function resizeCanvas() {
+            if (!sideMenuWrapper.classList.contains('active')) return;
+            const r = chapterList.getBoundingClientRect();
+            canvas.width       = r.width;
+            canvas.height      = r.height;
+            canvas.style.left  = r.left + 'px';
+            canvas.style.top   = r.top  + 'px';
+            cachedMenuRect = r;
+          }
+
+          chapterList.addEventListener('scroll', () => {
+            if (sideMenuWrapper.classList.contains('active')) {
+              requestAnimationFrame(() => {
+                resizeCanvas();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              });
+            }
+          }, { passive: true });
+
+          function drawDividerGlow(mouseX, mouseY) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!sideMenuWrapper.classList.contains('active')) return;
+
+            const style    = getComputedStyle(document.body);
+            const colorHi  = style.getPropertyValue('--reveal-hi').trim();
+            const colorMid = style.getPropertyValue('--reveal-mid').trim();
+
+            const menuRect = chapterList.getBoundingClientRect();
+            if (canvas.width  !== Math.round(menuRect.width)  ||
+                canvas.height !== Math.round(menuRect.height) ||
+                parseFloat(canvas.style.left) !== menuRect.left ||
+                parseFloat(canvas.style.top)  !== menuRect.top) {
+              canvas.width      = menuRect.width;
+              canvas.height     = menuRect.height;
+              canvas.style.left = menuRect.left + 'px';
+              canvas.style.top  = menuRect.top  + 'px';
+              cachedMenuRect    = menuRect;
+            }
+
+            // 用封装好的 distToRect 判断鼠标是否在感应范围内
+            const radius = 80;
+            if (distToRect(mouseX, mouseY, menuRect) > radius) return;
+
+            const items = chapterList.querySelectorAll('.chapter-item:not(:last-child)');
+            items.forEach(item => {
+              const itemRect  = item.getBoundingClientRect();
+              const lineY     = itemRect.bottom - menuRect.top;
+              const lineLeft  = itemRect.left   - menuRect.left + 8;
+              const lineRight = itemRect.right  - menuRect.left - 8;
+
+              if (lineY < 0 || lineY > canvas.height) return;
+
+              const nearestX = Math.max(lineLeft, Math.min(mouseX - menuRect.left, lineRight));
+              const dist     = Math.hypot(
+                mouseX - menuRect.left - nearestX,
+                mouseY - menuRect.top  - lineY
+              );
+              if (dist > radius) return;
+
+              const intensity = 1 - dist / radius;
+              const gx   = mouseX - menuRect.left;
+              const grad = ctx.createRadialGradient(gx, lineY, 0, gx, lineY, radius);
+              grad.addColorStop(0,   `rgba(${colorHi},${1.0 * intensity})`);
+              grad.addColorStop(0.4, `rgba(${colorMid},${0.65 * intensity})`);
+              grad.addColorStop(1,   `rgba(${colorMid},0)`);
+
+              ctx.beginPath();
+              ctx.moveTo(lineLeft,  lineY);
+              ctx.lineTo(lineRight, lineY);
+              ctx.lineWidth   = 1;
+              ctx.strokeStyle = grad;
+              ctx.stroke();
+            });
+          }
+
+          function clearAllReveal() {
+            revealTargets.forEach(({ el }) => clearRevealVar(el));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.classList.remove('active');
+          }
+
+          function handleMove(e) {
+            if (e.pointerType && e.pointerType !== 'mouse') return;
+            const menuActive = sideMenuWrapper.classList.contains('active');
+
+            // 统一循环处理所有 Reveal 目标，无需为每个目标写特判分支
+            revealTargets.forEach(({ el, range, alwaysOn, distFn }) => {
+              if (!alwaysOn && !menuActive) {
+                clearRevealVar(el);
+                return;
+              }
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn);
+            });
+
+            if (menuActive) {
+              if (!cachedMenuRect) resizeCanvas();
+              canvas.classList.add('active');
+              drawDividerGlow(e.clientX, e.clientY);
+            }
+          }
+
+          document.addEventListener('pointermove',  handleMove);
+          document.addEventListener('pointerup',    handleMove);
+          document.addEventListener('pointerleave', clearAllReveal);
+          window.addEventListener('blur',           clearAllReveal);
+
+          window.addEventListener('resize', () => {
+            cachedMenuRect = null;
+            resizeCanvas();
+            updateProgress();
+          });
+
+        } // end isDesktop
+
+      </script>
+
+   </body>
 
 </html>
