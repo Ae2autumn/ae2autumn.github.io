@@ -4015,8 +4015,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 350);
         const menuScrollDebounce   = createDebounce(onMenuScrollDebounced, 400);
         const cooldownDebounce     = createDebounce(() => { isInCooldown = false; }, 5000);
-        // 滚轮停止后 300ms 才解除屏蔽，确保惯性滚动期间假事件全部被过滤
-        const wheelEndDebounce     = createDebounce(() => { isWheelScrolling = false; }, 300);
 
         let isInCooldown         = false;
         let isMenuScrolling      = false;
@@ -4144,10 +4142,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (activeState === 'hover') {
               hoverScrollDebounce.cancel();
               hoveredItem = null;
-              activeState = 'scroll';  // 解锁 scroll 事件里的 hover 早返回
+              activeState = 'scroll';
             }
           }
-          wheelEndDebounce.call();
+          // isWheelScrolling 不用计时器清除
+          // 由 onMenuScrollDebounced 在完全跑完后释放，杜绝时序竞争
         }, { passive: true });
 
         chapterList.addEventListener('scroll', () => {
@@ -4164,13 +4163,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         function onMenuScrollDebounced() {
           isMenuScrolling = false;
           const centerId = getCenteredItemId();
-          if (!centerId) return;
+          if (!centerId) { isWheelScrolling = false; return; }
 
           scrollMenuToItem(centerId).then(() => {
-            if (activeState !== 'menu' || hoveredItem) return;
+            if (activeState !== 'menu' || hoveredItem) { isWheelScrolling = false; return; }
 
-            // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
-            // 回归 scroll 状态时用的都是正确的新值，不会跳回旧位置。
             currentId = centerId;
             setHighlight(centerId);
 
@@ -4182,16 +4179,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 () => window.scrollY
               ).finally(() => {
                 menuDrivingArticleCount--;
-                // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
-                // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
-                // 文章 scroll 事件覆盖成其它值，导致再次跳位。
+                isWheelScrolling = false;  // 文章滚完才释放，整个流程结束
                 if (activeState === 'menu' && !hoveredItem) {
                   activeState = 'scroll';
                   setHighlight(currentId);
                 }
               });
             } else {
-              // 没有对应标题元素时，直接回归
+              isWheelScrolling = false;
               activeState = 'scroll';
               setHighlight(currentId);
             }
