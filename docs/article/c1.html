@@ -2717,61 +2717,56 @@ Fu~fu~<br>
         }
 
         // === 状态：menu ===
+
+        // isWheeling：桌面滚轮期间为 true，用于屏蔽 scroll 事件对防抖的干扰。
+        // 滚轮会触发 chapterList 真实 scroll（scrollMenuToItem 的程序化居中），
+        // 但我们不希望这些 scroll 事件重置防抖计时或提前提交。
+        let isWheeling = false;
+
         chapterList.addEventListener('scroll', () => {
           if (programmaticScrollCount > 0) return;
           if (activeState === 'hover') return;
+          if (isWheeling) return; // wheel 路径自己管理，屏蔽 scroll 的干扰
           isMenuScrolling = true;
           activeState = 'menu';
-          // 实时更新高亮跟随菜单中心项，而不是等防抖结束后才跳变
           const realtimeId = getCenteredItemId();
           if (realtimeId) setHighlight(realtimeId);
           menuScrollDebounce.call();
         }, { passive: true });
 
+        function commitMenuSelection(centerId) {
+          if (activeState !== 'menu' || hoveredItem) return;
+          currentId = centerId;
+          setHighlight(centerId);
+          const targetHeading = document.getElementById(centerId);
+          if (targetHeading) {
+            menuDrivingArticleCount++;
+            smoothScrollPromise(
+              () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              () => window.scrollY
+            ).finally(() => {
+              menuDrivingArticleCount--;
+              if (activeState === 'menu' && !hoveredItem) {
+                activeState = 'scroll';
+                setHighlight(currentId);
+              }
+            });
+          } else {
+            activeState = 'scroll';
+            setHighlight(currentId);
+          }
+        }
+
         function onMenuScrollDebounced() {
           isMenuScrolling = false;
           const centerId = getCenteredItemId();
           if (!centerId) return;
-
-          // 吸附居中：programmaticScrollCount 保护期间产生的 scroll 事件会被过滤，
-          // 计数归零后等一帧再判断是否有新的用户输入，避免归零瞬间的竞态。
           scrollMenuToItem(centerId).then(() => {
-            return new Promise(resolve => requestAnimationFrame(resolve));
-          }).then(() => {
-            // 如果吸附完成后状态已被新的用户滚动重置，放弃本次流程
-            if (activeState !== 'menu' || hoveredItem) return;
-
-            // currentId 必须在驱动文章前同步，这样无论文章是否真的滚动，
-            // 回归 scroll 状态时用的都是正确的新值，不会跳回旧位置。
-            currentId = centerId;
-            setHighlight(centerId);
-
-            const targetHeading = document.getElementById(centerId);
-            if (targetHeading) {
-              menuDrivingArticleCount++;
-              smoothScrollPromise(
-                () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                () => window.scrollY
-              ).finally(() => {
-                menuDrivingArticleCount--;
-                // 文章滚完（或滚轮场景下位置未变立即完成）后直接回归，
-                // 不再用 backToScrollDebounce 延迟——延迟期间 currentId 可能被
-                // 文章 scroll 事件覆盖成其它值，导致再次跳位。
-                if (activeState === 'menu' && !hoveredItem) {
-                  activeState = 'scroll';
-                  setHighlight(currentId);
-                }
-              });
-            } else {
-              // 没有对应标题元素时，直接回归
-              activeState = 'scroll';
-              setHighlight(currentId);
-            }
+            commitMenuSelection(centerId);
           });
         }
 
-        // 移动端：手指离开时立即触发一次防抖（重置计时器到 400ms 后），
-        // 比等惯性滚动自然停止更快响应，同时不会在惯性期间提前吸附。
+        // 移动端：touchend 提前触发防抖，比等惯性停止更快响应
         function onTouchEnd() {
           if (hoveredItem) hoveredItem = null;
           if (activeState === 'menu') menuScrollDebounce.call();
@@ -2779,16 +2774,30 @@ Fu~fu~<br>
         chapterList.addEventListener('touchend',    onTouchEnd);
         chapterList.addEventListener('touchcancel', onTouchEnd);
 
-        // 桌面端滚轮：wheel 事件停止后视为"手离开"，和 touchend 对称。
-        // 用独立的 wheelDebounce 而非 menuScrollDebounce，是为了不干扰
-        // chapterList scroll 事件内已在计时的防抖（两者共同保证：
-        // 滚轮停转后 400ms 内一定会触发一次 onMenuScrollDebounced）。
-        const wheelEndDebounce = createDebounce(() => {
-          if (activeState === 'menu') menuScrollDebounce.call();
-        }, 200);
-        chapterList.addEventListener('wheel', () => {
-          if (activeState === 'menu') wheelEndDebounce.call();
-        }, { passive: true });
+        // 桌面滚轮：chapterList 允许真实滚动（用户能看到列表划动），
+        // 但用 isWheeling 屏蔽 scroll 事件的防抖，改由 wheelEndDebounce 统一提交。
+        // 这样滚轮体验和 touch 一致：划 → 停 → 吸附 → 驱动文章。
+        if (isDesktop) {
+          const wheelEndDebounce = createDebounce(() => {
+            isWheeling = false;
+            if (activeState !== 'menu') return;
+            const centerId = getCenteredItemId();
+            if (!centerId) return;
+            scrollMenuToItem(centerId).then(() => {
+              commitMenuSelection(centerId);
+            });
+          }, 300);
+
+          chapterList.addEventListener('wheel', () => {
+            if (activeState === 'hover') return;
+            isWheeling    = true;
+            activeState   = 'menu';
+            // 实时高亮跟随（和 touch scroll 路径对称）
+            const realtimeId = getCenteredItemId();
+            if (realtimeId) setHighlight(realtimeId);
+            wheelEndDebounce.call();
+          }, { passive: true });
+        }
 
         // === 4. 菜单控制 ===
         function openMenu() {
