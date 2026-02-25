@@ -4197,8 +4197,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                            e.clientY >= r.top  && e.clientY <= r.bottom;
             if (!inMenu) return;
 
-            if (activeState === 'hover') return;
             isWheeling = true;
+            if (activeState === 'hover') {
+              hoverScrollDebounce.cancel();
+              hoveredItem = null;
+            }
             activeState = 'menu';
 
             chapterList.scrollTop += e.deltaY;

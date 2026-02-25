@@ -1000,8 +1000,11 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
                            e.clientY >= r.top  && e.clientY <= r.bottom;
             if (!inMenu) return;
 
-            if (activeState === 'hover') return;
             isWheeling = true;
+            if (activeState === 'hover') {
+              hoverScrollDebounce.cancel();
+              hoveredItem = null;
+            }
             activeState = 'menu';
 
             chapterList.scrollTop += e.deltaY;

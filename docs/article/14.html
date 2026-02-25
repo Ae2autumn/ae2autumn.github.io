@@ -1097,8 +1097,11 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
                            e.clientY >= r.top  && e.clientY <= r.bottom;
             if (!inMenu) return;
 
-            if (activeState === 'hover') return;
             isWheeling = true;
+            if (activeState === 'hover') {
+              hoverScrollDebounce.cancel();
+              hoveredItem = null;
+            }
             activeState = 'menu';
 
             chapterList.scrollTop += e.deltaY;
