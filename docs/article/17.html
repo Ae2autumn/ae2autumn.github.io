@@ -1702,8 +1702,8 @@ Start：是一场无知的冒险。</p>
         // === 状态：hover ===
         function onHoverScrollDebounced(item) {
           if (activeState !== 'hover' || hoveredItem !== item) return;
-          // 1.5 秒到了，真正执行：先高亮，再居中，再跳文章
           setHighlight(item.dataset.id);
+          // 居中和文章跳转同时触发，不串行等待
           scrollMenuToItem(item.dataset.id);
 
           const targetHeading = document.getElementById(item.dataset.id);
