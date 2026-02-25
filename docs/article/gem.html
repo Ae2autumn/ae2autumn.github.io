@@ -4372,8 +4372,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const redrawAfterScroll = createDebounce(() => {
             if (sideMenuWrapper.classList.contains('active')) {
               resizeCanvas();
-              if (lastMouseX !== -9999) canvas.classList.add('active');
-              drawDividerGlow(lastMouseX, lastMouseY);
+              if (lastMouseX !== -9999) {
+                chapterList.style.pointerEvents = 'none';
+                canvas.classList.add('active');
+                drawDividerGlow(lastMouseX, lastMouseY);
+                requestAnimationFrame(() => { chapterList.style.pointerEvents = ''; });
+              }
             }
           }, 150);
 

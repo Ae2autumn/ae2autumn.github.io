@@ -1964,8 +1964,12 @@ Start：是一场无知的冒险。</p>
           const redrawAfterScroll = createDebounce(() => {
             if (sideMenuWrapper.classList.contains('active')) {
               resizeCanvas();
-              if (lastMouseX !== -9999) canvas.classList.add('active');
-              drawDividerGlow(lastMouseX, lastMouseY);
+              if (lastMouseX !== -9999) {
+                chapterList.style.pointerEvents = 'none';
+                canvas.classList.add('active');
+                drawDividerGlow(lastMouseX, lastMouseY);
+                requestAnimationFrame(() => { chapterList.style.pointerEvents = ''; });
+              }
             }
           }, 150);
 
