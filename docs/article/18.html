@@ -691,7 +691,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
                   // 움직임 후 멈춤 → 진짜 완료
                   stable++;
                   if (stable >= 3) { resolve(); return; }
-                } else if (now - start > 150) {
+                } else if (now - start > 300) {
                   // 150ms 동안 움직임 없음 → 이미 목적지에 있었던 것
                   resolve(); return;
                 }
