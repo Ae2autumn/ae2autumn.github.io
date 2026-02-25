@@ -2960,6 +2960,7 @@ Fu~fu~<br>
           const redrawAfterScroll = createDebounce(() => {
             if (sideMenuWrapper.classList.contains('active')) {
               resizeCanvas();
+              if (lastMouseX !== -9999) canvas.classList.add('active');
               drawDividerGlow(lastMouseX, lastMouseY);
             }
           }, 150);

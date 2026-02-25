@@ -1272,6 +1272,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           const redrawAfterScroll = createDebounce(() => {
             if (sideMenuWrapper.classList.contains('active')) {
               resizeCanvas();
+              if (lastMouseX !== -9999) canvas.classList.add('active');
               drawDividerGlow(lastMouseX, lastMouseY);
             }
           }, 150);
