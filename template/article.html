@@ -982,8 +982,11 @@
                            e.clientY >= r.top  && e.clientY <= r.bottom;
             if (!inMenu) return;
 
-            if (activeState === 'hover') return;
             isWheeling = true;
+            if (activeState === 'hover') {
+              hoverScrollDebounce.cancel();
+              hoveredItem = null;
+            }
             activeState = 'menu';
 
             chapterList.scrollTop += e.deltaY;
