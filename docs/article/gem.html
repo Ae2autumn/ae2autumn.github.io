@@ -3871,18 +3871,30 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             scrollFn();
             let lastPos = getPosition();
             let stable = 0;
+            let animationStarted = false;  // 실제로 움직임이 감지됐는지
             const start = performance.now();
 
             function check() {
+              const now = performance.now();
               const pos = getPosition();
-              if (pos === lastPos) {
-                stable++;
-                if (stable >= 3) { resolve(); return; } // 连续3帧位置不变，视为完成
-              } else {
+
+              if (pos !== lastPos) {
+                // 애니메이션이 실제로 시작됨
+                animationStarted = true;
                 stable = 0;
                 lastPos = pos;
+              } else {
+                if (animationStarted) {
+                  // 움직임 후 멈춤 → 진짜 완료
+                  stable++;
+                  if (stable >= 3) { resolve(); return; }
+                } else if (now - start > 150) {
+                  // 150ms 동안 움직임 없음 → 이미 목적지에 있었던 것
+                  resolve(); return;
+                }
               }
-              if (performance.now() - start > timeout) { resolve(); return; }
+
+              if (now - start > timeout) { resolve(); return; }
               requestAnimationFrame(check);
             }
             requestAnimationFrame(check);
