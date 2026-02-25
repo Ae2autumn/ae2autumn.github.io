@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -4024,14 +4025,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         // 用 createDebounce 替换原来的裸 timer 变量，集中管理
         const hoverScrollDebounce  = createDebounce(onHoverScrollDebounced, 350);
-        const menuScrollDebounce   = createDebounce(onMenuScrollDebounced,  70);
+        const menuScrollDebounce   = createDebounce(onMenuScrollDebounced, 400);
         const cooldownDebounce     = createDebounce(() => { isInCooldown = false; }, 5000);
         const backToScrollDebounce = createDebounce(() => {
-          // 菜单滑动后 1.5s 无操作，回归 scroll 状态
+          // 菜单滑动后 1.5s 无操作，回归 scroll 状态。
+          // 此时文章已经滚到位，currentId 已是正确值，菜单也在正确位置，
+          // 只需切换状态和高亮，不再调 scrollMenuToItem（否则会用旧 currentId 把菜单拉回去）。
           if (activeState === 'menu' && !hoveredItem) {
             activeState = 'scroll';
             setHighlight(currentId);
-            scrollMenuToItem(currentId);
           }
         }, 1500);
 
@@ -4101,12 +4103,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (top <= scrollY + offset) current = allHeadings[i];
             else break;
           }
-          // menu 状态：文章在随用户滚轮滚动，只静默同步 currentId，不改高亮也不拉菜单。
-          // 这样松手回归 scroll 状态时，currentId 已经是最新值，菜单不会跳回旧位置。
-          if (activeState === 'menu') {
-            currentId = current.id;
-            return;
-          }
           if (current.id !== currentId || activeState !== 'scroll') {
             applyScrollState(current.id);
           }
@@ -4172,34 +4168,32 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           scrollMenuToItem(centerId).then(() => {
             if (activeState !== 'menu' || hoveredItem) return;
-
-            // 对齐高亮到菜单中心项
             setHighlight(centerId);
-            currentId = centerId;
 
-            // 只有菜单中心项与文章当前位置不一致时，才主动驱动文章滚动。
-            // 用滚轮滚菜单时文章已经同步滚动（currentId 在 updateActiveHeading 里静默更新），
-            // 此时 centerId === currentId，跳过 scrollIntoView，避免重复滚动和抖动。
-            if (centerId !== currentId) {
-              const targetHeading = document.getElementById(centerId);
-              if (targetHeading) {
-                menuDrivingArticleCount++;
-                smoothScrollPromise(
-                  () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                  () => window.scrollY
-                ).finally(() => {
-                  menuDrivingArticleCount--;
-                });
-              }
+            const targetHeading = document.getElementById(centerId);
+            if (targetHeading) {
+              menuDrivingArticleCount++;
+              currentId = centerId; // 先同步，防止文章滚完后 backToScrollDebounce 用旧值
+              smoothScrollPromise(
+                () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                () => window.scrollY
+              ).finally(() => {
+                menuDrivingArticleCount--;
+              });
             }
 
             backToScrollDebounce.call();
           });
         }
 
-        // 移动端 touch 兜底
-        chapterList.addEventListener('touchend',    () => { if (hoveredItem) hoveredItem = null; });
-        chapterList.addEventListener('touchcancel', () => { if (hoveredItem) hoveredItem = null; });
+        // 移动端：手指离开时立即触发一次防抖（重置计时器到 400ms 后），
+        // 比等惯性滚动自然停止更快响应，同时不会在惯性期间提前吸附。
+        function onTouchEnd() {
+          if (hoveredItem) hoveredItem = null;
+          if (activeState === 'menu') menuScrollDebounce.call();
+        }
+        chapterList.addEventListener('touchend',    onTouchEnd);
+        chapterList.addEventListener('touchcancel', onTouchEnd);
 
         // === 4. 菜单控制 ===
         function openMenu() {
