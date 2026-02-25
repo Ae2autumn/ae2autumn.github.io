@@ -973,8 +973,7 @@
             if (activeState !== 'menu') { isWheeling = false; return; }
             const centerId = getCenteredItemId();
             if (!centerId) { isWheeling = false; return; }
-            // isWheeling 保持 true，直到 commitMenuSelection 内文章滚完才释放
-            scrollMenuToItem(centerId).then(() => commitMenuSelection(centerId));
+            scrollMenuToItem(centerId, 'instant').then(() => commitMenuSelection(centerId));
           }, 350);
 
           document.addEventListener('wheel', (e) => {
