@@ -991,8 +991,7 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
             if (activeState !== 'menu') { isWheeling = false; return; }
             const centerId = getCenteredItemId();
             if (!centerId) { isWheeling = false; return; }
-            // isWheeling 保持 true，直到 commitMenuSelection 内文章滚完才释放
-            scrollMenuToItem(centerId).then(() => commitMenuSelection(centerId));
+            scrollMenuToItem(centerId, 'instant').then(() => commitMenuSelection(centerId));
           }, 350);
 
           document.addEventListener('wheel', (e) => {

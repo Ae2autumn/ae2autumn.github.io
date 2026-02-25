@@ -4188,8 +4188,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (activeState !== 'menu') { isWheeling = false; return; }
             const centerId = getCenteredItemId();
             if (!centerId) { isWheeling = false; return; }
-            // isWheeling 保持 true，直到 commitMenuSelection 内文章滚完才释放
-            scrollMenuToItem(centerId).then(() => commitMenuSelection(centerId));
+            scrollMenuToItem(centerId, 'instant').then(() => commitMenuSelection(centerId));
           }, 350);
 
           document.addEventListener('wheel', (e) => {
