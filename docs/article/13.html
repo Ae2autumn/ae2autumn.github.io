@@ -311,7 +311,8 @@
             bottom: 30px;
             right: 30px;
             width: 250px;
-            height: 400px;
+            /* 自适应内容，但不超过视口高度（留上下 80px 余量） */
+            max-height: min(400px, calc(100vh - 80px));
             max-width: calc(100vw - 60px);
             border-radius: 12px;
             z-index: 999;
@@ -349,7 +350,9 @@
          .side-menu {
             position: relative;
             width: 100%;
+            /* max-height 从 wrapper 继承，height:100% 让菜单撑满 wrapper */
             height: 100%;
+            max-height: inherit;
             border-radius: 12px;
             display: none;
             flex-direction: row;
@@ -379,6 +382,8 @@
          .menu-left {
             position: relative;
             width: 200px;
+            /* 核心：flex 子项默认 min-height:auto 会阻止 overflow-y 生效 */
+            min-height: 0;
             padding: 20px;
             overflow-y: auto;
             scrollbar-width: none;
@@ -452,8 +457,9 @@
          /* ==================== 菜单右侧：按钮区 ==================== */
          .menu-right {
             position: relative;
+            flex-shrink: 0;        /* 防止被章节列表压缩 */
+            align-self: stretch;   /* 高度跟随 .menu-left 内容自动撑开，替代不可靠的 height:100% */
             width: 50px;
-            height: 100%;
             display: flex;
             flex-direction: column;
             background: rgba(0, 0, 0, 0.2);
