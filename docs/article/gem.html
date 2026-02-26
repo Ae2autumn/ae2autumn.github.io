@@ -4095,6 +4095,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
            * 初始化时用 getBoundingClientRect 做一次静态扫描，补充 Observer
            * 不触发回调的"已过线"状态（Observer 只在状态变化时触发）。
            */
+          const HEADING_OFFSET = 80;
           let passedHeadings = new Set(); // 记录所有已过 80px 线的 heading
 
           function resolveCurrentHeading() {
@@ -4114,14 +4115,13 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           function initHeadingObserver() {
             // 初始扫描：把页面加载时已经过线的 heading 加入 passedHeadings
-            const offset = 80;
             allHeadings.forEach(h => {
-              if (h.getBoundingClientRect().top < offset) passedHeadings.add(h);
+              if (h.getBoundingClientRect().top < HEADING_OFFSET) passedHeadings.add(h);
             });
 
             const observer = new IntersectionObserver((entries) => {
               entries.forEach(entry => {
-                if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+                if (!entry.isIntersecting && entry.boundingClientRect.top < HEADING_OFFSET) {
                   // heading 已向上滚过 80px 线
                   passedHeadings.add(entry.target);
                 } else {
@@ -4132,7 +4132,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               resolveCurrentHeading();
             }, {
               root:       null,
-              rootMargin: '-80px 0px 0px 0px',
+              rootMargin: `-${HEADING_OFFSET}px 0px 0px 0px`,
               threshold:  0,
             });
 
