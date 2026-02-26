@@ -8,6 +8,26 @@
       <title>01.29 - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
+      <!--
+        FOUC 防闪修复：在任何渲染发生前，检查 localStorage 与服务端主题是否冲突。
+        优先级：localStorage > 服务端配置值。
+        若两者不同，提前注入临时样式覆盖背景色/字色，避免页面加载时的主题闪烁。
+        applyTheme() 执行完毕后会移除此临时样式。
+      -->
+      <script>
+        (function () {
+          var saved      = localStorage.getItem('theme');
+          var serverMode = "dark";
+          // 没有 localStorage 值，直接用服务端渲染的 class，无需任何干预
+          if (!saved || saved === serverMode) return;
+          var style = document.createElement('style');
+          style.id  = 'theme-fouc-fix';
+          style.textContent = saved === 'light'
+            ? 'body { background-color: #fff    !important; color: #000 !important; }'
+            : 'body { background-color: #121212 !important; color: #fff !important; }';
+          document.head.appendChild(style);
+        })();
+      </script>
       <style>
          /* ==================== 基础样式 ==================== */
          *, *::before, *::after {
@@ -180,7 +200,8 @@
             max-width: 100%;
          }
    
-         body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
+         body.dark-mode  .content pre { background-color: #2d2d2d; color: #f8f8f2; }
+         body.light-mode .content pre { background-color: #f5f5f5; color: #333; }
    
          .content code {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -405,7 +426,9 @@
    
          /* ==================== 章节项 ==================== */
          .chapter-item {
-            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            padding: 0;
             cursor: pointer;
             color: rgba(255, 255, 255, 0.7);
             transition: color 0.2s, padding-left 0.2s;
@@ -567,8 +590,16 @@
          body.is-desktop .close-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.08); }
    
          /* ==================== Reveal：floating-btn ==================== */
+         /* --toggle-hi / --toggle-mid 由 JS updateProgress 随滚动进度实时写入 body，
+            默认值对应初始状态（暗色主题、进度为 0）。                              */
          .floating-btn::before {
             border-radius: 50%;
+            background: radial-gradient(
+               80px circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--toggle-hi,  255, 0,   0),   0.95),
+               rgba(var(--toggle-mid, 180, 30,  30),  0.45) 45%,
+               transparent 70%
+            );
          }
    
          .header, .floating-btn, .side-menu, .comments {
@@ -724,18 +755,23 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
           return new Promise(resolve => {
             scrollFn();
-            let lastPos = getPosition();
-            let stable  = 0;
-            let started = false;
+            let lastPos  = getPosition();
+            let stable   = 0;
+            let stableAt = null;  // 首次稳定帧的时间戳，用于保证最短稳定时长
+            let started  = false;
             const t0 = performance.now();
 
             function check() {
               const now = performance.now();
               const pos = getPosition();
               if (pos !== lastPos) {
-                started = true; stable = 0; lastPos = pos;
+                started = true; stable = 0; stableAt = null; lastPos = pos;
               } else {
-                if (started) { if (++stable >= 3) { resolve(); return; } }
+                if (started) {
+                  if (stableAt === null) stableAt = now;
+                  // 至少 3 帧 + 距首次稳定帧 ≥ 50ms，避免高帧率设备过早判定结束
+                  if (++stable >= 3 && now - stableAt >= 50) { resolve(); return; }
+                }
                 else if (now - t0 > 300) { resolve(); return; }
               }
               if (now - t0 > timeout) { resolve(); return; }
@@ -764,10 +800,10 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           return Math.sqrt(dx * dx + dy * dy);
         }
 
-        /** 更新单个 Reveal 元素的 CSS 变量。 */
-        function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect) {
+        /** 更新单个 Reveal 元素的 CSS 变量。rect 可由外部传入以复用缓存，省去 reflow。 */
+        function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect, rect = null) {
           if (!el) return;
-          const r    = el.getBoundingClientRect();
+          const r    = rect || el.getBoundingClientRect();
           const dist = distFn(mouseX, mouseY, r);
           if (dist <= range) {
             el.style.setProperty('--rx', (mouseX - r.left) + 'px');
@@ -829,7 +865,9 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           const mode        = savedTheme || configTheme;
           document.body.classList.toggle('light-mode', mode === 'light');
           document.body.classList.toggle('dark-mode',  mode !== 'light');
-          menuToggle.style.color = mode === 'light' ? '#000' : '#fff';
+          // 移除 <head> 里注入的临时防闪样式（若存在）
+          const fouc = document.getElementById('theme-fouc-fix');
+          if (fouc) fouc.remove();
         }
         applyTheme();
 
@@ -1066,17 +1104,6 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
                 onItemClick?.();
               });
 
-              if (isDesktop) {
-                listItem.addEventListener('pointerenter', (e) => {
-                  if (e.pointerType !== 'mouse') return;
-                  onItemPointerEnter(listItem);
-                });
-                listItem.addEventListener('pointerleave', (e) => {
-                  if (e.pointerType !== 'mouse') return;
-                  onItemPointerLeave();
-                });
-              }
-
               chapterListEl.appendChild(listItem);
             });
 
@@ -1117,6 +1144,23 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
             chapterListEl.addEventListener('touchcancel', onTouchEnd);
 
             if (isDesktop) {
+              // 事件委托：pointerover/pointerout 会冒泡，pointerenter/pointerleave 不冒泡。
+              // pointerover：仅在进入新 item 时触发（与旧 item 不同才调用 onItemPointerEnter）
+              chapterListEl.addEventListener('pointerover', (e) => {
+                if (e.pointerType !== 'mouse') return;
+                const item = e.target.closest('.chapter-item');
+                if (item && item !== state.hoveredItem) onItemPointerEnter(item);
+              });
+
+              // pointerout：relatedTarget 不在当前 item 内部时，才视为真正离开
+              // （items 均为纯文本节点，此检查主要防御未来可能添加的子元素）
+              chapterListEl.addEventListener('pointerout', (e) => {
+                if (e.pointerType !== 'mouse') return;
+                const item = e.target.closest('.chapter-item');
+                if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
+              });
+
+              // pointerleave（整个列表）：isWheelScrolling/isHoverScrolling 期间屏蔽
               chapterListEl.addEventListener('pointerleave', (e) => {
                 if (e.pointerType !== 'mouse') return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
@@ -1163,8 +1207,20 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           let cachedColorMid  = '';
           // ③ rAF 节流：pointermove 只记坐标，实际绘制合并到下一帧
           let rafPending      = false;
+          // ④ target rect 缓存：fixed 定位元素只在 resize / 菜单打开时位置变化，无需每帧 reflow
+          let cachedTargetRects = null; // Map<el, DOMRect>
 
           const isMenuActive = () => menuWrapperEl.classList.contains('active');
+
+          /** 刷新 target rect 缓存。alwaysOn 元素始终缓存；其余只在菜单激活时才有有效位置。 */
+          function refreshTargetRects() {
+            cachedTargetRects = new Map();
+            targets.forEach(({ el, alwaysOn }) => {
+              if (alwaysOn || isMenuActive()) {
+                cachedTargetRects.set(el, el.getBoundingClientRect());
+              }
+            });
+          }
 
           /** 构建 item rect 缓存（相对于 menuRect），使用调用方已有的 menuRect 避免重复 reflow。 */
           function buildItemRectCache(menuRect) {
@@ -1200,6 +1256,8 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
             // item 位置依赖动画完成后的 layout，此处只置为 null，
             // drawDividerGlow 在真正绘制时再懒加载，确保坐标正确
             cachedItemRects = null;
+            // target rect 缓存在菜单打开/resize 时统一刷新
+            refreshTargetRects();
           }
 
           const redrawAfterScroll = createDebounce(() => {
@@ -1291,9 +1349,11 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
             const menuActive = isMenuActive();
 
             // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
+            // 使用缓存 rect，避免每次 pointermove 对 fixed 元素重复 reflow
+            if (!cachedTargetRects) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              updateRevealVar(el, e.clientX, e.clientY, range, distFn);
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects.get(el) ?? null);
             });
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
@@ -1315,13 +1375,13 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           document.addEventListener('pointerleave', clearAllReveal);
           window.addEventListener('blur',           clearAllReveal);
 
-          window.addEventListener('resize', () => {
+          function handleResize() {
             cachedMenuRect  = null;
             cachedItemRects = null;
             resizeCanvas();
-          });
+          }
 
-          return { resizeCanvas, clearAllReveal };
+          return { resizeCanvas, clearAllReveal, handleResize };
         }
 
 
@@ -1374,8 +1434,11 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           });
         }
 
-        // resize 同步进度条颜色（原版即为无条件，移动端也需要）
-        window.addEventListener('resize', updateProgress, { passive: true });
+        // resize 同步进度条颜色 + canvas 尺寸（合并为单一监听器，桌面/移动端均生效）
+        window.addEventListener('resize', () => {
+          if (reveal) reveal.handleResize();
+          updateProgress();
+        }, { passive: true });
 
         // --- 按钮事件 ---
         menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
@@ -1403,9 +1466,6 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
         });
 
         // ==================== 9. 滚动进度指示器（保持原样）====================
-        const toggleRevealStyle = document.createElement('style');
-        document.head.appendChild(toggleRevealStyle);
-
         function updateProgress() {
           const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
           const scrollPercent  = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
@@ -1431,16 +1491,9 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
             hiColor  = `255, ${gb}, ${gb}`;
             midColor = `${midR}, ${midGB}, ${midGB}`;
           }
-          toggleRevealStyle.textContent = `
-            .floating-btn::before {
-              background: radial-gradient(
-                80px circle at var(--rx, -9999px) var(--ry, -9999px),
-                rgba(${hiColor}, 0.95),
-                rgba(${midColor}, 0.45) 45%,
-                transparent 70%
-              );
-            }
-          `;
+          // 直接写 CSS 变量，避免每帧重新解析整段样式规则
+          document.body.style.setProperty('--toggle-hi',  hiColor);
+          document.body.style.setProperty('--toggle-mid', midColor);
         }
 
         window.addEventListener('scroll', updateProgress, { passive: true });
