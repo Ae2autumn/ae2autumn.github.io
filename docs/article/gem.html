@@ -4085,21 +4085,59 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             menuSyncDebounce.call(id);  // 菜单位置 debounce，滚动停止后跟随
           }
 
-          function updateActiveHeading() {
+          /**
+           * 用 IntersectionObserver 替代 scroll 遍历，判断当前阅读位置。
+           *
+           * 语义：rootMargin '-80px 0px 0px 0px' 把观察区域顶部缩进 80px。
+           * heading 向上滚出该区域（isIntersecting=false, top<0）即视为"已过线"。
+           * 当前章节 = passedHeadings 中文档顺序最后一个；若没有则为第一个 heading。
+           *
+           * 初始化时用 getBoundingClientRect 做一次静态扫描，补充 Observer
+           * 不触发回调的"已过线"状态（Observer 只在状态变化时触发）。
+           */
+          let passedHeadings = new Set(); // 记录所有已过 80px 线的 heading
+
+          function resolveCurrentHeading() {
             if (allHeadings.length === 0) return;
             if (state.menuDrivingArticleCount > 0) return;
             if (state.isHoverScrolling) return;
-            const scrollY = window.scrollY;
-            const offset  = 80;
-            let current   = allHeadings[0];
-            for (let i = 0; i < allHeadings.length; i++) {
-              const top = allHeadings[i].getBoundingClientRect().top + scrollY;
-              if (top <= scrollY + offset) current = allHeadings[i];
-              else break;
+
+            // 从 passedHeadings 中找文档顺序最后一个；若无则取第一个 heading
+            let current = allHeadings[0];
+            for (let i = allHeadings.length - 1; i >= 0; i--) {
+              if (passedHeadings.has(allHeadings[i])) { current = allHeadings[i]; break; }
             }
             if (current.id !== state.currentId || state.activeState !== 'scroll') {
               applyScrollState(current.id);
             }
+          }
+
+          function initHeadingObserver() {
+            // 初始扫描：把页面加载时已经过线的 heading 加入 passedHeadings
+            const offset = 80;
+            allHeadings.forEach(h => {
+              if (h.getBoundingClientRect().top < offset) passedHeadings.add(h);
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+                  // heading 已向上滚过 80px 线
+                  passedHeadings.add(entry.target);
+                } else {
+                  // heading 回到 80px 线以下（向下滚动时）
+                  passedHeadings.delete(entry.target);
+                }
+              });
+              resolveCurrentHeading();
+            }, {
+              root:       null,
+              rootMargin: '-80px 0px 0px 0px',
+              threshold:  0,
+            });
+
+            allHeadings.forEach(h => observer.observe(h));
+            return observer;
           }
 
           // --- 状态：hover ---
@@ -4249,7 +4287,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               applyScrollState(state.currentId);
             }
 
-            window.addEventListener('scroll', updateActiveHeading, { passive: true });
+            window.removeEventListener('scroll', updateActiveHeading); // 防御性移除（如有残留）
+            initHeadingObserver();
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
