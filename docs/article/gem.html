@@ -583,7 +583,7 @@
       <div class="header">
          <h1 class="title">gem</h1>
          <p class="summary">暂无简介</p>
-         <div class="date">2026-02-25</div>
+         <div class="date">2026-02-26</div>
          <div class="tags">
          </div>
       </div>
@@ -3950,6 +3950,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           el.style.setProperty('--ry', '-9999px');
         }
 
+        /**
+         * 主动查询当前鼠标位置下是否有 chapter-item
+         * 用于在 DOM 位移后不依赖浏览器补发的 pointer 事件，直接决策
+         */
+        function getItemAtPointer() {
+          const el = document.elementFromPoint(lastMouseX, lastMouseY);
+          if (!el) return null;
+          return el.closest('.chapter-item');
+        }
+
 
         // ==================== DOM 引用 ====================
         const menuToggle      = document.getElementById('menuToggle');
@@ -4038,6 +4048,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         let programmaticScrollCount  = 0;
         let menuDrivingArticleCount  = 0;
 
+        // 鼠标位置：提升到外层，供 onHoverScrollDebounced 主动查询使用
+        let lastMouseX = -9999;
+        let lastMouseY = -9999;
+
         // 唯一高亮入口
         function setHighlight(id) {
           document.querySelectorAll('.chapter-item.current, .chapter-item.hovered')
@@ -4111,6 +4125,28 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
         // === 状态：hover ===
+
+        /**
+         * 根据 getItemAtPointer() 的结果主动推进状态机，
+         * 不再依赖浏览器在 DOM 位移后补发的 pointer 事件（时序不可靠）。
+         * @param {Element} item - 触发本轮防抖的 chapter-item
+         */
+        function resolvePointerAfterScroll(item) {
+          const itemAtPointer = getItemAtPointer();
+          if (itemAtPointer && itemAtPointer !== item) {
+            // 鼠标现在压着新的 item B → 移交给 B，重启链
+            onItemPointerEnter(itemAtPointer);
+          } else if (!itemAtPointer) {
+            // 鼠标已离开菜单范围 → 重置为 scroll 状态
+            hoveredItem = null;
+            activeState = 'scroll';
+            setHighlight(currentId);
+          } else {
+            // 鼠标仍在 item 上 → 重启防抖，解决"只触发一次"
+            hoverScrollDebounce.call(item);
+          }
+        }
+
         async function onHoverScrollDebounced(item) {
           if (activeState !== 'hover' || hoveredItem !== item) return;
           setHighlight(item.dataset.id);
@@ -4118,19 +4154,26 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           // 先等菜单居中完成，再跳转文章，避免两个 smoothScrollPromise 并发竞争
           isHoverScrolling = true;
           await scrollMenuToItem(item.dataset.id);
-
-          // 居中完成后短暂释放，让浏览器补发的 pointerenter 能进来重新触发防抖
-          // （鼠标静止时 DOM 位移后浏览器会补发，但 isHoverScrolling=true 时会被拦）
           isHoverScrolling = false;
 
-          // 居中结束后留 150ms 让残留 pointer 事件消化完毕，状态稳定后再跳转
-          await new Promise(resolve => setTimeout(resolve, 150));
+          // 菜单居中后，主动查询鼠标当前位置决策，不等浏览器补发 pointer 事件
+          // 两行之间是同步执行，不存在异步窗口，补发事件无法插入
+          const itemAtPointer = getItemAtPointer();
 
-          // await 后重新校验：若状态已被其他交互重置则放弃跳转
-          if (activeState !== 'hover' || hoveredItem !== item) {
+          if (itemAtPointer && itemAtPointer !== item) {
+            // 鼠标已在新 item 上 → 移交，本轮结束
+            onItemPointerEnter(itemAtPointer);
+            return;
+          }
+          if (!itemAtPointer) {
+            // 鼠标已离开菜单 → 重置，本轮结束
+            hoveredItem = null;
+            activeState = 'scroll';
+            setHighlight(currentId);
             return;
           }
 
+          // 鼠标仍在 item 上 → 继续执行文章跳转
           const targetHeading = document.getElementById(item.dataset.id);
           if (targetHeading) {
             isHoverScrolling = true;
@@ -4142,13 +4185,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               );
             } finally {
               menuDrivingArticleCount--;
-              isHoverScrolling = false;
+              // currentId 先于 isHoverScrolling 更新，确保 onItemPointerLeave
+              // 拿不到过期的旧值
               if (activeState === 'hover' && hoveredItem === item) {
                 currentId = item.dataset.id;
+              }
+              isHoverScrolling = false;
+
+              // 文章跳转结束后再查一次，保持链持续运转
+              if (activeState === 'hover' && hoveredItem === item) {
+                resolvePointerAfterScroll(item);
               }
             }
           } else {
             isHoverScrolling = false;
+            if (activeState === 'hover' && hoveredItem === item) {
+              resolvePointerAfterScroll(item);
+            }
           }
         }
 
@@ -4347,8 +4400,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const canvas = document.getElementById('menuRevealCanvas');
           const ctx    = canvas.getContext('2d');
           let cachedMenuRect = null;
-          let lastMouseX = -9999;
-          let lastMouseY = -9999;
+          // lastMouseX / lastMouseY 已在外层声明，此处直接使用
 
           // Reveal 目标列表：每个目标只需声明元素、感应范围、距离策略
           // 新增目标只要在这里加一行即可，handleMove 不需要改动
