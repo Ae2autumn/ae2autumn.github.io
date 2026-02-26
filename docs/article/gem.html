@@ -295,6 +295,7 @@
             z-index: 1000;
             border: 1px solid rgba(255, 255, 255, 0.12); /* 移动端可见 */
             outline: none;
+            color: #fff;
             background: rgba(20, 20, 20, 0.55);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -428,7 +429,7 @@
          .chapter-item {
             display: flex;
             align-items: center;
-            padding: 0;
+            padding: 10px 0;
             cursor: pointer;
             color: rgba(255, 255, 255, 0.7);
             transition: color 0.2s, padding-left 0.2s;
@@ -439,12 +440,12 @@
             content: '';
             position: absolute;
             bottom: 0;
-            left: 8px;
-            right: 8px;
+            left: 7px;
+            right: 7px;
             height: 1px;
             transform: scaleY(0.5);
             transform-origin: bottom;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
             transition: opacity 0.3s;
          }
    
@@ -4281,17 +4282,18 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
             if (isDesktop) {
               // 事件委托：pointerover/pointerout 会冒泡，pointerenter/pointerleave 不冒泡。
-              // pointerover：仅在进入新 item 时触发（与旧 item 不同才调用 onItemPointerEnter）
+              // pointerover：仅在进入新 item 且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerover', (e) => {
                 if (e.pointerType !== 'mouse') return;
+                if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && item !== state.hoveredItem) onItemPointerEnter(item);
               });
 
-              // pointerout：relatedTarget 不在当前 item 内部时，才视为真正离开
-              // （items 均为纯文本节点，此检查主要防御未来可能添加的子元素）
+              // pointerout：relatedTarget 不在当前 item 内部、且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerout', (e) => {
                 if (e.pointerType !== 'mouse') return;
+                if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
               });
@@ -4392,8 +4394,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // item 位置依赖动画完成后的 layout，此处只置为 null，
             // drawDividerGlow 在真正绘制时再懒加载，确保坐标正确
             cachedItemRects = null;
-            // target rect 缓存在菜单打开/resize 时统一刷新
-            refreshTargetRects();
+            // target rect 缓存：menuAppear 动画耗时 0.3s，scale 期间 getBoundingClientRect
+            // 返回的是变换后的小尺寸，立即缓存会导致边框光效定位严重偏移。
+            // 先置 null（handleMove 会实时取 rect 降级），动画结束后再正式缓存。
+            cachedTargetRects = null;
+            setTimeout(refreshTargetRects, 330);
           }
 
           const redrawAfterScroll = createDebounce(() => {
