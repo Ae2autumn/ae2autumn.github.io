@@ -4287,7 +4287,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               applyScrollState(state.currentId);
             }
 
-            window.removeEventListener('scroll', updateActiveHeading); // 防御性移除（如有残留）
             initHeadingObserver();
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
