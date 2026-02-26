@@ -30,6 +30,7 @@
             position: relative;
             transition: background-color 0.5s ease, color 0.5s ease;
             overflow-x: hidden;
+            word-wrap: break-word;
             word-break: break-word;
             overflow-wrap: break-word;
          }
@@ -38,54 +39,40 @@
          body.dark-mode {
             background-color: #121212;
             color: #ffffff;
-            --color-border:            #333;
-            --color-title:             #fff;
-            --color-summary:           #ccc;
-            --color-date:              #999;
-            --color-tag-bg:            #333;
-            --color-tag-text:          #fff;
-            --color-pre-bg:            #2d2d2d;
-            --color-code:              #f8f8f2;
-            --color-inline-code-bg:    #3a3a3a;
-            --color-bq-border:         #555;
-            --color-bq-bg:             #2a2a2a;
-            --color-bq-text:           #ccc;
-            --color-th-bg:             #333;
-            --color-cell-border:       #444;
-            --color-link:              #6bb8ff;
-            --color-link-dotted:       rgba(107, 184, 255, 0.5);
-            --color-link-hover-border: rgba(107, 184, 255, 0.8);
-            --color-link-hover-bg:     rgba(107, 184, 255, 0.1);
-            --reveal-hi:               255, 0, 0;
-            --reveal-mid:              180, 30, 30;
+            --reveal-hi:  255, 0, 0;
+            --reveal-mid: 180, 30, 30;
          }
-
+   
          body.light-mode {
             background-color: #fff;
             color: #000;
-            --color-border:            #ddd;
-            --color-title:             #000;
-            --color-summary:           #666;
-            --color-date:              #777;
-            --color-tag-bg:            #eee;
-            --color-tag-text:          #000;
-            --color-pre-bg:            #f5f5f5;
-            --color-code:              inherit;
-            --color-inline-code-bg:    #f5f5f5;
-            --color-bq-border:         #ddd;
-            --color-bq-bg:             #f9f9f9;
-            --color-bq-text:           #666;
-            --color-th-bg:             #f5f5f5;
-            --color-cell-border:       #ddd;
-            --color-link:              #4da6ff;
-            --color-link-dotted:       rgba(77, 166, 255, 0.5);
-            --color-link-hover-border: rgba(77, 166, 255, 0.8);
-            --color-link-hover-bg:     rgba(77, 166, 255, 0.1);
-            --reveal-hi:               80, 80, 180;
-            --reveal-mid:              60, 60, 160;
+            --reveal-hi:  80, 80, 180;
+            --reveal-mid: 60, 60, 160;
          }
    
-
+         body.dark-mode .header { border-bottom-color: #333; }
+         body.dark-mode .title { color: #fff; }
+         body.dark-mode .summary { color: #ccc; }
+         body.dark-mode .date { color: #999; }
+         body.dark-mode .tag { background-color: #333; color: #fff; }
+         body.dark-mode h1, body.dark-mode h2, body.dark-mode h3,
+         body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 {
+            border-bottom-color: #333;
+            color: #fff;
+         }
+         body.dark-mode .comments { border-top-color: #333; }
+   
+         body.light-mode .header { border-bottom-color: #ddd; }
+         body.light-mode .title { color: #000; }
+         body.light-mode .summary { color: #666; }
+         body.light-mode .date { color: #777; }
+         body.light-mode .tag { background-color: #eee; color: #000; }
+         body.light-mode h1, body.light-mode h2, body.light-mode h3,
+         body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+            border-bottom-color: #ddd;
+            color: #000;
+         }
+         body.light-mode .comments { border-top-color: #ddd; }
    
          /* ==================== Reveal ::before 公共结构 ==================== */
          .side-menu-wrapper::before,
@@ -109,26 +96,26 @@
             margin-bottom: 9px;
             padding: 20px;
             padding-bottom: 3px;
-            border-bottom: 1px solid var(--color-border);
+            border-bottom: 1px solid #333;
             transition: border-color 0.5s ease;
          }
    
          .title {
             font-size: 2.5rem;
             margin-bottom: 3px;
-            color: var(--color-title);
+            color: #fff;
             transition: color 0.5s ease;
          }
    
          .summary {
             font-size: 1.1rem;
             margin-bottom: 3px;
-            color: var(--color-summary);
+            color: #ccc;
             transition: color 0.5s ease;
          }
    
          .date {
-            color: var(--color-date);
+            color: #999;
             font-size: 0.9rem;
             margin-bottom: 3px;
             transition: color 0.5s ease;
@@ -142,8 +129,8 @@
          }
    
          .tag {
-            background-color: var(--color-tag-bg);
-            color: var(--color-tag-text);
+            background-color: #333;
+            color: #fff;
             padding: 2px 10px;
             border-radius: 3px;
             font-size: 0.9rem;
@@ -169,7 +156,7 @@
          .content h4, .content h5, .content h6 {
             margin: 1.5em 0 0.5em;
             padding-bottom: 10px;
-            border-bottom: 1px solid var(--color-border);
+            border-bottom: 1px solid #333;
             transition: border-color 0.5s ease, color 0.5s ease;
          }
    
@@ -186,13 +173,14 @@
          .content pre {
             margin: 1em 0;
             padding: 1em;
-            background-color: var(--color-pre-bg);
-            color: var(--color-code);
+            background-color: #f5f5f5;
             border-radius: 4px;
             overflow-x: auto;
             white-space: pre;
             max-width: 100%;
          }
+   
+         body.dark-mode .content pre { background-color: #2d2d2d; color: #f8f8f2; }
    
          .content code {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -200,20 +188,23 @@
          }
    
          .content p code {
-            background-color: var(--color-inline-code-bg);
-            color: var(--color-code);
+            background-color: #f5f5f5;
             padding: 0.2em 0.4em;
             border-radius: 3px;
          }
    
+         body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
+   
          .content blockquote {
             margin: 1em 0;
             padding: 0.5em 1em;
-            border-left: 4px solid var(--color-bq-border);
-            background-color: var(--color-bq-bg);
-            color: var(--color-bq-text);
+            border-left: 4px solid #ddd;
+            background-color: #f9f9f9;
+            color: #666;
             border-radius: 5px;
          }
+   
+         body.dark-mode .content blockquote { border-left-color: #555; background-color: #2a2a2a; color: #ccc; }
    
          .table-wrapper { overflow-x: auto; margin: 20px 0; max-width: 100%; }
    
@@ -225,35 +216,45 @@
          }
    
          .content th, .content td {
-            border: 1px solid var(--color-cell-border);
+            border: 1px solid #ddd;
             padding: 0.5em 1em;
             text-align: left;
             max-width: 300px;
          }
    
-         .content th { background-color: var(--color-th-bg); font-weight: 600; }
+         .content th { background-color: #f5f5f5; font-weight: 600; }
+         body.dark-mode .content th { background-color: #333; border-color: #444; }
+         body.dark-mode .content td { border-color: #444; }
    
          .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
          .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
    
          .content a {
-            color: var(--color-link);
+            color: #4da6ff;
             text-decoration: none;
-            border-bottom: 1px dotted var(--color-link-dotted);
-            transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+            border-bottom: 1px dotted rgba(77, 166, 255, 0.5);
+            transition: all 0.3s ease;
          }
+   
+         body.dark-mode .content a { color: #6bb8ff; border-bottom: 1px dotted rgba(107, 184, 255, 0.5); }
    
          .content a:hover {
             color: #fff;
-            border-bottom: 1px solid var(--color-link-hover-border);
-            background-color: var(--color-link-hover-bg);
+            border-bottom: 1px solid rgba(77, 166, 255, 0.8);
+            background-color: rgba(77, 166, 255, 0.1);
+         }
+   
+         body.dark-mode .content a:hover {
+            color: #fff;
+            border-bottom: 1px solid rgba(107, 184, 255, 0.8);
+            background-color: rgba(107, 184, 255, 0.1);
          }
    
          /* ==================== 评论区 ==================== */
          .comments {
             margin-top: 50px;
             padding: 20px;
-            border-top: 1px solid var(--color-border);
+            border-top: 1px solid #333;
             transition: border-color 0.5s ease;
          }
    
@@ -370,7 +371,11 @@
          body.is-desktop .side-menu {
             border: none;
          }
-
+   
+         body.is-desktop.light-mode .side-menu {
+            border: none;
+         }
+   
          .side-menu.active {
             display: flex;
          }
@@ -400,14 +405,11 @@
    
          /* ==================== 章节项 ==================== */
          .chapter-item {
-             display: flex;
-             align-items: center;
-             min-height: 41px;
-             padding: 5px 0;
-             cursor: pointer;
-             color: rgba(255, 255, 255, 0.7);
-             transition: color 0.2s, padding-left 0.2s;
-             position: relative;
+            padding: 10px 0;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            transition: color 0.2s, padding-left 0.2s;
+            position: relative;
          }
    
          .chapter-item::after {
@@ -503,7 +505,7 @@
             background: none;
             border: none;
             cursor: pointer;
-            transition: color 0.2s, background-color 0.2s;
+            transition: all 0.2s;
             font-size: 20px;
             width: 50px;
             height: 47px;
@@ -540,7 +542,11 @@
             border-top: none;
             background: transparent;
          }
-
+   
+         body.is-desktop.light-mode .close-btn {
+            border-top: none;
+         }
+   
          body.is-desktop .close-btn::before {
             content: '';
             position: absolute;
@@ -576,16 +582,6 @@
    </head>
 
    <body class="dark-mode">
-      <!-- 防止主题闪烁（FOUC）：同步读取 localStorage，优先于服务端设置 -->
-      <script>
-        (function () {
-          var stored = localStorage.getItem('theme');
-          if (!stored) return;                       // 无覆盖，使用服务端 class
-          document.body.classList.remove('light-mode', 'dark-mode');
-          document.body.classList.add(stored + '-mode');
-        })();
-      </script>
-
       <div class="header">
          <h1 class="title">02.02</h1>
          <p class="summary">暂无简介</p>
@@ -804,10 +800,10 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           return Math.sqrt(dx * dx + dy * dy);
         }
 
-        /** 更新单个 Reveal 元素的 CSS 变量（使用预缓存的 rect，避免 reflow）。 */
-        function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect, cachedRect = null) {
+        /** 更新单个 Reveal 元素的 CSS 变量。 */
+        function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect) {
           if (!el) return;
-          const r    = cachedRect || el.getBoundingClientRect();
+          const r    = el.getBoundingClientRect();
           const dist = distFn(mouseX, mouseY, r);
           if (dist <= range) {
             el.style.setProperty('--rx', (mouseX - r.left) + 'px');
@@ -861,8 +857,8 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
 
 
         // ==================== 5. 主题 ====================
-        // 更新 body class 以匹配当前主题；
-        // menuToggle 颜色由 CSS 处理不到（按钮无 light/dark 专项规则），保持手动赋值。
+        // 颜色由 CSS 继承控制（body.dark-mode color/#fff，body.light-mode .floating-btn color/#000），
+        // 此处无需再通过 JS 设置 menuToggle 颜色。
         function applyTheme() {
           const savedTheme  = localStorage.getItem('theme');
           const configTheme = "dark";
@@ -950,45 +946,21 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
             menuSyncDebounce.call(id);  // 菜单位置 debounce，滚动停止后跟随
           }
 
-          // 使用 IntersectionObserver 替代 scroll + getBoundingClientRect，
-          // heading 进出视口时才触发，零 reflow，低端设备也不掉帧。
-          let headingObserver = null;
-
-          function setupHeadingObserver() {
-            if (headingObserver) headingObserver.disconnect();
-
-            headingObserver = new IntersectionObserver((entries) => {
-              if (state.menuDrivingArticleCount > 0 || state.isHoverScrolling) return;
-
-              // 从所有正在观察的 heading 中找第一个在视口内的
-              let first = null;
-              for (const h of allHeadings) {
-                if (visibleHeadings.has(h.id)) { first = h; break; }
-              }
-              if (!first) return;
-              if (first.id !== state.currentId || state.activeState !== 'scroll') {
-                applyScrollState(first.id);
-              }
-            }, {
-              root: null,
-              rootMargin: '0px 0px -80% 0px', // 只感应视口顶部 20% 区域
-              threshold: 0
-            });
-
-            allHeadings.forEach(h => headingObserver.observe(h));
-          }
-
-          // 记录当前可见的 heading id 集合
-          const visibleHeadings = new Set();
-
-          function setupVisibilityTracker() {
-            const tracker = new IntersectionObserver((entries) => {
-              entries.forEach(e => {
-                if (e.isIntersecting) visibleHeadings.add(e.target.id);
-                else visibleHeadings.delete(e.target.id);
-              });
-            }, { root: null, threshold: 0 });
-            allHeadings.forEach(h => tracker.observe(h));
+          function updateActiveHeading() {
+            if (allHeadings.length === 0) return;
+            if (state.menuDrivingArticleCount > 0) return;
+            if (state.isHoverScrolling) return;
+            const scrollY = window.scrollY;
+            const offset  = 80;
+            let current   = allHeadings[0];
+            for (let i = 0; i < allHeadings.length; i++) {
+              const top = allHeadings[i].getBoundingClientRect().top + scrollY;
+              if (top <= scrollY + offset) current = allHeadings[i];
+              else break;
+            }
+            if (current.id !== state.currentId || state.activeState !== 'scroll') {
+              applyScrollState(current.id);
+            }
           }
 
           // --- 状态：hover ---
@@ -1113,7 +1085,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
 
           function init(onItemClick) {
             allHeadings = Array.from(contentEl.querySelectorAll('h1, h2, h3'))
-              .filter(h => h.textContent.trim() !== '' && h.offsetParent !== null);
+              .filter(h => h.textContent.trim() !== '');
             allHeadings.forEach((el, index) => { el.id = `heading-${index}`; });
 
             const classMap = { 1: 'h1-item', 2: 'h2-item', 3: 'h3-item' };
@@ -1149,8 +1121,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
               applyScrollState(state.currentId);
             }
 
-            setupVisibilityTracker();
-            setupHeadingObserver();
+            window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
@@ -1219,15 +1190,6 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
         function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, targets, state }) {
           const ctx = canvasEl.getContext('2d');
           let cachedMenuRect  = null;
-          // target rect 缓存：resize 时失效，避免 pointermove 高频 getBoundingClientRect
-          let cachedTargetRects = null;
-
-          function buildTargetRectCache() {
-            cachedTargetRects = targets.map(t => ({
-              ...t,
-              _rect: t.el ? t.el.getBoundingClientRect() : null
-            }));
-          }
 
           // === 性能缓存 ===
           // ① item rect 缓存：菜单打开/resize/滚动结束后重建，避免 pointermove 高频 reflow
@@ -1364,11 +1326,10 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
             state.lastMouseY = e.clientY;
             const menuActive = isMenuActive();
 
-            // CSS 变量更新：使用缓存 rect，避免高频 getBoundingClientRect reflow
-            if (!cachedTargetRects) buildTargetRectCache();
-            cachedTargetRects.forEach(({ el, range, alwaysOn, distFn, _rect }) => {
+            // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
+            targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              updateRevealVar(el, e.clientX, e.clientY, range, distFn, _rect);
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn);
             });
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
@@ -1391,9 +1352,8 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           window.addEventListener('blur',           clearAllReveal);
 
           window.addEventListener('resize', () => {
-            cachedMenuRect    = null;
-            cachedItemRects   = null;
-            cachedTargetRects = null;   // layout 变化，rect 缓存失效
+            cachedMenuRect  = null;
+            cachedItemRects = null;
             resizeCanvas();
           });
 
@@ -1519,16 +1479,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           `;
         }
 
-        let _progressRafPending = false;
-        window.addEventListener('scroll', () => {
-          if (!_progressRafPending) {
-            _progressRafPending = true;
-            requestAnimationFrame(() => {
-              _progressRafPending = false;
-              updateProgress();
-            });
-          }
-        }, { passive: true });
+        window.addEventListener('scroll', updateProgress, { passive: true });
         updateProgress();
 
       </script>
