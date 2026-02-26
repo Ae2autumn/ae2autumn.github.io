@@ -4276,9 +4276,40 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          */
         function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, targets, state }) {
           const ctx = canvasEl.getContext('2d');
-          let cachedMenuRect = null;
+          let cachedMenuRect  = null;
+
+          // === 性能缓存 ===
+          // ① item rect 缓存：菜单打开/resize/滚动结束后重建，避免 pointermove 高频 reflow
+          let cachedItemRects = null;   // { lineY, lineLeft, lineRight }[]
+          // ② 颜色缓存：只在主题切换时会变，菜单打开时更新一次即可
+          let cachedColorHi   = '';
+          let cachedColorMid  = '';
+          // ③ rAF 节流：pointermove 只记坐标，实际绘制合并到下一帧
+          let rafPending      = false;
 
           const isMenuActive = () => menuWrapperEl.classList.contains('active');
+
+          /** 构建 item rect 缓存（相对于 menuRect）。 */
+          function buildItemRectCache() {
+            const menuRect = chapterListEl.getBoundingClientRect();
+            cachedItemRects = Array.from(
+              chapterListEl.querySelectorAll('.chapter-item:not(:last-child)')
+            ).map(item => {
+              const r = item.getBoundingClientRect();
+              return {
+                lineY:     r.bottom - menuRect.top,
+                lineLeft:  r.left   - menuRect.left + 8,
+                lineRight: r.right  - menuRect.left - 8,
+              };
+            });
+          }
+
+          /** 更新颜色缓存。 */
+          function updateColorCache() {
+            const style    = getComputedStyle(document.body);
+            cachedColorHi  = style.getPropertyValue('--reveal-hi').trim();
+            cachedColorMid = style.getPropertyValue('--reveal-mid').trim();
+          }
 
           function resizeCanvas() {
             if (!isMenuActive()) return;
@@ -4288,18 +4319,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             canvasEl.style.left  = r.left + 'px';
             canvasEl.style.top   = r.top  + 'px';
             cachedMenuRect = r;
+            // 菜单打开 / resize 后同步重建缓存
+            updateColorCache();
+            buildItemRectCache();
           }
 
           const redrawAfterScroll = createDebounce(() => {
             if (isMenuActive()) {
-              resizeCanvas();
+              resizeCanvas();  // 内部已包含 buildItemRectCache
               drawDividerGlow(state.lastMouseX, state.lastMouseY);
             }
           }, 150);
 
-          // 菜单内部滚动时：先清除、再防抖重绘，避免残影
+          // 菜单内部滚动时：立即清除画面，并将 item 缓存置为 null（位置已失效）；
+          // 防抖结束后 resizeCanvas 会重建缓存再重绘。
           chapterListEl.addEventListener('scroll', () => {
             if (isMenuActive()) {
+              cachedItemRects = null;
               requestAnimationFrame(() => {
                 resizeCanvas();
                 ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -4312,9 +4348,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             if (!isMenuActive()) return;
 
-            const style    = getComputedStyle(document.body);
-            const colorHi  = style.getPropertyValue('--reveal-hi').trim();
-            const colorMid = style.getPropertyValue('--reveal-mid').trim();
+            // 颜色直接读缓存，无需每帧 getComputedStyle
+            const colorHi  = cachedColorHi;
+            const colorMid = cachedColorMid;
 
             // 尺寸/位置校验，避免 resize 后使用旧 rect
             const menuRect = chapterListEl.getBoundingClientRect();
@@ -4332,12 +4368,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const radius = 80;
             if (distToRect(mouseX, mouseY, menuRect) > radius) return;
 
-            chapterListEl.querySelectorAll('.chapter-item:not(:last-child)').forEach(item => {
-              const itemRect  = item.getBoundingClientRect();
-              const lineY     = itemRect.bottom - menuRect.top;
-              const lineLeft  = itemRect.left   - menuRect.left + 8;
-              const lineRight = itemRect.right  - menuRect.left - 8;
+            // item rect 缓存兜底：正常情况下 resizeCanvas 已确保缓存存在；
+            // 若因时序问题为 null，回退到实时查询，保证绘制不跳帧。
+            const items = cachedItemRects ?? (() => {
+              buildItemRectCache();
+              return cachedItemRects;
+            })();
 
+            items.forEach(({ lineY, lineLeft, lineRight }) => {
               if (lineY < 0 || lineY > canvasEl.height) return;
 
               const nearestX = Math.max(lineLeft, Math.min(mouseX - menuRect.left, lineRight));
@@ -4367,6 +4405,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             targets.forEach(({ el }) => clearRevealVar(el));
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             canvasEl.classList.remove('active');
+            rafPending = false;
           }
 
           function handleMove(e) {
@@ -4375,16 +4414,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             state.lastMouseY = e.clientY;
             const menuActive = isMenuActive();
 
-            // 统一循环，新增 target 只需在外部 targets 数组追加一行
+            // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
               updateRevealVar(el, e.clientX, e.clientY, range, distFn);
             });
 
+            // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
             if (menuActive) {
               if (!cachedMenuRect) resizeCanvas();
               canvasEl.classList.add('active');
-              drawDividerGlow(e.clientX, e.clientY);
+              if (!rafPending) {
+                rafPending = true;
+                requestAnimationFrame(() => {
+                  rafPending = false;
+                  if (isMenuActive()) drawDividerGlow(state.lastMouseX, state.lastMouseY);
+                });
+              }
             }
           }
 
@@ -4394,7 +4440,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           window.addEventListener('blur',           clearAllReveal);
 
           window.addEventListener('resize', () => {
-            cachedMenuRect = null;
+            cachedMenuRect  = null;
+            cachedItemRects = null;
             resizeCanvas();
           });
 
