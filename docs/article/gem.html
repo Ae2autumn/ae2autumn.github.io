@@ -4156,24 +4156,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           await scrollMenuToItem(item.dataset.id);
           isHoverScrolling = false;
 
-          // 菜单居中后，主动查询鼠标当前位置决策，不等浏览器补发 pointer 事件
-          // 两行之间是同步执行，不存在异步窗口，补发事件无法插入
-          const itemAtPointer = getItemAtPointer();
+          // 居中完成后校验状态机：只要 hoveredItem 还是 item，就继续执行文章跳转。
+          // 不在这里用 elementFromPoint 判断 —— item 可能因居中滚动而物理偏离光标，
+          // 误判为"鼠标离开"会导致跳转丢失。
+          // 外部中断（移到新 item 或离开菜单）会通过 pointer 事件直接修改 hoveredItem，
+          // 状态机本身已经能可靠反映这一点。
+          if (activeState !== 'hover' || hoveredItem !== item) return;
 
-          if (itemAtPointer && itemAtPointer !== item) {
-            // 鼠标已在新 item 上 → 移交，本轮结束
-            onItemPointerEnter(itemAtPointer);
-            return;
-          }
-          if (!itemAtPointer) {
-            // 鼠标已离开菜单 → 重置，本轮结束
-            hoveredItem = null;
-            activeState = 'scroll';
-            setHighlight(currentId);
-            return;
-          }
-
-          // 鼠标仍在 item 上 → 继续执行文章跳转
+          // 继续执行文章跳转
           const targetHeading = document.getElementById(item.dataset.id);
           if (targetHeading) {
             isHoverScrolling = true;
