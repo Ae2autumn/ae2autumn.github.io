@@ -4012,12 +4012,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         function createChapterHighlighter({ contentEl, chapterListEl, isDesktop, state }) {
 
           const hoverScrollDebounce = createDebounce(onHoverScrollDebounced, 1500);
-          const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  100);
-
-          // 当前菜单滚动链的 AbortController。
-          // 每次新链启动时先 abort 旧的，旧链各续体检测到 signal.aborted 后立即退出，
-          // 保证任意时刻只有一条链在运行，彻底消除并发竞态。
-          let menuScrollAbort = null;
+          const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  400);
 
           let allHeadings = [];
 
@@ -4175,26 +4170,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
-            // 菜单已关闭时直接释放锁并退出
-            if (!sideMenuWrapper.classList.contains('active')) {
-              state.isWheelScrolling = false;
-              if (state.activeState === 'menu') state.activeState = 'scroll';
-              return;
-            }
             state.isMenuScrolling = false;
             const centerId = getCenteredItemId();
             if (!centerId) { state.isWheelScrolling = false; return; }
 
-            // 中止上一条异步链，启动新的控制器
-            if (menuScrollAbort) menuScrollAbort.abort();
-            const ctrl   = new AbortController();
-            const signal = ctrl.signal;
-            menuScrollAbort = ctrl;
-
             scrollMenuToItem(centerId).then(() => {
-              if (signal.aborted) return;
-              if (state.activeState !== 'menu' || state.hoveredItem) { state.isWheelScrolling = false; return; }
-
+              if (state.activeState !== 'menu' || state.hoveredItem) {
+                state.isWheelScrolling = false;
+                return;
+              }
               state.currentId = centerId;
               setHighlight(centerId);
 
@@ -4207,7 +4191,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 ).finally(() => {
                   state.menuDrivingArticleCount--;
                   state.isWheelScrolling = false;
-                  if (signal.aborted) return;
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
@@ -4219,7 +4202,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              if (!signal.aborted) state.isWheelScrolling = false;
+              state.isWheelScrolling = false;
             });
           }
 
@@ -4279,7 +4262,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
               state.activeState     = 'menu';
-              state.isWheelScrolling = true;    // 确保新一轮滚动持有锁
               const realtimeId = getCenteredItemId();
               if (realtimeId) setHighlight(realtimeId);
               menuScrollDebounce.call();
@@ -4657,7 +4639,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           document.body.style.setProperty('--toggle-mid', midColor);
         }
 
-        window.addEventListener('scroll', updateProgress, { passive: true });
+        window.addEventListener('scroll', () => {
+          updateProgress();
+          // 滚动时鼠标未移动，手动用上次记录的位置刷新 menuToggle 的 Reveal 变量，
+          // 避免 --rx/--ry 停留在旧值导致光效失效。
+          if (reveal) {
+            const rect = menuToggle.getBoundingClientRect();
+            updateRevealVar(menuToggle, state.lastMouseX, state.lastMouseY, 60, distToRect, rect);
+          }
+        }, { passive: true });
         updateProgress();
 
       </script>
