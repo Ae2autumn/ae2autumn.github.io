@@ -3889,7 +3889,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          * 基于 Promise 的 smooth scroll 完成检测。
          * 轮询位置变化判断滚动结束，避免硬编码超时的竞态。
          */
-        function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
+        function smoothScrollPromise(scrollFn, getPosition, timeout = 1000, shouldAbort = null) {
           return new Promise(resolve => {
             scrollFn();
             let lastPos  = getPosition();
@@ -3899,6 +3899,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const t0 = performance.now();
 
             function check() {
+              // 外部通知中止（如新一轮滚动已开始）：立即 resolve，不等位置稳定
+              if (shouldAbort && shouldAbort()) { resolve(); return; }
               const now = performance.now();
               const pos = getPosition();
               if (pos !== lastPos) {
@@ -4227,18 +4229,19 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
               const targetHeading = document.getElementById(centerId);
               if (targetHeading) {
-                // 打断上一次进行中的平滑滚动：令其立即稳定，旧 smoothScrollPromise 快速 resolve
-                // 并由世代计数识别为"已被取代"，只做计数清理，不干扰新一轮的状态
-                window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+                // 递增世代计数，旧世代的 shouldAbort() 在下一帧返回 true，立即 resolve，
+                // 不再需要等待"位置稳定"——避免新旧两次 scrollIntoView 并发竞争文章位置。
                 const gen = ++articleScrollGen;
                 state.menuDrivingArticleCount++;
                 smoothScrollPromise(
                   () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                  () => window.scrollY
+                  () => window.scrollY,
+                  1000,
+                  () => gen !== articleScrollGen  // 被新世代取代时立即中止
                 ).finally(() => {
                   state.menuDrivingArticleCount--;
                   state.isWheelScrolling = false;
-                  if (gen !== articleScrollGen) return; // 已被更新世代取代，跳过状态更新
+                  if (gen !== articleScrollGen) return; // 已被取代，跳过状态更新
                   if (state.activeState === 'menu' && !state.hoveredItem && !menuScrollDebounce.pending) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
