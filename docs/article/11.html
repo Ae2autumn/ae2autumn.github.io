@@ -1360,7 +1360,10 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
             if (!cachedTargetRects) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects.get(el) ?? null);
+              // alwaysOn 元素（menuToggle）会因 display:none 导致缓存 rect 失效，
+              // 直接实时获取，开销可忽略（fixed 元素，每次 pointermove 只算一次）。
+              const rect = alwaysOn ? null : (cachedTargetRects.get(el) ?? null);
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
@@ -1503,15 +1506,7 @@ Title:原生家庭的创伤总是令人难以置信<br><br>
           document.body.style.setProperty('--toggle-mid', midColor);
         }
 
-        window.addEventListener('scroll', () => {
-          updateProgress();
-          // 滚动时鼠标未移动，手动用上次记录的位置刷新 menuToggle 的 Reveal 变量，
-          // 避免 --rx/--ry 停留在旧值导致光效失效。
-          if (reveal) {
-            const rect = menuToggle.getBoundingClientRect();
-            updateRevealVar(menuToggle, state.lastMouseX, state.lastMouseY, 60, distToRect, rect);
-          }
-        }, { passive: true });
+        window.addEventListener('scroll', updateProgress, { passive: true });
         updateProgress();
 
       </script>
