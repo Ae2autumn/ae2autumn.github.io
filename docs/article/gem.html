@@ -40,7 +40,7 @@
          }
    
          body {
-            background-color: #0d0d0d;
+            background-color: #121212;
             color: #fff;
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -3966,7 +3966,13 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         // ==================== 3. 桌面/移动端检测 ====================
         const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-        if (isDesktop) document.body.classList.add('is-desktop');
+        if (isDesktop) {
+          document.body.classList.add('is-desktop');
+        } else {
+          // 移动端完全不使用 Canvas，直接从 DOM 移除以释放内存
+          const _mobileCanvas = document.getElementById('menuRevealCanvas');
+          if (_mobileCanvas) _mobileCanvas.remove();
+        }
 
 
         // ==================== 4. 共享状态对象 ====================
@@ -4002,6 +4008,28 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
 
         // ==================== 6. 章节高亮器 ====================
+
+        /**
+         * 菜单驱动文章滚动的公共路径：
+         *   - 维护 menuDrivingArticleCount，防止滚动期间 updateActiveHeading 干扰高亮
+         *   - 滚动结束后调用 onFinally(scrolled: boolean) 以便调用方继续状态机流转
+         * @param {string}   id        目标 heading 的 id
+         * @param {function} onFinally (scrolled: boolean) => void，在 finally 块中调用
+         */
+        function driveArticleScroll(id, onFinally) {
+          const heading = document.getElementById(id);
+          if (!heading) { onFinally(false); return; }
+          state.menuDrivingArticleCount++;
+          smoothScrollPromise(
+            () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+            () => window.scrollY
+          ).finally(() => {
+            state.menuDrivingArticleCount--;
+            onFinally(true);
+          });
+        }
+
+
         /**
          * 封装了"章节 item 构建 + 高亮状态机"的全部逻辑。
          * 对外暴露三个接口：
@@ -4111,7 +4139,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
 
-          async function onHoverScrollDebounced(item) {
+          function onHoverScrollDebounced(item) {
             if (state.activeState !== 'hover' || state.hoveredItem !== item) return;
             setHighlight(item.dataset.id);
 
@@ -4123,32 +4151,17 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 居中后校验状态：外部中断会直接修改 state，这里只需读取即可
             if (state.activeState !== 'hover' || state.hoveredItem !== item) return;
 
-            const targetHeading = document.getElementById(item.dataset.id);
-            if (targetHeading) {
-              state.isHoverScrolling = true;
-              state.menuDrivingArticleCount++;
-              try {
-                await smoothScrollPromise(
-                  () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                  () => window.scrollY
-                );
-              } finally {
-                state.menuDrivingArticleCount--;
-                // currentId 先于 isHoverScrolling 更新，防止 onItemPointerLeave 读到旧值
-                if (state.activeState === 'hover' && state.hoveredItem === item) {
-                  state.currentId = item.dataset.id;
-                }
-                state.isHoverScrolling = false;
-                if (state.activeState === 'hover' && state.hoveredItem === item) {
-                  resolvePointerAfterScroll(item);
-                }
+            state.isHoverScrolling = true;
+            driveArticleScroll(item.dataset.id, () => {
+              // currentId 先于 isHoverScrolling 更新，防止 onItemPointerLeave 读到旧值
+              if (state.activeState === 'hover' && state.hoveredItem === item) {
+                state.currentId = item.dataset.id;
               }
-            } else {
               state.isHoverScrolling = false;
               if (state.activeState === 'hover' && state.hoveredItem === item) {
                 resolvePointerAfterScroll(item);
               }
-            }
+            });
           }
 
           function onItemPointerEnter(item) {
@@ -4184,12 +4197,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
               const targetHeading = document.getElementById(centerId);
               if (targetHeading) {
-                state.menuDrivingArticleCount++;
-                smoothScrollPromise(
-                  () => targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-                  () => window.scrollY
-                ).finally(() => {
-                  state.menuDrivingArticleCount--;
+                driveArticleScroll(centerId, () => {
                   state.isWheelScrolling = false;
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
@@ -4228,6 +4236,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
               listItem.addEventListener('click', (e) => {
                 e.stopPropagation();
+                state.currentId = heading.id;   // 立即同步，避免菜单关闭后高亮回退到旧章节
                 heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 onItemClick?.();
               });
@@ -4311,6 +4320,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
            */
           function cancelHover() {
             hoverScrollDebounce.cancel();
+            state.isHoverScrolling = false;   // 确保 async 跳转中途关闭菜单时不留脏状态
             state.hoveredItem = null;
             if (state.activeState === 'hover') {
               state.activeState = 'scroll';
@@ -4413,7 +4423,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // 菜单内部滚动时：立即清除画面，并将 item 缓存置为 null（位置已失效）；
           // 防抖结束后 resizeCanvas 会重建缓存再重绘。
-          chapterListEl.addEventListener('scroll', () => {
+          // 注意：此 handler 由 openMenu/closeMenu 通过 attachScrollListener /
+          //       detachScrollListener 管理，而非在 initRevealEffect 内直接绑定，
+          //       以便菜单关闭后彻底解除，同时保留 menuToggle 的 pointermove Reveal。
+          function _onChapterScroll() {
             if (isMenuActive()) {
               cachedItemRects = null;
               requestAnimationFrame(() => {
@@ -4421,7 +4434,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               });
               redrawAfterScroll.call();
             }
-          }, { passive: true });
+          }
+
+          function attachScrollListener() {
+            chapterListEl.addEventListener('scroll', _onChapterScroll, { passive: true });
+          }
+
+          function detachScrollListener() {
+            chapterListEl.removeEventListener('scroll', _onChapterScroll);
+            redrawAfterScroll.cancel();   // 取消未触发的防抖，避免菜单关闭后残留重绘
+          }
 
           function drawDividerGlow(mouseX, mouseY) {
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -4527,7 +4549,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             resizeCanvas();
           }
 
-          return { resizeCanvas, clearAllReveal, handleResize };
+          return { resizeCanvas, clearAllReveal, handleResize, attachScrollListener, detachScrollListener };
         }
 
 
@@ -4547,8 +4569,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
           menuToggle.style.display = 'none';
+          state.isWheelScrolling = false;   // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
           highlighter.syncToMenu();
-          if (isDesktop) reveal.resizeCanvas();
+          if (isDesktop) {
+            reveal.resizeCanvas();
+            reveal.attachScrollListener();
+          }
         }
 
         function closeMenu() {
@@ -4556,7 +4582,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          if (isDesktop) reveal.clearAllReveal();
+          if (isDesktop) {
+            reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
+            reveal.clearAllReveal();
+          }
           highlighter.cancelHover();
         }
 
@@ -4612,27 +4641,34 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         });
 
         // ==================== 9. 滚动进度指示器（保持原样）====================
+        // 缓存上次写入的 redValue，避免值未变时重复触发 style 写入
+        let _lastRedValue = -1;
+
         function updateProgress() {
           const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
           const scrollPercent  = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
           const redValue       = Math.floor(scrollPercent * 255);
-          menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
-          menuToggle.style.boxShadow       = 'none';
 
-          const isLight = document.body.classList.contains('light-mode');
-          const t = 1 - scrollPercent;
+          if (redValue !== _lastRedValue) {
+            _lastRedValue = redValue;
+            menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
+            menuToggle.style.boxShadow       = 'none';
+          }
+
+          const isLight    = document.body.classList.contains('light-mode');
+          const fadeRatio  = 1 - scrollPercent;
           let hiColor, midColor;
           if (isLight) {
-            const r  = Math.round(20  + 60  * t);
-            const g  = Math.round(20  + 60  * t);
-            const b  = Math.round(60  + 120 * t);
-            const r2 = Math.round(15  + 45  * t);
-            const b2 = Math.round(50  + 110 * t);
+            const r  = Math.round(20  + 60  * fadeRatio);
+            const g  = Math.round(20  + 60  * fadeRatio);
+            const b  = Math.round(60  + 120 * fadeRatio);
+            const r2 = Math.round(15  + 45  * fadeRatio);
+            const b2 = Math.round(50  + 110 * fadeRatio);
             hiColor  = `${r}, ${g}, ${b}`;
             midColor = `${r2}, ${g}, ${b2}`;
           } else {
-            const gb    = Math.round(255 * (1 - t));
-            const midR  = Math.round(180 * t + 255 * (1 - t));
+            const gb    = Math.round(255 * (1 - fadeRatio));
+            const midR  = Math.round(180 * fadeRatio + 255 * (1 - fadeRatio));
             const midGB = Math.round(gb * 0.5);
             hiColor  = `255, ${gb}, ${gb}`;
             midColor = `${midR}, ${midGB}, ${midGB}`;
