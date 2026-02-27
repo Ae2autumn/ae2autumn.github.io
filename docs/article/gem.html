@@ -617,7 +617,7 @@
       <div class="header">
          <h1 class="title">gem</h1>
          <p class="summary">暂无简介</p>
-         <div class="date">2026-02-26</div>
+         <div class="date">2026-02-27</div>
          <div class="tags">
          </div>
       </div>
@@ -4020,7 +4020,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         function createChapterHighlighter({ contentEl, chapterListEl, isDesktop, state }) {
 
           const hoverScrollDebounce = createDebounce(onHoverScrollDebounced, 1500);
-          const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  400);
+          const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  100);
 
           let allHeadings = [];
 
@@ -4096,17 +4096,26 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
            * 不触发回调的"已过线"状态（Observer 只在状态变化时触发）。
            */
           const HEADING_OFFSET = 80;
-          let passedHeadings = new Set(); // 记录所有已过 80px 线的 heading
 
+          /**
+           * Observer 只负责触发时机（heading 穿越 80px 线时），不依赖回调里的
+           * boundingClientRect 做状态判断——那个值反映的是回调执行时的位置，
+           * 快速滚动时与实际穿越时刻的位置不符，会导致状态紊乱。
+           * 每次触发时做一次实时扫描，调用次数远少于 scroll 事件，性能可接受。
+           */
           function resolveCurrentHeading() {
             if (allHeadings.length === 0) return;
             if (state.menuDrivingArticleCount > 0) return;
             if (state.isHoverScrolling) return;
 
-            // 从 passedHeadings 中找文档顺序最后一个；若无则取第一个 heading
+            // 实时扫描：找最后一个 top < HEADING_OFFSET 的 heading
             let current = allHeadings[0];
-            for (let i = allHeadings.length - 1; i >= 0; i--) {
-              if (passedHeadings.has(allHeadings[i])) { current = allHeadings[i]; break; }
+            for (let i = 0; i < allHeadings.length; i++) {
+              if (allHeadings[i].getBoundingClientRect().top < HEADING_OFFSET) {
+                current = allHeadings[i];
+              } else {
+                break;
+              }
             }
             if (current.id !== state.currentId || state.activeState !== 'scroll') {
               applyScrollState(current.id);
@@ -4114,21 +4123,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           }
 
           function initHeadingObserver() {
-            // 初始扫描：把页面加载时已经过线的 heading 加入 passedHeadings
-            allHeadings.forEach(h => {
-              if (h.getBoundingClientRect().top < HEADING_OFFSET) passedHeadings.add(h);
-            });
-
-            const observer = new IntersectionObserver((entries) => {
-              entries.forEach(entry => {
-                if (!entry.isIntersecting && entry.boundingClientRect.top < HEADING_OFFSET) {
-                  // heading 已向上滚过 80px 线
-                  passedHeadings.add(entry.target);
-                } else {
-                  // heading 回到 80px 线以下（向下滚动时）
-                  passedHeadings.delete(entry.target);
-                }
-              });
+            const observer = new IntersectionObserver(() => {
+              // 回调仅作触发器，实际判断由 resolveCurrentHeading 实时计算
               resolveCurrentHeading();
             }, {
               root:       null,
