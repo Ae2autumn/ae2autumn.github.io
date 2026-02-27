@@ -4165,18 +4165,18 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             state.hoveredItem = null;
             state.activeState = 'scroll';
             setHighlight(state.currentId);
-            // 仅当目标 item 不在可视区内时才触发菜单滚动，避免无意义的 smooth scroll 抖动
-            const targetItem = chapterListEl.querySelector(`.chapter-item[data-id="${state.currentId}"]`);
-            if (targetItem) {
-              const itemRect      = targetItem.getBoundingClientRect();
-              const containerRect = chapterListEl.getBoundingClientRect();
-              const isVisible     = itemRect.top >= containerRect.top && itemRect.bottom <= containerRect.bottom;
-              if (!isVisible) scrollMenuToItem(state.currentId);
-            }
+            scrollMenuToItem(state.currentId);
           }
 
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
+            // 菜单已关闭时（display:none 导致 rect 全为 0）直接释放锁并退出，
+            // 防止 getCenteredItemId 错误返回第一项，进而驱动文章滚回开头。
+            if (!isMenuActive()) {
+              state.isWheelScrolling = false;
+              if (state.activeState === 'menu') state.activeState = 'scroll';
+              return;
+            }
             state.isMenuScrolling = false;
             const centerId = getCenteredItemId();
             if (!centerId) { state.isWheelScrolling = false; return; }
@@ -4311,12 +4311,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (state.currentId) scrollMenuToItem(state.currentId, 'instant');
           }
 
-          /** 菜单关闭时调用：取消悬停状态，回退到 scroll。 */
+          /** 菜单关闭时调用：取消悬停状态，回退到 scroll。
+           *  注：menuScrollDebounce 不在此处取消——onMenuScrollDebounced 的 finally
+           *  负责 isWheelScrolling 复位与 activeState 回退；若此处强制取消，
+           *  isWheelScrolling 会永久卡在 true，导致 pointer 事件全部被屏蔽，
+           *  并在菜单关闭后触发意外的高亮回滚。
+           */
           function cancelHover() {
             hoverScrollDebounce.cancel();
-            menuScrollDebounce.cancel();
             state.hoveredItem = null;
-            if (state.activeState === 'hover' || state.activeState === 'menu') {
+            if (state.activeState === 'hover') {
               state.activeState = 'scroll';
               setHighlight(state.currentId);
             }
