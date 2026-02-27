@@ -4014,6 +4014,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const hoverScrollDebounce = createDebounce(onHoverScrollDebounced, 1500);
           const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  100);
 
+          // 并发执行计数：记录有多少个 onMenuScrollDebounced 实例正在异步运行。
+          // 用于在 finally 中判断"当前是否为最后一个执行者"，防止中间态提前重置 activeState。
+          let menuScrollExecuting = 0;
+
           let allHeadings = [];
 
           // 主动查询当前鼠标位置下是否有 chapter-item（不依赖浏览器补发的 pointer 事件）
@@ -4181,9 +4185,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const centerId = getCenteredItemId();
             if (!centerId) { state.isWheelScrolling = false; return; }
 
+            menuScrollExecuting++;
             scrollMenuToItem(centerId).then(() => {
               if (state.activeState !== 'menu' || state.hoveredItem) {
                 state.isWheelScrolling = false;
+                menuScrollExecuting--;
                 return;
               }
               state.currentId = centerId;
@@ -4198,18 +4204,24 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 ).finally(() => {
                   state.menuDrivingArticleCount--;
                   state.isWheelScrolling = false;
-                  if (state.activeState === 'menu' && !state.hoveredItem && !menuScrollDebounce.pending) {
+                  menuScrollExecuting--;
+                  // 只有当前是最后一个执行者，且没有新的防抖排队时，才回退 activeState。
+                  // 防止并发执行中的中间者提前重置状态，导致后续执行者的 .then() 守卫误判退出。
+                  if (state.activeState === 'menu' && !state.hoveredItem &&
+                      menuScrollExecuting === 0 && !menuScrollDebounce.pending) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
                 state.isWheelScrolling = false;
+                menuScrollExecuting--;
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              // scrollMenuToItem 失败时确保滚轮锁一定被释放
+              // scrollMenuToItem 失败时确保计数器与滚轮锁一定被释放
+              menuScrollExecuting--;
               state.isWheelScrolling = false;
             });
           }
