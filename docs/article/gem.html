@@ -4190,8 +4190,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const myGen = menuScrollGeneration;
 
             scrollMenuToItem(centerId).then(() => {
-              // 已被后来者取代：释放锁，状态交给新代际处理
-              if (myGen !== menuScrollGeneration) { state.isWheelScrolling = false; return; }
+              // 已被后来者取代：直接退出，不动 isWheelScrolling。
+              // isWheelScrolling 由最新代际在自己的异步链末尾统一释放；
+              // 若此处提前释放，会在新代际防抖触发前产生空窗期，
+              // 导致 pointer 事件绕过守卫、鼠标移出时高亮错误回退。
+              if (myGen !== menuScrollGeneration) { return; }
               if (state.activeState !== 'menu' || state.hoveredItem) { state.isWheelScrolling = false; return; }
 
               state.currentId = centerId;
