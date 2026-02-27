@@ -4507,7 +4507,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (!cachedTargetRects && !isAnimating) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects.get(el) ?? null);
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects?.get(el) ?? null);
             });
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove

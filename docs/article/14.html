@@ -1407,7 +1407,7 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
             if (!cachedTargetRects && !isAnimating) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects.get(el) ?? null);
+              updateRevealVar(el, e.clientX, e.clientY, range, distFn, cachedTargetRects?.get(el) ?? null);
             });
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
