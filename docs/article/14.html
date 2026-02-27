@@ -1086,7 +1086,8 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
             if (!centerId) { state.isWheelScrolling = false; return; }
 
             // 捕获本次代际，后续所有异步续体通过对比判断是否已被取代
-            const myGen = ++menuScrollGeneration;
+            // 捕获本次代际（由 scroll 监听器负责推进）；后续所有异步续体通过对比判断是否已被取代
+            const myGen = menuScrollGeneration;
 
             scrollMenuToItem(centerId).then(() => {
               // 已被后来者取代：释放锁，状态交给新代际处理
@@ -1178,6 +1179,8 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
               state.activeState     = 'menu';
+              menuScrollGeneration++;           // 推进代际，立即作废任何正在运行的异步链
+              state.isWheelScrolling = true;    // 确保新一轮滚动持有锁
               const realtimeId = getCenteredItemId();
               if (realtimeId) setHighlight(realtimeId);
               menuScrollDebounce.call();
