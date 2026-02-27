@@ -4014,10 +4014,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const hoverScrollDebounce = createDebounce(onHoverScrollDebounced, 1500);
           const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  100);
 
-          // 代际计数器：每次 onMenuScrollDebounced 开始时递增并捕获当前值。
-          // 异步续体通过对比 myGen 与 menuScrollGeneration 判断自己是否已被后来者取代。
-          // 被取代的调用直接放弃，只释放 isWheelScrolling，状态由最新一次统一收尾。
-          let menuScrollGeneration = 0;
+          // 当前菜单滚动链的 AbortController。
+          // 每次新链启动时先 abort 旧的，旧链各续体检测到 signal.aborted 后立即退出，
+          // 保证任意时刻只有一条链在运行，彻底消除并发竞态。
+          let menuScrollAbort = null;
 
           let allHeadings = [];
 
@@ -4185,16 +4185,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const centerId = getCenteredItemId();
             if (!centerId) { state.isWheelScrolling = false; return; }
 
-            // 捕获本次代际，后续所有异步续体通过对比判断是否已被取代
-            // 捕获本次代际（由 scroll 监听器负责推进）；后续所有异步续体通过对比判断是否已被取代
-            const myGen = menuScrollGeneration;
+            // 中止上一条异步链，启动新的控制器
+            if (menuScrollAbort) menuScrollAbort.abort();
+            const ctrl   = new AbortController();
+            const signal = ctrl.signal;
+            menuScrollAbort = ctrl;
 
             scrollMenuToItem(centerId).then(() => {
-              // 已被后来者取代：直接退出，不动 isWheelScrolling。
-              // isWheelScrolling 由最新代际在自己的异步链末尾统一释放；
-              // 若此处提前释放，会在新代际防抖触发前产生空窗期，
-              // 导致 pointer 事件绕过守卫、鼠标移出时高亮错误回退。
-              if (myGen !== menuScrollGeneration) { return; }
+              if (signal.aborted) return;
               if (state.activeState !== 'menu' || state.hoveredItem) { state.isWheelScrolling = false; return; }
 
               state.currentId = centerId;
@@ -4209,8 +4207,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 ).finally(() => {
                   state.menuDrivingArticleCount--;
                   state.isWheelScrolling = false;
-                  // 再次检查：文章滚动期间可能又有新的菜单滚动发生
-                  if (myGen !== menuScrollGeneration) return;
+                  if (signal.aborted) return;
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
@@ -4222,7 +4219,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              state.isWheelScrolling = false;
+              if (!signal.aborted) state.isWheelScrolling = false;
             });
           }
 
@@ -4282,7 +4279,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
               state.activeState     = 'menu';
-              menuScrollGeneration++;           // 推进代际，立即作废任何正在运行的异步链
               state.isWheelScrolling = true;    // 确保新一轮滚动持有锁
               const realtimeId = getCenteredItemId();
               if (realtimeId) setHighlight(realtimeId);
