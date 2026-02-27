@@ -4014,9 +4014,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const hoverScrollDebounce = createDebounce(onHoverScrollDebounced, 1500);
           const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  100);
 
-          // 并发执行计数：记录有多少个 onMenuScrollDebounced 实例正在异步运行。
-          // 用于在 finally 中判断"当前是否为最后一个执行者"，防止中间态提前重置 activeState。
-          let menuScrollExecuting = 0;
+          // 代际计数器：每次 onMenuScrollDebounced 开始时递增并捕获当前值。
+          // 异步续体通过对比 myGen 与 menuScrollGeneration 判断自己是否已被后来者取代。
+          // 被取代的调用直接放弃，只释放 isWheelScrolling，状态由最新一次统一收尾。
+          let menuScrollGeneration = 0;
 
           let allHeadings = [];
 
@@ -4174,8 +4175,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
-            // 菜单已关闭时（display:none 导致 rect 全为 0）直接释放锁并退出，
-            // 防止 getCenteredItemId 错误返回第一项，进而驱动文章滚回开头。
+            // 菜单已关闭时直接释放锁并退出
             if (!sideMenuWrapper.classList.contains('active')) {
               state.isWheelScrolling = false;
               if (state.activeState === 'menu') state.activeState = 'scroll';
@@ -4185,13 +4185,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const centerId = getCenteredItemId();
             if (!centerId) { state.isWheelScrolling = false; return; }
 
-            menuScrollExecuting++;
+            // 捕获本次代际，后续所有异步续体通过对比判断是否已被取代
+            const myGen = ++menuScrollGeneration;
+
             scrollMenuToItem(centerId).then(() => {
-              if (state.activeState !== 'menu' || state.hoveredItem) {
-                state.isWheelScrolling = false;
-                menuScrollExecuting--;
-                return;
-              }
+              // 已被后来者取代：释放锁，状态交给新代际处理
+              if (myGen !== menuScrollGeneration) { state.isWheelScrolling = false; return; }
+              if (state.activeState !== 'menu' || state.hoveredItem) { state.isWheelScrolling = false; return; }
+
               state.currentId = centerId;
               setHighlight(centerId);
 
@@ -4204,24 +4205,19 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 ).finally(() => {
                   state.menuDrivingArticleCount--;
                   state.isWheelScrolling = false;
-                  menuScrollExecuting--;
-                  // 只有当前是最后一个执行者，且没有新的防抖排队时，才回退 activeState。
-                  // 防止并发执行中的中间者提前重置状态，导致后续执行者的 .then() 守卫误判退出。
-                  if (state.activeState === 'menu' && !state.hoveredItem &&
-                      menuScrollExecuting === 0 && !menuScrollDebounce.pending) {
+                  // 再次检查：文章滚动期间可能又有新的菜单滚动发生
+                  if (myGen !== menuScrollGeneration) return;
+                  if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
                 state.isWheelScrolling = false;
-                menuScrollExecuting--;
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              // scrollMenuToItem 失败时确保计数器与滚轮锁一定被释放
-              menuScrollExecuting--;
               state.isWheelScrolling = false;
             });
           }
