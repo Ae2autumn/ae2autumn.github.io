@@ -4172,7 +4172,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           function onMenuScrollDebounced() {
             // 菜单已关闭时（display:none 导致 rect 全为 0）直接释放锁并退出，
             // 防止 getCenteredItemId 错误返回第一项，进而驱动文章滚回开头。
-            if (!isMenuActive()) {
+            if (!sideMenuWrapper.classList.contains('active')) {
               state.isWheelScrolling = false;
               if (state.activeState === 'menu') state.activeState = 'scroll';
               return;
