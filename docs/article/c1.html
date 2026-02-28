@@ -100,8 +100,8 @@
          .floating-btn::before {
             content: '';
             position: absolute;
-            inset: -1px;
-            padding: 1px;
+            inset: -2px;
+            padding: 2px;
             -webkit-mask:
                linear-gradient(#fff 0 0) content-box,
                linear-gradient(#fff 0 0);
@@ -293,7 +293,7 @@
             cursor: pointer;
             font-size: 24px;
             z-index: 1000;
-            border: 1px solid rgba(255, 255, 255, 0.12); /* 移动端可见 */
+            border: 2px solid rgba(255, 255, 255, 0.12); /* 移动端可见 */
             outline: none;
             color: #fff;
             background: rgba(20, 20, 20, 0.55);
@@ -376,7 +376,7 @@
             display: none;
             flex-direction: row;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            border: 2px solid rgba(255, 255, 255, 0.18);
             pointer-events: auto;
             transform: translateZ(0);
             isolation: isolate;
@@ -420,8 +420,8 @@
             z-index: 7;
             border-radius: 11px;
             background: rgba(18, 18, 18, 0.55);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
          }
          body.light-mode .menu-layer-base {
             background: rgba(255, 255, 255, 0.55);
@@ -431,10 +431,10 @@
          .menu-layer-light {
             z-index: 8;
             background: radial-gradient(
-               circle at var(--lx, -9999px) var(--ly, -9999px),
-               rgba(var(--reveal-hi,  255, 0, 0), 0.09)  0%,
-               rgba(var(--reveal-mid, 180, 30, 30), 0.04) 40%,
-               transparent 70%
+               400px circle at var(--lx, -9999px) var(--ly, -9999px),
+               rgba(var(--reveal-hi,  255, 0, 0), 0.055) 0%,
+               rgba(var(--reveal-mid, 180, 30, 30), 0.02) 50%,
+               transparent 100%
             );
          }
 
@@ -536,7 +536,7 @@
             display: flex;
             flex-direction: column;
             background: rgba(0, 0, 0, 0.2);
-            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: 2px solid rgba(255, 255, 255, 0.15);
             transition: background 0.5s ease, border-color 0.5s ease;
             flex-shrink: 0;
          }
@@ -604,7 +604,7 @@
             background: rgba(0, 0, 0, 0.15);
             color: rgba(255, 255, 255, 0.6);
             border: none;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
             font-size: 16px;
             transition: background 0.2s, color 0.2s, border-color 0.2s;
@@ -3419,9 +3419,9 @@ Fu~fu~<br>
               const [h, s, l] = rgbToHsl(rA, gA, bA);
 
               // 相对亮度 ±45%（HSL L 通道）
-              const lHi   = clamp(l + 45, 0, 100);
-              const lDark = clamp(l - 45, 0, 100);
-              const lMid  = clamp(lHi - 20, 0, 100);
+              const lHi   = clamp(l + 15, 0, 100);
+              const lDark = clamp(l - 15, 0, 100);
+              const lMid  = clamp(lHi - 8, 0, 100);
               const sDim  = s * 0.82;
 
               const rgbHi    = hslToRgb(h, s,    lHi);
