@@ -4812,8 +4812,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 if (!_prevMenuActive) clearRevealVar(el);
                 return;
               }
-              // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
-              const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
+              // 统一从缓存读取 rect；缓存缺失（含动画期间 null）时降级到实时查询
+              const rect = cachedTargetRects?.get(el) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
             _prevMenuActive = menuActive;
