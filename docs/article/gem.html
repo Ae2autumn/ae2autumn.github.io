@@ -419,13 +419,14 @@
             background: rgba(0, 0, 0, 0.03);
          }
 
-         /* 第4层（z-index:8）：内部体积光，跟随鼠标（复用父级 --rx/ry 变量，无需新增事件监听）*/
+         /* 第4层（z-index:8）：内部体积光，跟随鼠标（复用父级 --rx/ry 变量，无需新增事件监听）
+            不指定圆半径 → 浏览器以 farthest-corner 为准，自然衰减无硬边界 */
          .menu-layer-light {
             z-index: 8;
             background: radial-gradient(
-               150px circle at var(--rx, -9999px) var(--ry, -9999px),
-               rgba(var(--reveal-hi,  255, 0, 0), 0.11),
-               rgba(var(--reveal-mid, 180, 30, 30), 0.055) 45%,
+               circle at var(--rx, -9999px) var(--ry, -9999px),
+               rgba(var(--reveal-hi,  255, 0, 0), 0.09)  0%,
+               rgba(var(--reveal-mid, 180, 30, 30), 0.04) 40%,
                transparent 70%
             );
          }
@@ -648,7 +649,8 @@
 
          /* ==================== floating-btn 悬停发光（M2 移除 boxShadow='none' 后生效）==================== */
          body.is-desktop .floating-btn:hover {
-            box-shadow: 0 0 18px 5px rgba(var(--toggle-hi, 255, 0, 0), 0.40),
+            /* --toggle-glow 由 JS updateProgress 预构建完整 rgba() 字符串写入，避免 rgba(var(), alpha) 解析歧义 */
+            box-shadow: 0 0 20px 6px var(--toggle-glow, rgba(255, 0, 0, 0.45)),
                         0 6px 24px rgba(0, 0, 0, 0.45);
             transition: box-shadow 0.25s ease;
          }
@@ -4715,13 +4717,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
               const [h, s, l] = rgbToHsl(rA, gA, bA);
 
-              // HSL 偏移：+17% 亮度 → 光效色；-17% 亮度 → 深色层；饱和度略降 → mid/right
-              const lHi    = clamp(l + 17, 0, 100);
-              const lDark  = clamp(l - 17, 0, 100);
+              // HSL 偏移：+45% 亮度 → 光效高亮色；-45% 亮度 → 深色层
+              // mid 比 hi 低 20% L，制造肉眼可辨的渐变层次；饱和度略降使过渡更自然
+              const lHi    = clamp(l + 45, 0, 100);
+              const lMid   = clamp(lHi - 20, 0, 100);  // 明显低于 hi，确保渐变可见
+              const lDark  = clamp(l - 45, 0, 100);
               const sDim   = s * 0.82;
 
-              const rgbHi    = hslToRgb(h, s,   lHi);
-              const rgbMid   = hslToRgb(h, sDim, lHi);
+              const rgbHi    = hslToRgb(h, s,    lHi);
+              const rgbMid   = hslToRgb(h, sDim, lMid); // 低亮度版，与 hi 形成对比
               const rgbDarkL = hslToRgb(h, s,   lDark);
               const rgbDarkR = hslToRgb(h, sDim, clamp(lDark + 3, 0, 100));
 
@@ -4729,6 +4733,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               document.body.style.setProperty('--reveal-mid',      rgbMid.join(', '));
               document.body.style.setProperty('--mica-dark-left',  rgbDarkL.join(', '));
               document.body.style.setProperty('--mica-dark-right', rgbDarkR.join(', '));
+
+              // 设计文档：Mica 联动 floating-btn 颜色
+              // --toggle-hi → Mica 亮色端（hi），--toggle-mid → Mica 深色端（dark-left）
+              // 同步更新 --toggle-glow 供 :hover box-shadow 使用
+              const hiStr   = rgbHi.join(', ');
+              const darkStr = rgbDarkL.join(', ');
+              document.body.style.setProperty('--toggle-hi',   hiStr);
+              document.body.style.setProperty('--toggle-mid',  darkStr);
+              document.body.style.setProperty('--toggle-glow', `rgba(${hiStr}, 0.45)`);
             } catch (_) {
               // 静默降级：跨域 SecurityError 或其他异常，保留 CSS 变量现有默认值
             }
@@ -4771,13 +4784,13 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
         async function openMenu() {
+          state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
+          // M5 Fix3: 必须在菜单显示之前采样，否则菜单覆盖视口，只能采到菜单自身的灰色
+          await micaSampler.sample();
           sideMenuWrapper.classList.add('active');
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
-          menuToggle.style.display = 'none';    // 同步隐藏按钮，防止重复点击
-          state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
-          // M5: Mica 采样（写 --reveal-hi/mid 等变量）；必须在 reveal.resizeCanvas() 之前
-          await micaSampler.sample();
+          menuToggle.style.display = 'none';
           highlighter.syncToMenu();
           if (isDesktop) {
             reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
@@ -4882,8 +4895,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             midColor = `${midR}, ${midGB}, ${midGB}`;
           }
           // 直接写 CSS 变量，避免每帧重新解析整段样式规则
-          document.body.style.setProperty('--toggle-hi',  hiColor);
-          document.body.style.setProperty('--toggle-mid', midColor);
+          // --toggle-glow: 预构建完整 rgba 字符串，供 :hover box-shadow 直接使用（避免 rgba(var(),x) 解析歧义）
+          document.body.style.setProperty('--toggle-hi',   hiColor);
+          document.body.style.setProperty('--toggle-mid',  midColor);
+          document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
         }
 
         window.addEventListener('scroll', updateProgress, { passive: true });
