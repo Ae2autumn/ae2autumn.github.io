@@ -560,7 +560,6 @@
             z-index: 11;            /* 同上，覆盖在 .menu-layer-* 之上 */
             width: 50px;
             height: 100%;
-            min-height: 100%;
             display: flex;
             flex-direction: column;
             /* C3: 使用 --mica-dark-right，fallback 与原 rgba(0,0,0,0.2) 一致 */
@@ -3982,7 +3981,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          */
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
           return new Promise(resolve => {
+            const before = getPosition();
             scrollFn();
+            // B6: 滚动前后位置相同（已在目标位置），直接 resolve，跳过轮询等待
+            if (getPosition() === before) { resolve(); return; }
             let lastPos  = getPosition();
             let stableAt = null;  // 首次位置稳定的时间戳
             let started  = false;
@@ -4056,7 +4058,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           el.style.setProperty('--ro', '0');
         }
 
-        // ==================== 1b. 颜色工具函数（供 Mica 采样器等多处复用）====================
+        // ==================== 1b. 颜色工具函数（HSL / chroma，供 Mica 采样器使用）====================
+        // 注：这些函数与 Reveal 效果无关，使用者是第 9 节 createMicaSampler。
+        //     因为被 createMicaSampler 闭包捕获，须在其之前定义，故放在此处。
 
         function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -4188,6 +4192,19 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           let allItems = [];
           // 缓存当前持有 .current / .hovered 的 DOM 元素，避免每次 setHighlight 调用 querySelectorAll
           let _currentHighlightEl = null;
+          // B3: 预缓存每个 heading 相对文档顶部的 offsetTop，避免 scroll 高频 reflow。
+          //     resize 时需调用 rebuildHeadingTopCache() 重建。
+          let _headingTops = [];
+
+          // B3: 重建 heading offsetTop 缓存。读取 offsetTop 不触发 reflow（非 getBoundingClientRect）。
+          //     在 init 完成后调用一次，之后由外部 resize 事件触发重建。
+          function rebuildHeadingTopCache() {
+            _headingTops = allHeadings.map(h => {
+              let top = 0, el = h;
+              while (el) { top += el.offsetTop; el = el.offsetParent; }
+              return top;
+            });
+          }
 
           // 主动查询当前鼠标位置下是否有 chapter-item（不依赖浏览器补发的 pointer 事件）
           function getItemAtPointer() {
@@ -4287,9 +4304,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const scrollY = window.scrollY;
             const offset  = 80;
             let current   = allHeadings[0];
+            // B3: 使用预缓存的 offsetTop，避免每次 scroll 触发 O(n) getBoundingClientRect reflow
             for (let i = 0; i < allHeadings.length; i++) {
-              const top = allHeadings[i].getBoundingClientRect().top + scrollY;
-              if (top <= scrollY + offset) current = allHeadings[i];
+              if (_headingTops[i] <= scrollY + offset) current = allHeadings[i];
               else break;
             }
             if (current.id !== state.currentId || state.activeState !== 'scroll') {
@@ -4357,15 +4374,18 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             scrollMenuToItem(state.currentId);
           }
 
+          // Q3: 统一封装 isWheelScrolling 复位，防止多处散落导致遗漏
+          function clearWheelLock() { state.isWheelScrolling = false; }
+
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
             state.isMenuScrolling = false;
             const centerId = getCenteredItemId();
-            if (!centerId) { state.isWheelScrolling = false; return; }
+            if (!centerId) { clearWheelLock(); return; }
 
             scrollMenuToItem(centerId).then(() => {
               if (state.activeState !== 'menu' || state.hoveredItem) {
-                state.isWheelScrolling = false;
+                clearWheelLock();
                 return;
               }
               state.currentId = centerId;
@@ -4374,19 +4394,19 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               const targetHeading = document.getElementById(centerId);
               if (targetHeading) {
                 driveArticleScroll(centerId, () => {
-                  state.isWheelScrolling = false;
+                  clearWheelLock();
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
-                state.isWheelScrolling = false;
+                clearWheelLock();
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              state.isWheelScrolling = false;
+              clearWheelLock();
             });
           }
 
@@ -4426,9 +4446,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (allHeadings.length > 0) {
               state.currentId = allHeadings[0].id;
               applyScrollState(state.currentId);
+              rebuildHeadingTopCache();   // B3: 首次构建缓存
             }
 
-            window.addEventListener('scroll', updateActiveHeading, { passive: true });
+            // P1: window scroll 监听由外部 _onWindowScroll 统一调度，此处不再重复绑定。
+            //     updateActiveHeading 将被 _onWindowScroll 在每次 scroll 时调用。
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
@@ -4508,7 +4530,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
 
-          return { init, syncToMenu, cancelHover };
+          return { init, syncToMenu, cancelHover, updateActiveHeading, rebuildHeadingTopCache };
         }
 
 
@@ -4696,10 +4718,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             canvasEl.classList.remove('active');
             rafPending = false;
+            _prevMenuActive = false;   // P4: 重置状态，确保下次菜单打开时 alwaysOn 元素能正确清除
             // 菜单关闭后 menuToggle 重新可见，旧缓存（含 display:none 时的零尺寸 rect）已失效，
             // 置 null 使下次 pointermove 重建缓存，确保 alwaysOn 元素 Reveal 坐标正确。
             cachedTargetRects = null;
           }
+
+          // P4: alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
+          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
+          let _prevMenuActive = false;
 
           function handleMove(e) {
             if (e.pointerType && e.pointerType !== 'mouse') return;
@@ -4712,12 +4739,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (!cachedTargetRects) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              // alwaysOn 元素（menuToggle）在菜单打开时为 display:none，直接跳过
-              if (alwaysOn && menuActive) { clearRevealVar(el); return; }
+              // P4: alwaysOn 元素（menuToggle）菜单打开时隐藏，只在状态切换帧清除一次
+              if (alwaysOn && menuActive) {
+                if (!_prevMenuActive) clearRevealVar(el);
+                return;
+              }
               // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
               const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
+            _prevMenuActive = menuActive;
 
             // 光照光层（.menu-layer-light）全屏坐标写入：
             // 不经过 range 裁切，鼠标在屏幕任意位置时均持续更新，
@@ -4764,9 +4795,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          * 负责向 .menu-layer-texture 注入 SVG 斑驳质感，并管理其生命周期。
          *
          * 质感构成（三层叠加）：
-         *   ① 噪点底层   feTurbulence(fractalNoise) + feColorMatrix 灰度化
+         *   ① 噪点底层   feTurbulence(fractalNoise) + feColorMatrix(saturate=0) + feBlend(overlay)
          *   ② 划痕层     随机贝塞尔曲线路径，模拟拉丝/划痕
-         *   ③ 边缘磨损层 径向渐变遮罩，四角更重
+         *   ③ 边缘磨损层 radialGradient 遮罩，四角更重
          *
          * 再生时机：
          *   · markDirty()      → 仅置 _dirty = true（绑定到 scroll，零开销）
@@ -4779,7 +4810,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // ── 随机工具 ──────────────────────────────────────────────
           function rand(min, max) { return min + Math.random() * (max - min); }
-          function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+          function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
           // ── 生成单条划痕路径（SVG path d 字符串）─────────────────
           // 起点随机落在四边，终点偏向对侧，中途有贝塞尔弯折
@@ -4961,23 +4992,28 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const rx = vw * 0.1, ry = vh * 0.1;
             const GRID = 4;
             const colors = [];
+            // B2: 跨采样点去重，避免多点命中同一容器时重复 getComputedStyle
+            const visited = new Set();
             for (let i = 0; i < GRID; i++) {
               for (let j = 0; j < GRID; j++) {
                 const x = cx - rx + rx * 2 * i / (GRID - 1);
                 const y = cy - ry + ry * 2 * j / (GRID - 1);
                 let el = document.elementFromPoint(x, y);
                 while (el && el !== document.documentElement) {
-                  const cs = getComputedStyle(el);
-                  if (!isTransparent(cs.backgroundColor)) {
-                    const rgb = parseRgba(cs.backgroundColor);
-                    if (rgb) colors.push(rgb);
-                  }
-                  // 采文字色：有直接文本子节点的元素
-                  for (const node of el.childNodes) {
-                    if (node.nodeType === 3 && node.textContent.trim()) {
-                      const rgb = parseRgba(cs.color);
+                  if (!visited.has(el)) {
+                    visited.add(el);
+                    const cs = getComputedStyle(el);
+                    if (!isTransparent(cs.backgroundColor)) {
+                      const rgb = parseRgba(cs.backgroundColor);
                       if (rgb) colors.push(rgb);
-                      break;
+                    }
+                    // 采文字色：有直接文本子节点的元素
+                    for (const node of el.childNodes) {
+                      if (node.nodeType === 3 && node.textContent.trim()) {
+                        const rgb = parseRgba(cs.color);
+                        if (rgb) colors.push(rgb);
+                        break;
+                      }
                     }
                   }
                   el = el.parentElement;
@@ -5120,10 +5156,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         });
 
         // 文章滚动时标记两个需要随页面内容更新的模块：质感绘制器 + Mica 采样器
-        window.addEventListener('scroll', () => {
+        // P1: 三路 scroll 回调合并为一个监听器，减少每帧事件分发开销
+        function _onWindowScroll() {
+          highlighter.updateActiveHeading();
+          updateProgress();
           texturePainter.markDirty();
           micaSampler.markDirty();
-        }, { passive: true });
+        }
+        window.addEventListener('scroll', _onWindowScroll, { passive: true });
 
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
         // 防重入标志：openMenu 含 await，若在 await 期间再次触发（如快速双击），
@@ -5144,9 +5184,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
             texturePainter.paintIfNeeded();
             highlighter.syncToMenu();
-            if (isDesktop) {
-              // J9: reveal 在 initRevealEffect 赋值后方可调用，此处加 null guard 防御极端时序
-              if (!reveal) return;
+            if (isDesktop && reveal) {
               reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
               reveal.attachScrollListener();
             }
@@ -5156,6 +5194,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }
 
         function closeMenu() {
+          if (!sideMenuWrapper.classList.contains('active')) return;
           sideMenuWrapper.classList.remove('active');
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
@@ -5190,6 +5229,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         // resize：debounce 100ms，避免拖拽窗口时 getBoundingClientRect 高频触发
         const _resizeDebounce = createDebounce(() => {
+          highlighter.rebuildHeadingTopCache();  // B3: 窗口尺寸变化后 offsetTop 可能变化
           if (reveal) reveal.handleResize();
           updateProgress();
         }, 100);
@@ -5279,7 +5319,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
         }
 
-        window.addEventListener('scroll', updateProgress, { passive: true });
         updateProgress();
         // 页面加载后立即取一次色，确保首次进入时按钮颜色就已匹配页面主色调
         // 用 requestAnimationFrame 确保 DOM 完成首次渲染后再采样
