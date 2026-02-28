@@ -38,15 +38,6 @@
             margin: 0;
             padding: 0;
          }
-
-         /* overflow-x 必须设在 html 而非 body：
-            body 设 overflow-x:hidden 会在 WebKit 中创建新的包含块，
-            导致其内部 position:fixed 子元素（menu-mask、side-menu-wrapper 等）
-            相对于 body 而非 viewport 定位，宽高受 max-width:1000px 限制，
-            无法全屏覆盖。 */
-         html {
-            overflow-x: hidden;
-         }
    
          body {
             background-color: #121212;
@@ -58,6 +49,7 @@
             margin: 0 auto;
             position: relative;
             transition: background-color 0.5s ease, color 0.5s ease;
+            overflow-x: hidden;
             word-wrap: break-word;
             word-break: break-word;
             overflow-wrap: break-word;
@@ -328,7 +320,8 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.3);
-            /* backdrop-filter 已移除：对遮罩层模糊会产生偏蓝光晕，且与菜单层 backdrop-filter 叠加后色偏加重 */
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
             z-index: 998;
             display: none;
             transition: opacity 0.3s ease;
@@ -379,9 +372,9 @@
    
          /* ==================== 亚克力侧边菜单 ==================== */
          .side-menu {
-            position: absolute;  /* 修复缝隙：absolute+inset:0 精确填充 wrapper，
-                                    避免 width/height:100% 在 box-sizing 下少算 border */
-            inset: 0;
+            position: relative;
+            width: 100%;
+            height: 100%;
             border-radius: 12px;
             display: none;
             flex-direction: row;
@@ -4878,6 +4871,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // --reveal-mid：亮色与暗色的中间值
               const rgbMid  = rgbHi.map((v, i) => Math.round((v + rgbDark[i]) / 2));
               // --mica-dark-left/right 均从暗色派生，right 略有差异（+5 偏亮，钳位）
+              // ⏸️ --mica-dark-left 当前无消费方（menu-layer-base 左侧已改用 --reveal-hi），保留备用
               const rgbDarkL = rgbDark;
               const rgbDarkR = rgbDark.map(v => Math.min(255, v + 5));
 
