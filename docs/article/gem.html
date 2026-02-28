@@ -40,6 +40,7 @@
          }
    
          body {
+            --menu-right-width: 50px;   /* Q5: menu-right 宽度单一来源，.menu-layer-base 渐变分割点引用此值 */
             background-color: #121212;
             color: #fff;
             font-family: Arial, sans-serif;
@@ -422,8 +423,8 @@
             background: linear-gradient(
                to right,
                rgba(var(--mica-dark-left,  18, 18, 18), 0.55) 0%,
-               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) calc(100% - 50px),
-               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) calc(100% - 50px),
+               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) calc(100% - var(--menu-right-width)),
                rgba(var(--mica-dark-right,  0,  0,  0), 0.55) 100%
             );
             backdrop-filter: blur(7px);
@@ -433,8 +434,8 @@
             background: linear-gradient(
                to right,
                rgba(var(--mica-dark-left,  255, 255, 255), 0.55) 0%,
-               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) calc(100% - 50px),
-               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) calc(100% - 50px),
+               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) calc(100% - var(--menu-right-width)),
                rgba(var(--mica-dark-right, 220, 220, 220), 0.55) 100%
             );
          }
@@ -558,7 +559,7 @@
          .menu-right {
             position: relative;
             z-index: 11;            /* 同上，覆盖在 .menu-layer-* 之上 */
-            width: 50px;
+            width: var(--menu-right-width);
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -614,9 +615,7 @@
             cursor: pointer;
             transition: all 0.2s;
             font-size: 20px;
-            width: 50px;
-            height: 47px;
-            text-align: center;
+            width: var(--menu-right-width);
             border-radius: 0;
             display: flex;
             justify-content: center;
@@ -3981,10 +3980,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          */
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
           return new Promise(resolve => {
-            const before = getPosition();
             scrollFn();
-            // B6: 滚动前后位置相同（已在目标位置），直接 resolve，跳过轮询等待
-            if (getPosition() === before) { resolve(); return; }
             let lastPos  = getPosition();
             let stableAt = null;  // 首次位置稳定的时间戳
             let started  = false;
@@ -4232,12 +4228,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // J4: 使用 Map 替代 querySelector
             const item = _itemMap.get(id);
             if (!item) return Promise.resolve();
-            const target = item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2;
+            const target = Math.max(0, item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2);
             if (chapterListEl.scrollHeight <= chapterListEl.clientHeight) return Promise.resolve();
+            // B6（修正位置）: 目标与当前 scrollTop 差距 < 1px，视为已到位，跳过滚动。
+            // 在此处判断（基于目标值）而非在 smoothScrollPromise 内判断（基于调用后的实时位置），
+            // 避免 smooth scroll 异步特性导致"调用后立即取位置仍未变"的误判。
+            if (Math.abs(target - chapterListEl.scrollTop) < 1) return Promise.resolve();
 
             state.programmaticScrollCount++;
             return smoothScrollPromise(
-              () => chapterListEl.scrollTo({ top: Math.max(0, target), behavior }),
+              () => chapterListEl.scrollTo({ top: target, behavior }),
               () => chapterListEl.scrollTop
             ).finally(() => { state.programmaticScrollCount--; });
           }
@@ -4523,6 +4523,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           function cancelHover() {
             hoverScrollDebounce.cancel();
             state.isHoverScrolling = false;   // 确保 async 跳转中途关闭菜单时不留脏状态
+            state.isMenuScrolling  = false;   // Q3: 菜单关闭时一并复位，防止下次打开时 menuSyncDebounce 被阻塞
             state.hoveredItem = null;
             if (state.activeState === 'hover') {
               state.activeState = 'scroll';
@@ -4662,14 +4663,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const colorHi  = cachedColorHi;
             const colorMid = cachedColorMid;
 
-            // 全局只取一次 rect，校验、缓存构建都用这同一个值
-            const menuRect = chapterListEl.getBoundingClientRect();
-
-            // 尺寸/位置校验：canvas 与实际位置不符时修正，并同步作废 item 缓存
-            if (canvasEl.width  !== Math.round(menuRect.width)  ||
+            // P3: 优先使用 cachedMenuRect（resizeCanvas 时已更新），仅在校验不符时才重新取，
+            //     避免高频 rAF 回调在 fixed 元素上重复触发 getBoundingClientRect reflow。
+            let menuRect = cachedMenuRect;
+            if (!menuRect ||
+                canvasEl.width  !== Math.round(menuRect.width)  ||
                 canvasEl.height !== Math.round(menuRect.height) ||
                 parseFloat(canvasEl.style.left) !== menuRect.left ||
                 parseFloat(canvasEl.style.top)  !== menuRect.top) {
+              menuRect            = chapterListEl.getBoundingClientRect();
               canvasEl.width      = menuRect.width;
               canvasEl.height     = menuRect.height;
               canvasEl.style.left = menuRect.left + 'px';
@@ -4948,23 +4950,21 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // M3: 只取视口中间 20% 矩形区域（以中心为基准，±10%）内的图片
             const cx = vw / 2, cy = vh / 2;
             const zoneW = vw * 0.1, zoneH = vh * 0.1;   // 半宽/半高
-            const imgs = Array.from(document.querySelectorAll('img')).filter(img => {
-              if (!img.complete || img.naturalWidth === 0) return false;
+            // Q2: filter + map 合并为单次遍历，每张图只调用一次 getBoundingClientRect
+            const candidates = [];
+            for (const img of document.querySelectorAll('img')) {
+              if (!img.complete || img.naturalWidth === 0) continue;
               const r = img.getBoundingClientRect();
-              if (r.width <= 20 || r.height <= 20) return false;
-              // 与中间 20% 矩形有交叉
-              return r.right  > cx - zoneW && r.left   < cx + zoneW &&
-                     r.bottom > cy - zoneH && r.top    < cy + zoneH;
-            });
-            if (imgs.length === 0) return null;
-            // J5: sort 前预计算 rect，避免 comparator 内反复 reflow（O(n log n) 次 → O(n) 次）
-            const withArea = imgs.map(img => {
-              const r = img.getBoundingClientRect();
-              return { img, area: r.width * r.height };
-            });
-            withArea.sort((a, b) => b.area - a.area);
+              if (r.width <= 20 || r.height <= 20) continue;
+              if (r.right  > cx - zoneW && r.left   < cx + zoneW &&
+                  r.bottom > cy - zoneH && r.top    < cy + zoneH) {
+                candidates.push({ img, area: r.width * r.height });
+              }
+            }
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => b.area - a.area);
             try {
-              const img = withArea[0].img;
+              const img = candidates[0].img;
               const SIZE = 40;
               const offscreen = document.createElement('canvas');
               offscreen.width = SIZE; offscreen.height = SIZE;
@@ -5115,7 +5115,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         // _micaActive:   Mica 采样成功后置 true，updateProgress 改用 Mica 端点
         // _micaBtnDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
         // _micaBtnHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
-        let _lastBgValue = -1;
+        let _lastBgValue  = -1;
+        let _lastHiColor  = '';    // P5: --toggle-hi/mid/glow 缓存，Mica 模式下值固定，避免重复 setProperty
+        let _lastMidColor = '';
         let _micaActive  = false;
         let _micaBtnDark = [0,   0,   0];
         let _micaBtnHi   = [255, 0,   0];
@@ -5314,9 +5316,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
           // --toggle-glow: 预构建完整 rgba()，避免 rgba(var(),alpha) 跨浏览器解析歧义
-          document.body.style.setProperty('--toggle-hi',   hiColor);
-          document.body.style.setProperty('--toggle-mid',  midColor);
-          document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
+          // P5: hi/mid 均未变化时跳过，Mica 模式下这三个值在整个会话内几乎不变
+          if (hiColor !== _lastHiColor || midColor !== _lastMidColor) {
+            _lastHiColor  = hiColor;
+            _lastMidColor = midColor;
+            document.body.style.setProperty('--toggle-hi',   hiColor);
+            document.body.style.setProperty('--toggle-mid',  midColor);
+            document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
+          }
         }
 
         updateProgress();
