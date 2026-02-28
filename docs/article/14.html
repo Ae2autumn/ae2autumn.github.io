@@ -38,6 +38,15 @@
             margin: 0;
             padding: 0;
          }
+
+         /* overflow-x 必须设在 html 而非 body：
+            body 设 overflow-x:hidden 会在 WebKit 中创建新的包含块，
+            导致其内部 position:fixed 子元素（menu-mask、side-menu-wrapper 等）
+            相对于 body 而非 viewport 定位，宽高受 max-width:1000px 限制，
+            无法全屏覆盖。 */
+         html {
+            overflow-x: hidden;
+         }
    
          body {
             background-color: #121212;
@@ -49,7 +58,6 @@
             margin: 0 auto;
             position: relative;
             transition: background-color 0.5s ease, color 0.5s ease;
-            overflow-x: hidden;
             word-wrap: break-word;
             word-break: break-word;
             overflow-wrap: break-word;
@@ -339,6 +347,7 @@
             z-index: 999;
             display: none;
             pointer-events: none;
+            overflow: hidden;   /* M2: 裁切子元素超出圆角的部分，消除四边白边 */
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28);
          }
    
@@ -432,13 +441,16 @@
             background: rgba(var(--mica-dark-left, 255, 255, 255), 0.55);
          }
 
-         /* 第4层（z-index:8）：内部体积光，跟随鼠标，纯渐变无 backdrop-filter */
+         /* 第4层（z-index:8）：内部体积光，跟随鼠标，纯渐变无 backdrop-filter。
+            颜色使用专用的 --volume-light（由 Mica 采样器计算，与 Reveal 边框光的
+            --reveal-hi 独立，两者色相相同但亮度/饱和度偏移规则不同）。
+            fallback 值对应夜间模式降级状态（深红体积光）。 */
          .menu-layer-light {
             z-index: 8;
             background: radial-gradient(
                400px circle at var(--lx, -9999px) var(--ly, -9999px),
-               rgba(var(--reveal-hi,  255, 0, 0), 0.055) 0%,
-               rgba(var(--reveal-mid, 180, 30, 30), 0.02) 50%,
+               rgba(var(--volume-light, 180, 0, 0), 0.055) 0%,
+               rgba(var(--volume-light, 180, 0, 0), 0.02) 50%,
                transparent 100%
             );
          }
@@ -1648,12 +1660,16 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           // ── 路A：从视口内 <img> 元素采像素 ──────────────────
           function sampleFromImages() {
             const vw = window.innerWidth, vh = window.innerHeight;
+            // M3: 只取视口中间 20% 矩形区域（以中心为基准，±10%）内的图片
+            const cx = vw / 2, cy = vh / 2;
+            const zoneW = vw * 0.1, zoneH = vh * 0.1;   // 半宽/半高
             const imgs = Array.from(document.querySelectorAll('img')).filter(img => {
               if (!img.complete || img.naturalWidth === 0) return false;
               const r = img.getBoundingClientRect();
-              return r.width > 20 && r.height > 20 &&
-                     r.bottom > 0 && r.top < vh &&
-                     r.right  > 0 && r.left < vw;
+              if (r.width <= 20 || r.height <= 20) return false;
+              // 与中间 20% 矩形有交叉
+              return r.right  > cx - zoneW && r.left   < cx + zoneW &&
+                     r.bottom > cy - zoneH && r.top    < cy + zoneH;
             });
             if (imgs.length === 0) return null;
             // J5: sort 前预计算 rect，避免 comparator 内反复 reflow（O(n log n) 次 → O(n) 次）
@@ -1687,7 +1703,8 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
           function sampleFromDOM() {
             const vw = window.innerWidth, vh = window.innerHeight;
             const cx = vw / 2, cy = vh / 2;
-            const rx = vw * 0.2, ry = vh * 0.2;
+            // M4: ±10% 使总覆盖宽度为视口的 20%（原为 ±20% 即 40%）
+            const rx = vw * 0.1, ry = vh * 0.1;
             const GRID = 4;
             const colors = [];
             for (let i = 0; i < GRID; i++) {
@@ -1738,27 +1755,35 @@ M国流浪汉的故事也知道不少吧?有不少曾都是出人头地的人<br
                 .reduce((a, c) => [a[0]+c[0], a[1]+c[1], a[2]+c[2]], [0,0,0])
                 .map(v => Math.round(v / len));
 
-              const [h, s, l] = rgbToHsl(rA, gA, bA);
+              // M5（修正）: 亮色/暗色推导
+              // 亮色：夜间 = 基准色（×1.0），日间 = 基准色 ×1.15，各通道钳位 [0,255]
+              const isLight = document.body.classList.contains('light-mode');
+              const hiMul   = isLight ? 1.15 : 1.0;
+              const rgbHi   = [rA, gA, bA].map(v => Math.min(255, Math.round(v * hiMul)));
+              // 暗色：夜间 = 基准色 ×0.35（调暗65%），日间 = 基准色 ×0.40（调暗60%）
+              const darkMul = isLight ? 0.40 : 0.35;
+              const rgbDark = [rA, gA, bA].map(v => Math.round(v * darkMul));
+              // --reveal-mid：亮色与暗色的中间值
+              const rgbMid  = rgbHi.map((v, i) => Math.round((v + rgbDark[i]) / 2));
+              // --mica-dark-left/right 均从暗色派生，right 略有差异（+5 偏亮，钳位）
+              const rgbDarkL = rgbDark;
+              const rgbDarkR = rgbDark.map(v => Math.min(255, v + 5));
 
-              // 相对亮度 ±15%（HSL L 通道）
-              const lHi   = clamp(l + 15, 0, 100);
-              const lDark = clamp(l - 15, 0, 100);
-              const lMid  = clamp(lHi - 8, 0, 100);
-              const sDim  = s * 0.82;
+              // 体积光颜色（--volume-light）：HSL 空间调整，与 --reveal-hi 独立
+              // 日间：基准色 L+15%，S+30%；夜间：基准色 L-20%，S+30%
+              const [bH, bS, bL] = rgbToHsl(rA, gA, bA);
+              const vlL = clamp(bL + (isLight ? 15 : -20), 0, 100);
+              const vlS = clamp(bS + 30, 0, 100);
+              const rgbVol = hslToRgb(bH, vlS, vlL);
 
-              const rgbHi    = hslToRgb(h, s,    lHi);
-              const rgbMid   = hslToRgb(h, sDim, lMid);
-              const rgbDarkL = hslToRgb(h, s,    lDark);
-              const rgbDarkR = hslToRgb(h, sDim, clamp(lDark + 3, 0, 100));
-
-              document.body.style.setProperty('--reveal-hi',       rgbHi.join(', '));
-              document.body.style.setProperty('--reveal-mid',      rgbMid.join(', '));
-              // C1/C2/C3/C4: 写入 CSS 变量供 .menu-layer-base 和 .menu-right 使用
-              document.body.style.setProperty('--mica-dark-left',  rgbDarkL.join(', '));
-              document.body.style.setProperty('--mica-dark-right', rgbDarkR.join(', '));
+              document.body.style.setProperty('--reveal-hi',      rgbHi.join(', '));
+              document.body.style.setProperty('--reveal-mid',     rgbMid.join(', '));
+              document.body.style.setProperty('--mica-dark-left', rgbDarkL.join(', '));
+              document.body.style.setProperty('--mica-dark-right',rgbDarkR.join(', '));
+              document.body.style.setProperty('--volume-light',   rgbVol.join(', '));
 
               // J6: 通过回调传出结果，不直接写入外部变量
-              onComplete(rgbDarkL, rgbHi);
+              onComplete(rgbDark, rgbHi);
             } catch (_) {
               // 静默降级：CSS 变量保持默认值，onComplete 不调用，_micaActive 保持 false
             }
