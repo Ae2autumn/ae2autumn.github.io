@@ -485,7 +485,8 @@
          .menu-left {
             position: relative;
             z-index: 11;            /* 覆盖在 .menu-layer-* (z-index 7-10) 之上 */
-            width: 200px;
+            flex: 1;                /* 自动填充 menu-right 之外的剩余空间，无需随 --menu-right-width 手动同步 */
+            min-width: 0;           /* 防止 flex 子元素溢出父容器 */
             padding: 20px;
             overflow-y: auto;
             scrollbar-width: none;
@@ -4043,7 +4044,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const ro = dist <= range            ? 1
                    : dist <= range + fadeZone ? 1 - (dist - range) / fadeZone
                    : 0;
-          el.style.setProperty('--ro', ro.toFixed(3));
+          // O-1: 脏检测——对 0/1 直接写字面量（避免 toFixed 字符串分配），
+          //      中间值保留 3 位精度；相同值时跳过 setProperty，减少样式层写入。
+          //      上次写入值缓存在元素的 _revealRo 属性上，无需外部 Map。
+          const roStr = ro === 1 ? '1' : ro === 0 ? '0' : ro.toFixed(3);
+          if (el._revealRo !== roStr) {
+            el._revealRo = roStr;
+            el.style.setProperty('--ro', roStr);
+          }
         }
 
         /** 清除单个元素的 Reveal 变量（含衰减系数）。 */
@@ -4052,6 +4060,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           el.style.setProperty('--rx', '-9999px');
           el.style.setProperty('--ry', '-9999px');
           el.style.setProperty('--ro', '0');
+          el._revealRo = '0';   // O-1: 同步重置缓存，防止下次进入时脏检测误判
         }
 
         // ==================== 1b. 颜色工具函数（HSL / chroma，供 Mica 采样器使用）====================
@@ -4087,22 +4096,24 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           return [h * 360, s * 100, l * 100];
         }
 
+        /** hue2rgb 提升为模块级纯函数，避免每次 hslToRgb 调用时重复分配闭包对象。 */
+        function _hue2rgb(p, q, t) {
+          if (t < 0) t += 1; if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        }
+
         function hslToRgb(h, s, l) {
           h /= 360; s /= 100; l /= 100;
           if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
           const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
           const p = 2 * l - q;
-          const hue2rgb = t => {
-            if (t < 0) t += 1; if (t > 1) t -= 1;
-            if (t < 1/6) return p + (q - p) * 6 * t;
-            if (t < 1/2) return q;
-            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-            return p;
-          };
           return [
-            Math.round(hue2rgb(h + 1/3) * 255),
-            Math.round(hue2rgb(h)       * 255),
-            Math.round(hue2rgb(h - 1/3) * 255),
+            Math.round(_hue2rgb(p, q, h + 1/3) * 255),
+            Math.round(_hue2rgb(p, q, h)       * 255),
+            Math.round(_hue2rgb(p, q, h - 1/3) * 255),
           ];
         }
 
@@ -4236,6 +4247,13 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (Math.abs(target - chapterListEl.scrollTop) < 1) return Promise.resolve();
 
             state.programmaticScrollCount++;
+            // instant 滚动同帧完成，smoothScrollPromise 轮询会误判为"未启动"并等待 300ms。
+            // 在此处单独处理：同步执行 scrollTo 后直接 resolve，保持 count 语义正确。
+            if (behavior === 'instant') {
+              chapterListEl.scrollTo({ top: target, behavior: 'instant' });
+              state.programmaticScrollCount--;
+              return Promise.resolve();
+            }
             return smoothScrollPromise(
               () => chapterListEl.scrollTo({ top: target, behavior }),
               () => chapterListEl.scrollTop
@@ -5113,21 +5131,21 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         //     不随滚动进度 t 变化——这是设计有意为之（Mica 色相驱动，非进度驱动）。
         // _lastBgValue:  缓存上次写入的背景色打包值，避免未变时重复 style 写入
         // _micaActive:   Mica 采样成功后置 true，updateProgress 改用 Mica 端点
-        // _micaBtnDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
-        // _micaBtnHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
+        // _micaColorDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
+        // _micaColorHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
         let _lastBgValue  = -1;
         let _lastHiColor  = '';    // P5: --toggle-hi/mid/glow 缓存，Mica 模式下值固定，避免重复 setProperty
         let _lastMidColor = '';
         let _micaActive  = false;
-        let _micaBtnDark = [0,   0,   0];
-        let _micaBtnHi   = [255, 0,   0];
+        let _micaColorDark = [0,   0,   0];
+        let _micaColorHi   = [255, 0,   0];
 
         // --- Mica 采样器（J6: 通过 onComplete 回调写入外部状态）---
         // J7: 传入 onComplete，在采样成功后更新模块级变量并触发进度指示器刷新
         const micaSampler = createMicaSampler({
           onComplete(btnDark, btnHi) {
-            _micaBtnDark = btnDark;
-            _micaBtnHi   = btnHi;
+            _micaColorDark = btnDark;
+            _micaColorHi   = btnHi;
             _micaActive  = true;
             updateProgress();
           }
@@ -5201,7 +5219,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          if (isDesktop) {
+          if (isDesktop && reveal) {
             reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
             reveal.clearAllReveal();
           }
@@ -5245,7 +5263,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         toBottomBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
           closeMenu();
         });
 
@@ -5269,9 +5287,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           const scrollPercent = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
           const t = scrollPercent;   // 0（顶部）→ 1（底部）
 
-          // 按钮背景色：在 dark/hi 两端点之间按进度插值
-          const [dr, dg, db] = _micaBtnDark;
-          const [hr, hg, hb] = _micaBtnHi;
+          // ── 职责①：按钮背景色（滚动进度插值，写入 style.backgroundColor）──────────────
+          const [dr, dg, db] = _micaColorDark;
+          const [hr, hg, hb] = _micaColorHi;
           const bgR = Math.round(dr + (hr - dr) * t);
           const bgG = Math.round(dg + (hg - dg) * t);
           const bgB = Math.round(db + (hb - db) * t);
@@ -5284,12 +5302,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             menuToggle.style.color = '#fff';
           }
 
-          // J8: --toggle-hi/mid/glow 的计算逻辑说明：
-          //   · Mica 模式：hi/mid 固定为采样色端点（设计有意为之，颜色由 Mica 色相决定，非滚动进度）
-          //   · 降级模式：hi/mid 随滚动进度在主题硬编码色值之间插值
+          // ── 职责②：Reveal 颜色变量（写入 --toggle-hi/mid/glow，供 ::before 伪元素使用）──
+          // J8: Mica 模式下颜色由色相决定（固定），降级模式下随滚动进度插值。
           let hiColor, midColor;
           if (_micaActive) {
-            // Mica 模式：hi 端直接用 _micaBtnHi，mid 端取两端中间值
+            // Mica 模式：hi 端直接用 _micaColorHi，mid 端取两端中间值
             hiColor  = `${hr}, ${hg}, ${hb}`;
             const mr = Math.round(dr + (hr - dr) * 0.5);
             const mg = Math.round(dg + (hg - dg) * 0.5);
