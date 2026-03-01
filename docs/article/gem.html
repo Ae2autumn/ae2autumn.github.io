@@ -4920,6 +4920,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             });
           }
 
+          // alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
+          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
+          //     声明必须位于 clearAllReveal 之前，避免函数体内赋值触发 TDZ 隐患。
+          let _prevMenuActive = false;
+
           function clearAllReveal() {
             targets.forEach(({ el }) => clearRevealVar(el));
             // 光照光层：重置全屏坐标，防止菜单关闭后光斑残留
@@ -4934,10 +4939,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             cachedTargetRects = null;
           }
 
-          // alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
-          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
-          let _prevMenuActive = false;
-
           function handleMove(e) {
             if (e.pointerType && e.pointerType !== 'mouse') return;
             state.lastMouseX = e.clientX;
@@ -4946,7 +4947,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
             // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
             // 使用缓存 rect，避免每次 pointermove 对 fixed 元素重复 reflow
-            // 动画期间 cachedTargetRects 为 null，rect 此时无效，跳过重建
+            // _animating 期间 cachedTargetRects 被有意置为 null（resizeCanvas 内），
+            //     此时菜单尺寸仍在变换中，rect 无效，跳过重建以防坐标错误。
+            //     animationend 回调会在动画结束后统一重建缓存，光效恢复响应。
             if (!cachedTargetRects && !_animating) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
@@ -4955,6 +4958,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                 if (!_prevMenuActive) clearRevealVar(el);
                 return;
               }
+              // _animating 期间 cachedTargetRects 为 null（见上方注释），跳过本帧更新。
+              // 不降级到实时 getBoundingClientRect——动画中的 rect 值本身就不可靠。
+              if (!cachedTargetRects) return;
               // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
               const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
@@ -5384,15 +5390,25 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           // active class 同时充当防重入检查：菜单已打开时直接跳出
           if (sideMenuWrapper.classList.contains('active')) return;
           state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
-          // Mica 采样必须在 menuMask 激活之前执行：
-          // menuMask 是全屏 fixed 覆盖层（pointer-events: auto），激活后 elementFromPoint
-          // 的所有采样点均命中 menuMask（background: rgba(0,0,0,0.3)），导致采到纯黑色。
-          // sample() 内部无 await，DOM 查询全程同步，此处调用不阻塞后续菜单显示。
+
+          // Mica 采样必须在 menuMask 激活之前、resizeCanvas() 之前执行：
+          //   · menuMask 激活后 elementFromPoint 命中遮罩（rgba(0,0,0,0.3)），采样结果变为纯黑。
+          //   · resizeCanvas() 内 updateColorCache() 读取 CSS 变量；若 Mica 尚未写入，颜色缓存将
+          //     持有旧值，导致本次打开期间光照光颜色错误。
+          // ⚠️ 风险提示：sampleIfNeeded 的 then() 回调为微任务，在当前同步块执行完毕后才运行。
+          //     sampleIfNeeded 内部采样全程同步（无真正 I/O），CSS 变量写入在 then() 触发前已完成，
+          //     故 resizeCanvas() 读到的必然是最新 Mica 颜色。
+          //     若未来 sampleIfNeeded 内部引入真正的异步操作（如 fetch），需在 openMenu 调用前预热，
+          //     否则菜单会短暂显示旧颜色。
           micaSampler.sampleIfNeeded().then(() => {
-            if (isDesktop && reveal && sideMenuWrapper.classList.contains('active')) {
-              reveal.resizeCanvas();   // 用 Mica 新颜色更新颜色缓存
+            // 双重检查：用户可能在采样微任务排队期间关闭了菜单
+            if (!sideMenuWrapper.classList.contains('active')) return;
+            if (isDesktop && reveal) {
+              reveal.resizeCanvas();         // Mica 新颜色已写入，updateColorCache() 读到最新值
+              reveal.attachScrollListener();
             }
           });
+
           sideMenuWrapper.classList.add('active');
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
@@ -5400,12 +5416,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
           texturePainter.paintIfNeeded();
           // TODO(入场动画)：实现爆炸入场动画时，需 await syncToMenu() 完成后再触发；
-          //                  届时将 openMenu 恢复为 async 并在此处 await。
+          //                  届时将 openMenu 改为 async 并在此处 await。
           highlighter.syncToMenu();
-          if (isDesktop && reveal) {
-            reveal.resizeCanvas();
-            reveal.attachScrollListener();
-          }
         }
 
         function closeMenu() {
