@@ -40,6 +40,7 @@
          }
    
          body {
+            --menu-right-width: 50px;   /* Q5: menu-right 宽度单一来源，.menu-layer-base 渐变分割点引用此值 */
             background-color: #121212;
             color: #fff;
             font-family: Arial, sans-serif;
@@ -297,8 +298,8 @@
             outline: none;
             color: #fff;
             background: rgba(20, 20, 20, 0.55);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             transition: background 0.3s ease, border-color 0.3s ease;
          }
 
@@ -340,6 +341,7 @@
             z-index: 999;
             display: none;
             pointer-events: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28);
          }
    
          .side-menu-wrapper.active {
@@ -365,7 +367,7 @@
          }
    
          body.is-desktop .side-menu-wrapper::before {
-            opacity: 1;
+            opacity: var(--ro, 1);
          }
    
          /* ==================== 亚克力侧边菜单 ==================== */
@@ -377,19 +379,21 @@
             display: none;
             flex-direction: row;
             overflow: hidden;
-            /* background / backdrop-filter 已移至五层子元素（见 .menu-layer-*）*/
             border: 1px solid rgba(255, 255, 255, 0.18);
             pointer-events: auto;
-            isolation: isolate;         /* 防止子层 z-index 溢出到 wrapper 层 */
+            transform: translateZ(0);
+            isolation: isolate;
             transition: border-color 0.5s ease;
          }
-   
+
          body.light-mode .side-menu {
             border-color: rgba(0, 0, 0, 0.12);
+            outline-color: rgba(0, 0, 0, 0.12);
          }
-   
+
          body.is-desktop .side-menu {
             border: none;
+            outline: none;
          }
    
          .side-menu.active {
@@ -397,61 +401,92 @@
          }
    
          /* ==================== 菜单五层材质结构（z-index 7-10，由 JS buildMenuLayers 注入 DOM）==================== */
-         /* 所有层：绝对定位，充满 .side-menu，pointer-events:none 不拦截交互 */
          .menu-layer-base,
          .menu-layer-light,
          .menu-layer-acrylic,
          .menu-layer-texture {
             position: absolute;
             inset: 0;
-            border-radius: 12px;
             pointer-events: none;
          }
 
-         /* 底层（z-index:7）：最轻亚克力底衬，云母色的主要来源 */
+         /* 底层（z-index:7）：唯一的 backdrop-filter 层。
+            border-radius 故意比父容器（12px）少 1px，确保模糊层完全被
+            .side-menu 的 overflow:hidden 裁切，消除 WebKit 亚像素圆角渗色。
+            背景色：左侧（menu-left 区域）使用亮色 --reveal-hi，
+                    右侧（menu-right 区域）使用暗色 --mica-dark-right，
+            分割点固定在距右边 50px（menu-right 宽度）处。
+            Mica 未生效时回落到硬编码默认值。 */
          .menu-layer-base {
             z-index: 7;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
+            border-radius: 11px;
+            background: linear-gradient(
+               to right,
+               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) 0%,
+               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) 100%
+            );
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
          }
          body.light-mode .menu-layer-base {
-            background: rgba(0, 0, 0, 0.03);
-         }
-
-         /* 第4层（z-index:8）：内部体积光，跟随鼠标（复用父级 --rx/ry 变量，无需新增事件监听）*/
-         .menu-layer-light {
-            z-index: 8;
-            background: radial-gradient(
-               150px circle at var(--rx, -9999px) var(--ry, -9999px),
-               rgba(var(--reveal-hi,  255, 0, 0), 0.11),
-               rgba(var(--reveal-mid, 180, 30, 30), 0.055) 45%,
-               transparent 70%
+            background: linear-gradient(
+               to right,
+               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) 0%,
+               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) 100%
             );
          }
 
-         /* 第3层（z-index:9）：过渡层，柔化光照光与边框光之间的边界 */
-         .menu-layer-acrylic {
-            z-index: 9;
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(10px) saturate(140%);
-            -webkit-backdrop-filter: blur(10px) saturate(140%);
-            opacity: 0.5;
-         }
-         body.light-mode .menu-layer-acrylic {
-            background: rgba(0, 0, 0, 0.05);
+         /* 第4层（z-index:8）：内部体积光，跟随鼠标，纯渐变无 backdrop-filter。
+            颜色使用专用的 --volume-light（由 Mica 采样器计算，与 Reveal 边框光的
+            --reveal-hi 独立，两者色相相同但亮度/饱和度偏移规则不同）。
+            fallback 值对应夜间模式降级状态（深红体积光）。 */
+         .menu-layer-light {
+            z-index: 8;
+            background: radial-gradient(
+               75px circle at var(--lx, -9999px) var(--ly, -9999px),
+               rgba(var(--volume-light, 180, 0, 0), 0.055) 0%,
+               rgba(var(--volume-light, 180, 0, 0), 0.03)  30%,
+               rgba(var(--volume-light, 180, 0, 0), 0.008) 60%,
+               rgba(var(--volume-light, 180, 0, 0), 0)     85%,
+               transparent 100%
+            );
          }
 
-         /* 第2层（z-index:10）：斑驳质感预留槽，暂无内容 */
+         /* 第3层（z-index:9）：过渡层，纯色半透明，不使用 backdrop-filter */
+         .menu-layer-acrylic {
+            z-index: 9;
+            background: rgba(255, 255, 255, 0.05);
+         }
+         body.light-mode .menu-layer-acrylic {
+            background: rgba(0, 0, 0, 0.03);
+         }
+
+         /* 第2层（z-index:10）：斑驳质感层
+            · SVG（feTurbulence + feDisplacementMap + feComposite）由 JS 动态注入
+            · mix-blend-mode: overlay  在夜间模式下呈现金属做旧感
+            · opacity 由 JS 写入 --texture-opacity，主题切换时跟随更新        */
          .menu-layer-texture {
             z-index: 10;
+            mix-blend-mode: overlay;
+            opacity: var(--texture-opacity, 0.07);
+            border-radius: 11px;
+            overflow: hidden;
+         }
+         body.light-mode .menu-layer-texture {
+            mix-blend-mode: soft-light;
+            opacity: var(--texture-opacity, 0.06);
          }
 
          /* ==================== 菜单左侧：章节列表 ==================== */
          .menu-left {
             position: relative;
             z-index: 11;            /* 覆盖在 .menu-layer-* (z-index 7-10) 之上 */
-            width: 200px;
+            flex: 1;                /* 自动填充 menu-right 之外的剩余空间，无需随 --menu-right-width 手动同步 */
+            min-width: 0;           /* 防止 flex 子元素溢出父容器 */
             padding: 20px;
             overflow-y: auto;
             scrollbar-width: none;
@@ -477,7 +512,7 @@
             align-items: center;
             padding: 10px 0;
             cursor: pointer;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(var(--reveal-mid, 180, 30, 30), 0.7);
             transition: color 0.2s, padding-left 0.2s;
             position: relative;
          }
@@ -506,36 +541,39 @@
          .chapter-item:last-child::after { display: none; }
    
          .chapter-item.h1-item { padding-left: 0; }
-         .chapter-item.h2-item { padding-left: 14px; color: rgba(255,255,255,0.45); font-size: 0.9em; }
-         .chapter-item.h3-item { padding-left: 28px; color: rgba(255,255,255,0.3);  font-size: 0.85em; }
+         .chapter-item.h2-item { padding-left: 14px; color: rgba(var(--reveal-mid, 180, 30, 30), 0.65); font-size: 0.9em; }
+         .chapter-item.h3-item { padding-left: 28px; color: rgba(var(--reveal-mid, 180, 30, 30), 0.45); font-size: 0.85em; }
    
-         body.light-mode .chapter-item { color: rgba(0,0,0,0.7); }
-         body.light-mode .chapter-item.h2-item { color: rgba(0,0,0,0.45); }
-         body.light-mode .chapter-item.h3-item { color: rgba(0,0,0,0.3); }
+         body.light-mode .chapter-item { color: rgba(var(--reveal-mid, 60, 60, 160), 0.7); }
+         body.light-mode .chapter-item.h2-item { color: rgba(var(--reveal-mid, 60, 60, 160), 0.45); }
+         body.light-mode .chapter-item.h3-item { color: rgba(var(--reveal-mid, 60, 60, 160), 0.3); }
    
-         body.is-desktop .chapter-item:hover { color: #f00; }
+         body.is-desktop .chapter-item:hover { color: rgba(var(--reveal-hi), 1); }
          body.is-desktop .chapter-item.h1-item:hover { padding-left: 5px; }
          body.is-desktop .chapter-item.h2-item:hover { padding-left: 19px; }
          body.is-desktop .chapter-item.h3-item:hover { padding-left: 33px; }
    
-         .chapter-item.current { color: red !important; }
-         .chapter-item.hovered { color: red !important; }
+         .chapter-item.current { color: rgba(var(--reveal-hi), 1) !important; }
+         .chapter-item.hovered { color: rgba(var(--reveal-hi), 1) !important; }
    
          /* ==================== 菜单右侧：按钮区 ==================== */
          .menu-right {
             position: relative;
             z-index: 11;            /* 同上，覆盖在 .menu-layer-* 之上 */
-            width: 50px;
+            width: var(--menu-right-width);
             height: 100%;
             display: flex;
             flex-direction: column;
-            background: rgba(0, 0, 0, 0.2);
+            /* C3: 使用 --mica-dark-right，fallback 与原 rgba(0,0,0,0.2) 一致 */
+            background: rgba(var(--mica-dark-right, 0, 0, 0), 0.2);
             border-left: 1px solid rgba(255, 255, 255, 0.15);
             transition: background 0.5s ease, border-color 0.5s ease;
+            flex-shrink: 0;
          }
    
+         /* C4: light-mode fallback 与原 rgba(0,0,0,0.05) 一致 */
          body.light-mode .menu-right {
-            background: rgba(0, 0, 0, 0.05);
+            background: rgba(var(--mica-dark-right, 0, 0, 0), 0.05);
             border-left-color: rgba(0, 0, 0, 0.1);
          }
    
@@ -550,7 +588,7 @@
          }
 
          body.is-desktop .menu-right::before {
-            opacity: 1;
+            opacity: var(--ro, 1);
             border-radius: 0 12px 12px 0;
             background: radial-gradient(
                130px circle at var(--rx, -9999px) var(--ry, -9999px),
@@ -572,15 +610,13 @@
          }
    
          .menu-btn {
-            color: rgba(255, 255, 255, 0.75);
+            color: rgba(var(--reveal-mid, 180, 30, 30), 0.75);
             background: none;
             border: none;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 20px;
-            width: 50px;
-            height: 47px;
-            text-align: center;
+            width: var(--menu-right-width);
             border-radius: 0;
             display: flex;
             justify-content: center;
@@ -588,13 +624,14 @@
          }
    
          body.light-mode .menu-btn { color: rgba(0, 0, 0, 0.6); }
-         body.is-desktop .menu-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.1); }
+         body.is-desktop .menu-btn:hover { color: rgba(var(--reveal-hi), 1); background-color: rgba(var(--reveal-hi), 0.1); }
    
          .close-btn {
             position: relative;
             height: 50px;
+            margin-top: auto;
             background: rgba(0, 0, 0, 0.15);
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(var(--reveal-mid, 180, 30, 30), 0.6);
             border: none;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
@@ -621,6 +658,7 @@
             left: 0;
             right: 0;
             height: 1px;
+            opacity: var(--ro, 1);
             background: radial-gradient(
                130px circle at var(--rx, -9999px) var(--ry, -9999px),
                rgba(var(--reveal-hi),  0.95),
@@ -631,13 +669,14 @@
             z-index: 3;
          }
    
-         body.is-desktop .close-btn:hover { color: #f00; background-color: rgba(255, 0, 0, 0.08); }
+         body.is-desktop .close-btn:hover { color: rgba(var(--reveal-hi), 1); background-color: rgba(var(--reveal-hi), 0.08); }
    
          /* ==================== Reveal：floating-btn ==================== */
          /* --toggle-hi / --toggle-mid 由 JS updateProgress 随滚动进度实时写入 body，
             默认值对应初始状态（暗色主题、进度为 0）。                              */
          .floating-btn::before {
             border-radius: 50%;
+            opacity: var(--ro, 1);
             background: radial-gradient(
                80px circle at var(--rx, -9999px) var(--ry, -9999px),
                rgba(var(--toggle-hi,  255, 0,   0),   0.95),
@@ -648,14 +687,10 @@
 
          /* ==================== floating-btn 悬停发光（M2 移除 boxShadow='none' 后生效）==================== */
          body.is-desktop .floating-btn:hover {
-            box-shadow: 0 0 18px 5px rgba(var(--toggle-hi, 255, 0, 0), 0.40),
+            /* --toggle-glow 由 JS updateProgress 预构建完整 rgba() 字符串写入，避免 rgba(var(), alpha) 解析歧义 */
+            box-shadow: 0 0 20px 6px var(--toggle-glow, rgba(255, 0, 0, 0.45)),
                         0 6px 24px rgba(0, 0, 0, 0.45);
             transition: box-shadow 0.25s ease;
-         }
-
-         /* ==================== 菜单容器阴影 ==================== */
-         .side-menu-wrapper {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28);
          }
    
          .header, .floating-btn, .side-menu, .comments {
@@ -733,8 +768,7 @@
           return new Promise(resolve => {
             scrollFn();
             let lastPos  = getPosition();
-            let stable   = 0;
-            let stableAt = null;  // 首次稳定帧的时间戳，用于保证最短稳定时长
+            let stableAt = null;  // 首次位置稳定的时间戳
             let started  = false;
             const t0 = performance.now();
 
@@ -742,12 +776,12 @@
               const now = performance.now();
               const pos = getPosition();
               if (pos !== lastPos) {
-                started = true; stable = 0; stableAt = null; lastPos = pos;
+                started = true; stableAt = null; lastPos = pos;
               } else {
                 if (started) {
                   if (stableAt === null) stableAt = now;
-                  // 至少 3 帧 + 距首次稳定帧 ≥ 50ms，避免高帧率设备过早判定结束
-                  if (++stable >= 3 && now - stableAt >= 50) { resolve(); return; }
+                  // 纯时间判定：位置连续稳定 ≥ 50ms 即视为滚动结束
+                  if (now - stableAt >= 50) { resolve(); return; }
                 }
                 else if (now - t0 > 300) { resolve(); return; }
               }
@@ -777,25 +811,100 @@
           return Math.sqrt(dx * dx + dy * dy);
         }
 
-        /** 更新单个 Reveal 元素的 CSS 变量。rect 可由外部传入以复用缓存，省去 reflow。 */
+        /**
+         * 更新单个 Reveal 元素的 CSS 变量。
+         * --rx / --ry：始终写入真实坐标，不再跳 -9999px。
+         * --ro：距离衰减系数（0~1），在 range 内为 1，range 外经过半个 range 宽度的渐变区降至 0；
+         *        CSS 的 radial-gradient opacity 乘以此值，实现平滑淡出而非断片。
+         * rect 可由外部传入以复用缓存，省去 reflow。
+         */
         function updateRevealVar(el, mouseX, mouseY, range, distFn = distToRect, rect = null) {
           if (!el) return;
           const r    = rect || el.getBoundingClientRect();
           const dist = distFn(mouseX, mouseY, r);
-          if (dist <= range) {
-            el.style.setProperty('--rx', (mouseX - r.left) + 'px');
-            el.style.setProperty('--ry', (mouseY - r.top)  + 'px');
-          } else {
-            el.style.setProperty('--rx', '-9999px');
-            el.style.setProperty('--ry', '-9999px');
+          // O-2: --rx/--ry 脏检测，坐标未变时跳过写入（pointerup 等静止事件频繁触发时有效）
+          const rxVal = (mouseX - r.left) + 'px';
+          const ryVal = (mouseY - r.top)  + 'px';
+          if (el._revealRx !== rxVal) { el._revealRx = rxVal; el.style.setProperty('--rx', rxVal); }
+          if (el._revealRy !== ryVal) { el._revealRy = ryVal; el.style.setProperty('--ry', ryVal); }
+          // 衰减：range 内为 1，fadeZone 内线性降至 0，之外为 0
+          const fadeZone = range * 0.5;
+          const ro = dist <= range            ? 1
+                   : dist <= range + fadeZone ? 1 - (dist - range) / fadeZone
+                   : 0;
+          // O-1: 脏检测——对 0/1 直接写字面量（避免 toFixed 字符串分配），
+          //      中间值保留 3 位精度；相同值时跳过 setProperty，减少样式层写入。
+          //      上次写入值缓存在元素的 _revealRo 属性上，无需外部 Map。
+          const roStr = ro === 1 ? '1' : ro === 0 ? '0' : ro.toFixed(3);
+          if (el._revealRo !== roStr) {
+            el._revealRo = roStr;
+            el.style.setProperty('--ro', roStr);
           }
         }
 
-        /** 清除单个元素的 Reveal 变量。 */
+        /** 清除单个元素的 Reveal 变量（含衰减系数）。 */
         function clearRevealVar(el) {
           if (!el) return;
           el.style.setProperty('--rx', '-9999px');
           el.style.setProperty('--ry', '-9999px');
+          el.style.setProperty('--ro', '0');
+          el._revealRo = '0';   // O-1: 同步重置缓存，防止下次进入时脏检测误判
+          el._revealRx = '-9999px';  // O-2: 同步重置坐标缓存
+          el._revealRy = '-9999px';
+        }
+
+        // ==================== 1b. 颜色工具函数（HSL / chroma，供 Mica 采样器使用）====================
+        // 注：这些函数与 Reveal 效果无关，使用者是第 9 节 createMicaSampler。
+        //     因为被 createMicaSampler 闭包捕获，须在其之前定义，故放在此处。
+
+        function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+        /** 过滤纯黑/纯白/无彩色（饱和度 < 8%）*/
+        function hasChroma(rgb) {
+          const [r, g, b] = rgb;
+          const max = Math.max(r, g, b), min = Math.min(r, g, b);
+          if (max < 8 || min > 247) return false;
+          const l = (max + min) / 510;
+          const s = l > 0.5 ? (max - min) / (510 - max - min)
+                             : (max - min) / (max + min + 1e-6);
+          return s > 0.08;
+        }
+
+        function rgbToHsl(r, g, b) {
+          r /= 255; g /= 255; b /= 255;
+          const max = Math.max(r, g, b), min = Math.min(r, g, b);
+          let h = 0, s = 0, l = (max + min) / 2;
+          if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+              case g: h = ((b - r) / d + 2) / 6; break;
+              case b: h = ((r - g) / d + 4) / 6; break;
+            }
+          }
+          return [h * 360, s * 100, l * 100];
+        }
+
+        /** hue2rgb 提升为模块级纯函数，避免每次 hslToRgb 调用时重复分配闭包对象。 */
+        function _hue2rgb(p, q, t) {
+          if (t < 0) t += 1; if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        }
+
+        function hslToRgb(h, s, l) {
+          h /= 360; s /= 100; l /= 100;
+          if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          return [
+            Math.round(_hue2rgb(p, q, h + 1/3) * 255),
+            Math.round(_hue2rgb(p, q, h)       * 255),
+            Math.round(_hue2rgb(p, q, h - 1/3) * 255),
+          ];
         }
 
 
@@ -836,6 +945,7 @@
           menuDrivingArticleCount: 0,        // 菜单驱动的文章滚动计数
           lastMouseX:              -9999,    // 最新鼠标位置（Reveal 写，Highlighter 读）
           lastMouseY:              -9999,
+          animatingOut:            false,    // 出场动画播放锁：true 期间屏蔽 scroll/pointer 对状态机的写入
         };
 
 
@@ -862,27 +972,6 @@
         // ==================== 6. 章节高亮器 ====================
 
         /**
-         * 菜单驱动文章滚动的公共路径：
-         *   - 维护 menuDrivingArticleCount，防止滚动期间 updateActiveHeading 干扰高亮
-         *   - 滚动结束后调用 onFinally(scrolled: boolean) 以便调用方继续状态机流转
-         * @param {string}   id        目标 heading 的 id
-         * @param {function} onFinally (scrolled: boolean) => void，在 finally 块中调用
-         */
-        function driveArticleScroll(id, onFinally) {
-          const heading = document.getElementById(id);
-          if (!heading) { onFinally(false); return; }
-          state.menuDrivingArticleCount++;
-          smoothScrollPromise(
-            () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-            () => window.scrollY
-          ).finally(() => {
-            state.menuDrivingArticleCount--;
-            onFinally(true);
-          });
-        }
-
-
-        /**
          * 封装了"章节 item 构建 + 高亮状态机"的全部逻辑。
          * 对外暴露三个接口：
          *   init(onItemClick)  - 构建 DOM、绑定事件，传入点击 item 后的回调
@@ -895,8 +984,34 @@
           const menuScrollDebounce  = createDebounce(onMenuScrollDebounced,  400);
 
           let allHeadings = [];
+          // J3: id → element Map，O(1) 查找，替代 querySelector
+          let _itemMap = new Map();
+          // J3: 章节项元素列表缓存，供 getCenteredItemId 使用
+          let allItems = [];
           // 缓存当前持有 .current / .hovered 的 DOM 元素，避免每次 setHighlight 调用 querySelectorAll
           let _currentHighlightEl = null;
+          // B3: 预缓存每个 heading 相对文档顶部的 offsetTop，避免 scroll 高频 reflow。
+          //     resize 时需调用 rebuildHeadingTopCache() 重建。
+          let _headingTops = [];
+          // Opt-1: 预缓存每个 chapter-item 的 offsetTop + offsetHeight，
+          //        供 getCenteredItemId 使用，避免 scroll 实时回调中 O(n) getBoundingClientRect reflow。
+          //        与 _headingTops 同步重建（init 后一次，resize 后一次）。
+          let _itemOffsetCache = [];  // { offsetTop, height }[]
+
+          // B3: 重建 heading offsetTop 缓存。读取 offsetTop 不触发 reflow（非 getBoundingClientRect）。
+          //     在 init 完成后调用一次，之后由外部 resize 事件触发重建。
+          function rebuildHeadingTopCache() {
+            _headingTops = allHeadings.map(h => {
+              let top = 0, el = h;
+              while (el) { top += el.offsetTop; el = el.offsetParent; }
+              return top;
+            });
+            // Opt-1: 同步重建 item offsetTop 缓存（读取 offsetTop 不触发 reflow）
+            _itemOffsetCache = allItems.map(item => ({
+              offsetTop: item.offsetTop,
+              height:    item.offsetHeight,
+            }));
+          }
 
           // 主动查询当前鼠标位置下是否有 chapter-item（不依赖浏览器补发的 pointer 事件）
           function getItemAtPointer() {
@@ -904,14 +1019,15 @@
             return el ? el.closest('.chapter-item') : null;
           }
 
-          // 唯一高亮入口：直接操作缓存引用，避免全量 querySelectorAll
+          // J4: 唯一高亮入口：_currentHighlightEl 避免移除时的 querySelector，
+          //     _itemMap 避免添加时的 querySelector
           function setHighlight(id) {
             if (_currentHighlightEl) {
               _currentHighlightEl.classList.remove('current', 'hovered');
               _currentHighlightEl = null;
             }
             if (!id) return;
-            const item = chapterListEl.querySelector(`.chapter-item[data-id="${id}"]`);
+            const item = _itemMap.get(id);
             if (item) {
               item.classList.add(state.activeState === 'scroll' ? 'current' : 'hovered');
               _currentHighlightEl = item;
@@ -920,30 +1036,69 @@
 
           // 滚动菜单让指定 item 居中（返回 Promise，避免硬编码超时）
           function scrollMenuToItem(id, behavior = 'smooth') {
-            const item = chapterListEl.querySelector(`.chapter-item[data-id="${id}"]`);
+            // J4: 使用 Map 替代 querySelector
+            const item = _itemMap.get(id);
             if (!item) return Promise.resolve();
-            const target = item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2;
+            const target = Math.max(0, item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2);
             if (chapterListEl.scrollHeight <= chapterListEl.clientHeight) return Promise.resolve();
+            // B6（修正位置）: 目标与当前 scrollTop 差距 < 1px，视为已到位，跳过滚动。
+            // 在此处判断（基于目标值）而非在 smoothScrollPromise 内判断（基于调用后的实时位置），
+            // 避免 smooth scroll 异步特性导致"调用后立即取位置仍未变"的误判。
+            if (Math.abs(target - chapterListEl.scrollTop) < 1) return Promise.resolve();
 
             state.programmaticScrollCount++;
+            // instant 滚动同帧完成，smoothScrollPromise 轮询会误判为"未启动"并等待 300ms。
+            // 在此处单独处理：同步执行 scrollTo 后直接 resolve，保持 count 语义正确。
+            if (behavior === 'instant') {
+              chapterListEl.scrollTo({ top: target, behavior: 'instant' });
+              state.programmaticScrollCount--;
+              return Promise.resolve();
+            }
             return smoothScrollPromise(
-              () => chapterListEl.scrollTo({ top: Math.max(0, target), behavior }),
+              () => chapterListEl.scrollTo({ top: target, behavior }),
               () => chapterListEl.scrollTop
             ).finally(() => { state.programmaticScrollCount--; });
           }
 
-          // 找到当前菜单可视区中心最近的 item
+          // Opt-1: getCenteredItemId 改用 _itemOffsetCache（offsetTop + offsetHeight），
+          //        完全不触发 reflow，scroll 实时回调中性能大幅提升。
+          //        containerHalf = chapterListEl.clientHeight / 2：容器高度在 resize 后才变化，
+          //        此处直接读取（不触发 reflow，clientHeight 为布局属性）。
           function getCenteredItemId() {
-            const items      = chapterListEl.querySelectorAll('.chapter-item');
-            const containerR = chapterListEl.getBoundingClientRect();
-            const centerY    = containerR.top + containerR.height / 2;
+            const half = chapterListEl.clientHeight / 2;
+            const scrollTop = chapterListEl.scrollTop;
             let best = null, bestDist = Infinity;
-            items.forEach(item => {
-              const r    = item.getBoundingClientRect();
-              const dist = Math.abs(r.top + r.height / 2 - centerY);
-              if (dist < bestDist) { bestDist = dist; best = item; }
-            });
+            for (let i = 0; i < allItems.length; i++) {
+              const { offsetTop, height } = _itemOffsetCache[i];
+              const itemCenter = offsetTop + height / 2 - scrollTop;
+              const dist = Math.abs(itemCenter - half);
+              if (dist < bestDist) { bestDist = dist; best = allItems[i]; }
+            }
             return best ? best.dataset.id : null;
+          }
+
+          // J2: driveArticleScroll 移入闭包内部，消除全局作用域污染。
+          //     使用闭包内的 state（与参数同名，无需额外传参）。
+          /**
+           * 菜单驱动文章滚动的公共路径：
+           *   - 目标 heading 距视口顶部 < 4px 时直接跳过（已在位），避免 hover 链忙等
+           *   - 维护 menuDrivingArticleCount，防止滚动期间 updateActiveHeading 干扰高亮
+           *   - 滚动结束后调用 onFinally(scrolled: boolean) 以便调用方继续状态机流转
+           */
+          function driveArticleScroll(id, onFinally) {
+            const heading = document.getElementById(id);
+            if (!heading) { onFinally(false); return; }
+            // 目标已在视口顶部（阈值 4px），跳过滚动，直接回调
+            const distToTop = Math.abs(heading.getBoundingClientRect().top);
+            if (distToTop < 4) { onFinally(false); return; }
+            state.menuDrivingArticleCount++;
+            smoothScrollPromise(
+              () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              () => window.scrollY
+            ).finally(() => {
+              state.menuDrivingArticleCount--;
+              if (!state.animatingOut) onFinally(true);   // 出场锁期间放弃回调，防止竞态写入状态机
+            });
           }
 
           // --- 状态：scroll ---
@@ -971,9 +1126,9 @@
             const scrollY = window.scrollY;
             const offset  = 80;
             let current   = allHeadings[0];
+            // B3: 使用预缓存的 offsetTop，避免每次 scroll 触发 O(n) getBoundingClientRect reflow
             for (let i = 0; i < allHeadings.length; i++) {
-              const top = allHeadings[i].getBoundingClientRect().top + scrollY;
-              if (top <= scrollY + offset) current = allHeadings[i];
+              if (_headingTops[i] <= scrollY + offset) current = allHeadings[i];
               else break;
             }
             if (current.id !== state.currentId || state.activeState !== 'scroll') {
@@ -1041,15 +1196,18 @@
             scrollMenuToItem(state.currentId);
           }
 
+          // Q3: 统一封装 isWheelScrolling 复位，防止多处散落导致遗漏
+          function clearWheelLock() { state.isWheelScrolling = false; }
+
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
             state.isMenuScrolling = false;
             const centerId = getCenteredItemId();
-            if (!centerId) { state.isWheelScrolling = false; return; }
+            if (!centerId) { clearWheelLock(); return; }
 
             scrollMenuToItem(centerId).then(() => {
               if (state.activeState !== 'menu' || state.hoveredItem) {
-                state.isWheelScrolling = false;
+                clearWheelLock();
                 return;
               }
               state.currentId = centerId;
@@ -1058,19 +1216,19 @@
               const targetHeading = document.getElementById(centerId);
               if (targetHeading) {
                 driveArticleScroll(centerId, () => {
-                  state.isWheelScrolling = false;
+                  clearWheelLock();
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
-                state.isWheelScrolling = false;
+                clearWheelLock();
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              state.isWheelScrolling = false;
+              clearWheelLock();
             });
           }
 
@@ -1102,18 +1260,24 @@
               });
 
               chapterListEl.appendChild(listItem);
+              // J3: 构建缓存，供 setHighlight / scrollMenuToItem / getCenteredItemId 使用
+              _itemMap.set(heading.id, listItem);
+              allItems.push(listItem);
             });
 
             if (allHeadings.length > 0) {
               state.currentId = allHeadings[0].id;
               applyScrollState(state.currentId);
+              rebuildHeadingTopCache();   // B3: 首次构建缓存
             }
 
-            window.addEventListener('scroll', updateActiveHeading, { passive: true });
+            // P1: window scroll 监听由外部 _onWindowScroll 统一调度，此处不再重复绑定。
+            //     updateActiveHeading 将被 _onWindowScroll 在每次 scroll 时调用。
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
             chapterListEl.addEventListener('wheel', () => {
+              if (state.animatingOut) return;   // 出场动画播放锁
               if (!state.isWheelScrolling) {
                 state.isWheelScrolling = true;
                 if (state.activeState === 'hover') {
@@ -1127,6 +1291,7 @@
 
             // 菜单列表滚动：实时更新高亮并触发防抖吸附
             chapterListEl.addEventListener('scroll', () => {
+              if (state.animatingOut) return;    // 出场动画播放锁
               if (state.programmaticScrollCount > 0) return;
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
@@ -1145,6 +1310,7 @@
               // pointerover：仅在进入新 item 且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerover', (e) => {
                 if (e.pointerType !== 'mouse') return;
+                if (state.animatingOut) return;    // 出场动画播放锁
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && item !== state.hoveredItem) onItemPointerEnter(item);
@@ -1153,6 +1319,7 @@
               // pointerout：relatedTarget 不在当前 item 内部、且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerout', (e) => {
                 if (e.pointerType !== 'mouse') return;
+                if (state.animatingOut) return;    // 出场动画播放锁
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
@@ -1161,10 +1328,24 @@
               // pointerleave（整个列表）：isWheelScrolling/isHoverScrolling 期间屏蔽
               chapterListEl.addEventListener('pointerleave', (e) => {
                 if (e.pointerType !== 'mouse') return;
+                if (state.animatingOut) return;    // 出场动画播放锁
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 if (state.activeState === 'hover') onItemPointerLeave();
               });
             }
+          }
+
+          /**
+           * 返回当前 chapterList 视口内可见的 chapter-item 列表（按 DOM 顺序）。
+           * 用于出场/入场动画的视口过滤，复用 _itemOffsetCache 避免 reflow。
+           */
+          function getAllItemsForViewport() {
+            const containerH = chapterListEl.clientHeight;
+            const scrollTop  = chapterListEl.scrollTop;
+            return allItems.filter((item, i) => {
+              const { offsetTop, height } = _itemOffsetCache[i] || { offsetTop: item.offsetTop, height: item.offsetHeight };
+              return offsetTop + height > scrollTop && offsetTop < scrollTop + containerH;
+            });
           }
 
           /** 菜单打开时调用：将当前高亮项即时居中。返回 Promise 供入场动画等待（M11 预留）。 */
@@ -1182,6 +1363,7 @@
           function cancelHover() {
             hoverScrollDebounce.cancel();
             state.isHoverScrolling = false;   // 确保 async 跳转中途关闭菜单时不留脏状态
+            state.isMenuScrolling  = false;   // Q3: 菜单关闭时一并复位，防止下次打开时 menuSyncDebounce 被阻塞
             state.hoveredItem = null;
             if (state.activeState === 'hover') {
               state.activeState = 'scroll';
@@ -1189,7 +1371,7 @@
             }
           }
 
-          return { init, syncToMenu, cancelHover };
+          return { init, syncToMenu, cancelHover, updateActiveHeading, rebuildHeadingTopCache, getAllItems: () => allItems, getAllItemsForViewport };
         }
 
 
@@ -1200,7 +1382,7 @@
          *   resizeCanvas()   - 菜单打开时调用，初始化 canvas 尺寸
          *   clearAllReveal() - 菜单关闭时调用，清除所有光效
          */
-        function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, targets, state }) {
+        function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, sideMenuEl, targets, state, getAllItems }) {
           const ctx = canvasEl.getContext('2d');
           let cachedMenuRect  = null;
 
@@ -1214,10 +1396,17 @@
           let rafPending      = false;
           // ④ target rect 缓存：fixed 定位元素只在 resize / 菜单打开时位置变化，无需每帧 reflow
           let cachedTargetRects = null; // Map<el, DOMRect>
-
+          // ⑤ sideMenu rect 缓存：光照光层坐标基准（整个菜单含 menu-right），由 resizeCanvas 更新
+          let cachedSideMenuRect = null;
+          // ⑥ 动画播放标志：menuAppear 动画期间阻止 handleMove 用失效 rect 重建缓存
+          let _animating = false;
           const isMenuActive = () => menuWrapperEl.classList.contains('active');
 
-          /** 刷新 target rect 缓存。alwaysOn 元素始终缓存；其余只在菜单激活时才有有效位置。 */
+          /** 刷新 target rect 缓存。
+           *  alwaysOn 元素（menuToggle）在菜单关闭时可见，缓存其 rect 避免每帧 reflow；
+           *  菜单打开时 menuToggle 为 display:none，其 rect 无效，handleMove 会提前跳过。
+           *  其余 target 仅在菜单激活时才有有效位置。
+           */
           function refreshTargetRects() {
             cachedTargetRects = new Map();
             targets.forEach(({ el, alwaysOn }) => {
@@ -1227,11 +1416,12 @@
             });
           }
 
-          /** 构建 item rect 缓存（相对于 menuRect），使用调用方已有的 menuRect 避免重复 reflow。 */
+          /** 构建 item rect 缓存（相对于 menuRect），使用调用方已有的 menuRect 避免重复 reflow。
+           *  Decouple-1: 复用 Highlighter 暴露的 getAllItems()，避免重复 querySelectorAll。 */
           function buildItemRectCache(menuRect) {
-            cachedItemRects = Array.from(
-              chapterListEl.querySelectorAll('.chapter-item:not(:last-child)')
-            ).map(item => {
+            const items = getAllItems();
+            // 过滤最后一个 item（无分隔线），与原 :not(:last-child) 行为一致
+            cachedItemRects = items.slice(0, -1).map(item => {
               const r = item.getBoundingClientRect();
               return {
                 lineY:     r.bottom - menuRect.top,
@@ -1255,23 +1445,29 @@
             canvasEl.height      = r.height;
             canvasEl.style.left  = r.left + 'px';
             canvasEl.style.top   = r.top  + 'px';
-            cachedMenuRect = r;
+            cachedMenuRect     = r;
+            cachedSideMenuRect = null;   // 动画期间坐标无效，animationend 后再赋值
             updateColorCache();
             cachedItemRects   = null;
-            // target rect 缓存：menuAppear 动画期间 getBoundingClientRect 返回变换中的小尺寸，
-            // 先置 null（handleMove 会实时取 rect 降级），动画结束后再正式缓存。
+            // target rect / sideMenu rect：menuAppear 动画期间 getBoundingClientRect
+            // 返回变换中的小尺寸，先置 null，动画结束后统一刷新，避免光照光坐标偏移。
             cachedTargetRects = null;
             const wrapper = menuWrapperEl;
+            // P5-fix: 动画期间置标志，阻止 handleMove 用失效 rect 重建缓存
+            _animating = wrapper.getAnimations().length > 0;
             const onAnimEnd = () => {
               wrapper.removeEventListener('animationend', onAnimEnd);
-              if (isMenuActive()) refreshTargetRects();
+              _animating = false;
+              if (isMenuActive()) {
+                refreshTargetRects();
+                cachedSideMenuRect = sideMenuEl.getBoundingClientRect();
+              }
             };
-            // 若菜单已无动画在跑（如 resize 时），animationend 不会触发；
-            // 用 getAnimations() 判断，若无动画则立即刷新。
-            if (wrapper.getAnimations().length > 0) {
+            if (_animating) {
               wrapper.addEventListener('animationend', onAnimEnd);
             } else {
               refreshTargetRects();
+              cachedSideMenuRect = sideMenuEl.getBoundingClientRect();
             }
           }
 
@@ -1313,14 +1509,15 @@
             const colorHi  = cachedColorHi;
             const colorMid = cachedColorMid;
 
-            // 全局只取一次 rect，校验、缓存构建都用这同一个值
-            const menuRect = chapterListEl.getBoundingClientRect();
-
-            // 尺寸/位置校验：canvas 与实际位置不符时修正，并同步作废 item 缓存
-            if (canvasEl.width  !== Math.round(menuRect.width)  ||
+            // P3: 优先使用 cachedMenuRect（resizeCanvas 时已更新），仅在校验不符时才重新取，
+            //     避免高频 rAF 回调在 fixed 元素上重复触发 getBoundingClientRect reflow。
+            let menuRect = cachedMenuRect;
+            if (!menuRect ||
+                canvasEl.width  !== Math.round(menuRect.width)  ||
                 canvasEl.height !== Math.round(menuRect.height) ||
                 parseFloat(canvasEl.style.left) !== menuRect.left ||
                 parseFloat(canvasEl.style.top)  !== menuRect.top) {
+              menuRect            = chapterListEl.getBoundingClientRect();
               canvasEl.width      = menuRect.width;
               canvasEl.height     = menuRect.height;
               canvasEl.style.left = menuRect.left + 'px';
@@ -1335,6 +1532,8 @@
             // 懒加载：传入已有的 menuRect，避免再次 reflow
             if (!cachedItemRects) buildItemRectCache(menuRect);
 
+            // lineWidth 固定为 1，提到循环外避免每条分隔线重复设置
+            ctx.lineWidth = 1;
             cachedItemRects.forEach(({ lineY, lineLeft, lineRight }) => {
               if (lineY < 0 || lineY > canvasEl.height) return;
 
@@ -1355,7 +1554,6 @@
               ctx.beginPath();
               ctx.moveTo(lineLeft,  lineY);
               ctx.lineTo(lineRight, lineY);
-              ctx.lineWidth   = 1;
               ctx.strokeStyle = grad;
               ctx.stroke();
             });
@@ -1363,10 +1561,21 @@
 
           function clearAllReveal() {
             targets.forEach(({ el }) => clearRevealVar(el));
+            // 光照光层：重置全屏坐标，防止菜单关闭后光斑残留
+            sideMenuEl.style.setProperty('--lx', '-9999px');
+            sideMenuEl.style.setProperty('--ly', '-9999px');
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             canvasEl.classList.remove('active');
             rafPending = false;
+            _prevMenuActive = false;   // P4: 重置状态，确保下次菜单打开时 alwaysOn 元素能正确清除
+            // 菜单关闭后 menuToggle 重新可见，旧缓存（含 display:none 时的零尺寸 rect）已失效，
+            // 置 null 使下次 pointermove 重建缓存，确保 alwaysOn 元素 Reveal 坐标正确。
+            cachedTargetRects = null;
           }
+
+          // P4: alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
+          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
+          let _prevMenuActive = false;
 
           function handleMove(e) {
             if (e.pointerType && e.pointerType !== 'mouse') return;
@@ -1376,14 +1585,29 @@
 
             // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
             // 使用缓存 rect，避免每次 pointermove 对 fixed 元素重复 reflow
-            if (!cachedTargetRects) refreshTargetRects();
+            // P5-fix: 动画期间 cachedTargetRects 为 null，但 rect 此时无效，跳过重建
+            if (!cachedTargetRects && !_animating) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              // alwaysOn 元素（menuToggle）会因 display:none 导致缓存 rect 失效，
-              // 直接实时获取，开销可忽略（fixed 元素，每次 pointermove 只算一次）。
-              const rect = alwaysOn ? null : (cachedTargetRects.get(el) ?? null);
+              // P4: alwaysOn 元素（menuToggle）菜单打开时隐藏，只在状态切换帧清除一次
+              if (alwaysOn && menuActive) {
+                if (!_prevMenuActive) clearRevealVar(el);
+                return;
+              }
+              // 统一从缓存读取 rect；缓存为 null 或 key 缺失时降级到实时查询（防御性回退）
+              const rect = (cachedTargetRects && cachedTargetRects.get(el)) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
+            _prevMenuActive = menuActive;
+
+            // 光照光层（.menu-layer-light）全屏坐标写入：
+            // 不经过 range 裁切，鼠标在屏幕任意位置时均持续更新，
+            // 避免超出菜单边界时光源坐标跳到 -9999px 产生断片。
+            // 坐标系为相对于 .side-menu（光照光层的 position:absolute 定位父容器）。
+            if (menuActive && cachedSideMenuRect) {
+              sideMenuEl.style.setProperty('--lx', (e.clientX - cachedSideMenuRect.left) + 'px');
+              sideMenuEl.style.setProperty('--ly', (e.clientY - cachedSideMenuRect.top)  + 'px');
+            }
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
             if (menuActive) {
@@ -1405,8 +1629,9 @@
           window.addEventListener('blur',           clearAllReveal);
 
           function handleResize() {
-            cachedMenuRect  = null;
-            cachedItemRects = null;
+            cachedMenuRect     = null;
+            cachedSideMenuRect = null;
+            cachedItemRects    = null;
             resizeCanvas();
           }
 
@@ -1414,116 +1639,317 @@
         }
 
 
-        // ==================== 8. Mica 颜色采样器 ====================
+        // ==================== 8. 斑驳质感绘制器 ====================
         /**
-         * 通过 document.elementFromPoint 网格采样视口中心区域的主色调，
-         * 经 HSL 偏移后写入 CSS 变量，供五层结构和 Reveal 效果使用。
-         * 采样失败（含跨域 SecurityError）时静默降级，保留 CSS 默认值。
+         * createTexturePainter
+         * 负责向 .menu-layer-texture 注入 SVG 斑驳质感，并管理其生命周期。
          *
+         * 质感构成（三层叠加）：
+         *   ① 噪点底层   feTurbulence(fractalNoise) + feColorMatrix(saturate=0) + feBlend(overlay)
+         *   ② 划痕层     随机贝塞尔曲线路径，模拟拉丝/划痕
+         *   ③ 边缘磨损层 radialGradient 遮罩，四角更重
+         *
+         * 再生时机：
+         *   · markDirty()      → 仅置 _dirty = true（绑定到 scroll，零开销）
+         *   · paintIfNeeded()  → _dirty 时才真正重建，供 openMenu() 调用
+         *
+         * 对外暴露：markDirty() / paintIfNeeded() / paint()
+         */
+        function createTexturePainter({ layerEl }) {
+          let _dirty = true;   // 初始需要绘制一次
+
+          // ── 随机工具 ──────────────────────────────────────────────
+          function rand(min, max) { return min + Math.random() * (max - min); }
+          function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+          // ── 生成单条划痕路径（SVG path d 字符串）─────────────────
+          // 起点随机落在四边，终点偏向对侧，中途有贝塞尔弯折
+          // diag 由 buildSVG 预计算后传入，避免每条划痕重复开方
+          function makeScratchPath(w, h, diag) {
+            const edge = randInt(0, 3);
+            let x0, y0;
+            switch (edge) {
+              case 0: x0 = rand(0, w);  y0 = 0;          break;
+              case 1: x0 = w;           y0 = rand(0, h);  break;
+              case 2: x0 = rand(0, w);  y0 = h;           break;
+              default:x0 = 0;           y0 = rand(0, h);  break;
+            }
+            const length = rand(diag * 0.15, diag * 0.60);
+            const angle  = rand(0, Math.PI * 2);
+            const x1     = x0 + Math.cos(angle) * length;
+            const y1     = y0 + Math.sin(angle) * length;
+            const cpx    = (x0 + x1) / 2 + rand(-30, 30);
+            const cpy    = (y0 + y1) / 2 + rand(-30, 30);
+            return `M${x0.toFixed(1)},${y0.toFixed(1)} Q${cpx.toFixed(1)},${cpy.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+          }
+
+          // ── 生成完整 SVG 字符串 ───────────────────────────────────
+          function buildSVG(w, h, isLight) {
+            const noiseSeed    = randInt(0, 9999);
+            // 对角线长度：供所有划痕复用，避免 O(n) 重复开方
+            const diag         = Math.sqrt(w * w + h * h);
+
+            // 划痕数量：金属质感多，亚克力少
+            const scratchCount = isLight ? randInt(3, 7) : randInt(6, 14);
+            const scratches    = Array.from({ length: scratchCount }, () => makeScratchPath(w, h, diag));
+
+            // 划痕粗细与透明度：日间细而淡，夜间略粗略重
+            const scratchW     = isLight ? rand(0.3, 0.8)  : rand(0.5, 1.5);
+            const scratchAlpha = isLight ? rand(0.25, 0.45): rand(0.35, 0.60);
+
+            // 噪点频率：日间细腻，夜间粗粒
+            const noiseFreqX   = isLight ? rand(0.55, 0.80): rand(0.35, 0.55);
+            const noiseFreqY   = isLight ? rand(0.55, 0.80): rand(0.35, 0.55);
+            const noiseOctave  = isLight ? 4 : 3;
+
+            // 噪点填充色：日间浅灰（亚克力），夜间中灰（金属）
+            const noiseFill    = isLight ? 'rgba(200,200,210,0.18)' : 'rgba(160,160,170,0.22)';
+
+            // 边缘磨损：夜间暗晕（氧化感），日间亮晕（边缘反光）
+            const edgeColor    = isLight ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.65)';
+            const edgeAlpha    = isLight ? 0.50 : 0.60;
+
+            // 划痕颜色：日间白色高光，夜间浅银色
+            const scratchColor = isLight
+              ? `rgba(255,255,255,${scratchAlpha.toFixed(2)})`
+              : `rgba(220,220,230,${scratchAlpha.toFixed(2)})`;
+
+            const filterId = `tex-${noiseSeed}`;
+            const gradId   = `edge-${noiseSeed}`;
+
+            const defs = `<defs>
+    <filter id="${filterId}" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise"
+        baseFrequency="${noiseFreqX.toFixed(3)} ${noiseFreqY.toFixed(3)}"
+        numOctaves="${noiseOctave}" seed="${noiseSeed}" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+      <feBlend in="grayNoise" in2="SourceGraphic" mode="overlay"/>
+    </filter>
+    <radialGradient id="${gradId}" cx="50%" cy="50%" rx="68%" ry="62%">
+      <stop offset="0%"   stop-color="${edgeColor}" stop-opacity="0"/>
+      <stop offset="60%"  stop-color="${edgeColor}" stop-opacity="${(edgeAlpha * 0.3).toFixed(2)}"/>
+      <stop offset="100%" stop-color="${edgeColor}" stop-opacity="${edgeAlpha.toFixed(2)}"/>
+    </radialGradient>
+  </defs>`;
+
+            const noiseRect    = `<rect width="${w}" height="${h}" fill="${noiseFill}" filter="url(#${filterId})"/>`;
+            const scratchPaths = scratches.map(d =>
+              `<path d="${d}" stroke="${scratchColor}" stroke-width="${scratchW.toFixed(2)}" fill="none" stroke-linecap="round"/>`
+            ).join('\n      ');
+            const edgeRect     = `<rect width="${w}" height="${h}" fill="url(#${gradId})"/>`;
+
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" style="display:block">${defs}${noiseRect}<g>${scratchPaths}</g>${edgeRect}</svg>`;
+          }
+
+          // ── 公开接口 ──────────────────────────────────────────────
+
+          /** 标记需要重新生成（绑定到 scroll 事件，零开销） */
+          function markDirty() { _dirty = true; }
+
+          /** 仅在 _dirty 时重建 SVG，供 openMenu() 调用 */
+          function paintIfNeeded() {
+            if (!_dirty) return;
+            paint();
+          }
+
+          /** 强制重建 SVG */
+          function paint() {
+            _dirty = false;
+            const w = layerEl.offsetWidth  || layerEl.parentElement?.offsetWidth  || 250;
+            const h = layerEl.offsetHeight || layerEl.parentElement?.offsetHeight || 400;
+            const isLight = document.body.classList.contains('light-mode');
+            const svgStr  = buildSVG(w, h, isLight);
+            // SVG 内容完全由内部函数生成，不含任何外部输入，innerHTML 安全且比 DOMParser 更快
+            layerEl.innerHTML = svgStr;
+          }
+
+          return { markDirty, paintIfNeeded, paint };
+        }
+
+
+        // ==================== 9. Mica 颜色采样器 ====================
+
+        /**
+         * Mica 颜色采样器：两路合并方案
+         * 路A：视口内可见 <img> 元素 → 离屏 canvas getImageData（真实像素，权重×3）
+         * 路B：DOM 元素 backgroundColor + color（覆盖无图片场景）
+         * 优先使用有色彩的颜色（hasChroma），全部无彩时退回均值。
+         * 任何异常（含跨域 canvas 污染）静默降级，保留 CSS 变量默认值。
+         *
+         * J6: 采样结果通过 onComplete(btnDark, btnHi) 回调传出，
+         *     不再直接写入外部变量，保持工厂函数纯粹、可复用。
          * 对外暴露：sample() → Promise<void>
          */
-        function createMicaSampler() {
+        function createMicaSampler({ onComplete }) {
+
+          // ── 工具函数 ──────────────────────────────────────────
           function parseRgba(str) {
             const m = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
             return m ? [+m[1], +m[2], +m[3]] : null;
           }
-          function isOpaque(bg) {
-            if (!bg || bg === 'transparent') return false;
-            const m = bg.match(/rgba\([^)]+,\s*([\d.]+)\s*\)/);
-            return !(m && parseFloat(m[1]) < 0.05);
+          function isTransparent(str) {
+            if (!str || str === 'transparent') return true;
+            const m = str.match(/rgba\([^)]+,\s*([\d.]+)\s*\)/);
+            return !!(m && parseFloat(m[1]) < 0.05);
           }
-          function rgbToHsl(r, g, b) {
-            r /= 255; g /= 255; b /= 255;
-            const max = Math.max(r, g, b), min = Math.min(r, g, b);
-            let h = 0, s = 0, l = (max + min) / 2;
-            if (max !== min) {
-              const d = max - min;
-              s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-              switch (max) {
-                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                case g: h = ((b - r) / d + 2) / 6; break;
-                case b: h = ((r - g) / d + 4) / 6; break;
+          // hasChroma / rgbToHsl / hslToRgb / clamp 已提升至顶层工具函数区（1b），此处直接引用。
+
+          // ── 路A：从视口内 <img> 元素采像素 ──────────────────
+          function sampleFromImages() {
+            const vw = window.innerWidth, vh = window.innerHeight;
+            // M3: 只取视口中间 20% 矩形区域（以中心为基准，±10%）内的图片
+            const cx = vw / 2, cy = vh / 2;
+            const zoneW = vw * 0.1, zoneH = vh * 0.1;   // 半宽/半高
+            // Q2: filter + map 合并为单次遍历，每张图只调用一次 getBoundingClientRect
+            const candidates = [];
+            for (const img of document.querySelectorAll('img')) {
+              if (!img.complete || img.naturalWidth === 0) continue;
+              const r = img.getBoundingClientRect();
+              if (r.width <= 20 || r.height <= 20) continue;
+              if (r.right  > cx - zoneW && r.left   < cx + zoneW &&
+                  r.bottom > cy - zoneH && r.top    < cy + zoneH) {
+                candidates.push({ img, area: r.width * r.height });
               }
             }
-            return [h * 360, s * 100, l * 100];
-          }
-          function hslToRgb(h, s, l) {
-            h /= 360; s /= 100; l /= 100;
-            if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
-            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            const p = 2 * l - q;
-            const hue2rgb = (p, q, t) => {
-              if (t < 0) t += 1; if (t > 1) t -= 1;
-              if (t < 1/6) return p + (q - p) * 6 * t;
-              if (t < 1/2) return q;
-              if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-              return p;
-            };
-            return [
-              Math.round(hue2rgb(p, q, h + 1/3) * 255),
-              Math.round(hue2rgb(p, q, h)       * 255),
-              Math.round(hue2rgb(p, q, h - 1/3) * 255),
-            ];
-          }
-          function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-          async function sample() {
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => b.area - a.area);
             try {
-              const vw = window.innerWidth, vh = window.innerHeight;
-              const cx = vw / 2, cy = vh / 2;
-              const rx = vw * 0.1, ry = vh * 0.1;   // 视口中心 20%×20% 区域
-              const GRID = 4;
-              const colors = [];
+              const img = candidates[0].img;
+              const SIZE = 40;
+              const offscreen = document.createElement('canvas');
+              offscreen.width = SIZE; offscreen.height = SIZE;
+              const ctx = offscreen.getContext('2d');
+              ctx.drawImage(img, 0, 0, SIZE, SIZE);
+              const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+              let rSum = 0, gSum = 0, bSum = 0, count = 0;
+              for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 128) continue;
+                rSum += data[i]; gSum += data[i+1]; bSum += data[i+2];
+                count++;
+              }
+              if (count === 0) return null;
+              return [Math.round(rSum/count), Math.round(gSum/count), Math.round(bSum/count)];
+            } catch (_) {
+              return null;  // 跨域污染，静默忽略
+            }
+          }
 
-              for (let i = 0; i < GRID; i++) {
-                for (let j = 0; j < GRID; j++) {
-                  const x = cx - rx + rx * 2 * i / (GRID - 1);
-                  const y = cy - ry + ry * 2 * j / (GRID - 1);
-                  let el = document.elementFromPoint(x, y);
-                  // 向上遍历 DOM 树，找第一个不透明背景色
-                  while (el && el !== document.documentElement) {
-                    const bg = getComputedStyle(el).backgroundColor;
-                    if (isOpaque(bg)) {
-                      const rgb = parseRgba(bg);
-                      if (rgb) { colors.push(rgb); break; }
+          // ── 路B：从 DOM 元素采 backgroundColor + color ───────
+          function sampleFromDOM() {
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const cx = vw / 2, cy = vh / 2;
+            // M4: ±10% 使总覆盖宽度为视口的 20%（原为 ±20% 即 40%）
+            const rx = vw * 0.1, ry = vh * 0.1;
+            const GRID = 4;
+            const colors = [];
+            // B2: 跨采样点去重，避免多点命中同一容器时重复 getComputedStyle
+            const visited = new Set();
+            for (let i = 0; i < GRID; i++) {
+              for (let j = 0; j < GRID; j++) {
+                const x = cx - rx + rx * 2 * i / (GRID - 1);
+                const y = cy - ry + ry * 2 * j / (GRID - 1);
+                let el = document.elementFromPoint(x, y);
+                while (el && el !== document.documentElement) {
+                  if (!visited.has(el)) {
+                    visited.add(el);
+                    const cs = getComputedStyle(el);
+                    if (!isTransparent(cs.backgroundColor)) {
+                      const rgb = parseRgba(cs.backgroundColor);
+                      if (rgb) colors.push(rgb);
                     }
-                    el = el.parentElement;
+                    // 采文字色：有直接文本子节点的元素
+                    for (const node of el.childNodes) {
+                      if (node.nodeType === 3 && node.textContent.trim()) {
+                        const rgb = parseRgba(cs.color);
+                        if (rgb) colors.push(rgb);
+                        break;
+                      }
+                    }
                   }
+                  el = el.parentElement;
                 }
               }
-              if (colors.length === 0) return;   // 采样为空，静默降级
+            }
+            return colors;
+          }
 
-              // 计算区域平均色
-              const [rA, gA, bA] = colors
+          // ── 主采样：两路合并，有色彩优先 ─────────────────────
+          async function sample() {
+            try {
+              const allColors = [];
+
+              const imgColor = sampleFromImages();
+              if (imgColor) {
+                // 图片像素权重×3（代表性强）
+                allColors.push(imgColor, imgColor, imgColor);
+              }
+              allColors.push(...sampleFromDOM());
+
+              if (allColors.length === 0) return;
+
+              const chromaColors = allColors.filter(hasChroma);
+              const source = chromaColors.length > 0 ? chromaColors : allColors;
+
+              const len = source.length;
+              const [rA, gA, bA] = source
                 .reduce((a, c) => [a[0]+c[0], a[1]+c[1], a[2]+c[2]], [0,0,0])
-                .map(v => Math.round(v / colors.length));
+                .map(v => Math.round(v / len));
 
-              const [h, s, l] = rgbToHsl(rA, gA, bA);
+              // M5（修正）: 亮色/暗色推导
+              // 亮色：夜间 = 基准色（×1.0），日间 = 基准色 ×1.15，各通道钳位 [0,255]
+              const isLight = document.body.classList.contains('light-mode');
+              const hiMul   = isLight ? 1.15 : 1.0;
+              const rgbHi   = [rA, gA, bA].map(v => Math.min(255, Math.round(v * hiMul)));
+              // 暗色：夜间 = 基准色 ×0.35（调暗65%），日间 = 基准色 ×0.40（调暗60%）
+              const darkMul = isLight ? 0.40 : 0.35;
+              const rgbDark = [rA, gA, bA].map(v => Math.round(v * darkMul));
+              // --reveal-mid：亮色与暗色的中间值
+              const rgbMid  = rgbHi.map((v, i) => Math.round((v + rgbDark[i]) / 2));
+              // --mica-dark-left/right 均从暗色派生，right 略有差异（+5 偏亮，钳位）
+              const rgbDarkL = rgbDark;
+              // 夜间模式：右侧比左侧暗 25%（×0.75）；日间模式保持微小差异（+5 偏亮）
+              const rgbDarkR = isLight
+                ? rgbDark.map(v => Math.min(255, v + 5))
+                : rgbDark.map(v => Math.round(v * 0.75));
 
-              // HSL 偏移：+17% 亮度 → 光效色；-17% 亮度 → 深色层；饱和度略降 → mid/right
-              const lHi    = clamp(l + 17, 0, 100);
-              const lDark  = clamp(l - 17, 0, 100);
-              const sDim   = s * 0.82;
+              // 体积光颜色（--volume-light）：HSL 空间调整，与 --reveal-hi 独立
+              // 日间：基准色 L+15%，S+30%；夜间：基准色 L-20%，S+30%
+              const [bH, bS, bL] = rgbToHsl(rA, gA, bA);
+              const vlL = clamp(bL + (isLight ? 15 : -20), 0, 100);
+              const vlS = clamp(bS + 30, 0, 100);
+              const rgbVol = hslToRgb(bH, vlS, vlL);
 
-              const rgbHi    = hslToRgb(h, s,   lHi);
-              const rgbMid   = hslToRgb(h, sDim, lHi);
-              const rgbDarkL = hslToRgb(h, s,   lDark);
-              const rgbDarkR = hslToRgb(h, sDim, clamp(lDark + 3, 0, 100));
+              document.body.style.setProperty('--reveal-hi',      rgbHi.join(', '));
+              document.body.style.setProperty('--reveal-mid',     rgbMid.join(', '));
+              document.body.style.setProperty('--mica-dark-left', rgbDarkL.join(', '));
+              document.body.style.setProperty('--mica-dark-right',rgbDarkR.join(', '));
+              document.body.style.setProperty('--volume-light',   rgbVol.join(', '));
 
-              document.body.style.setProperty('--reveal-hi',       rgbHi.join(', '));
-              document.body.style.setProperty('--reveal-mid',      rgbMid.join(', '));
-              document.body.style.setProperty('--mica-dark-left',  rgbDarkL.join(', '));
-              document.body.style.setProperty('--mica-dark-right', rgbDarkR.join(', '));
+              // J6: 通过回调传出结果，不直接写入外部变量
+              onComplete(rgbDark, rgbHi);
             } catch (_) {
-              // 静默降级：跨域 SecurityError 或其他异常，保留 CSS 变量现有默认值
+              // 静默降级：CSS 变量保持默认值，onComplete 不调用，_micaActive 保持 false
             }
           }
 
-          return { sample };
+          // _dirty：页面滚动后内容变化，下次 openMenu 才重新采样；初始为 true（首次必须采）
+          let _mDirty = true;
+
+          /** 标记采样结果已过期（绑定到 scroll 事件，零开销）*/
+          function markDirty() { _mDirty = true; }
+
+          /** 仅在 _dirty 时执行采样，供 openMenu 调用 */
+          async function sampleIfNeeded() {
+            if (!_mDirty) return;
+            await sample();
+            _mDirty = false;
+          }
+
+          return { sample, sampleIfNeeded, markDirty };
         }
 
 
-        // ==================== 9. 主初始化 ====================
+        // ==================== 10. 主初始化 ====================
 
         // --- 创建高亮器（此时 closeMenu 尚未定义，通过回调注入）---
         const highlighter = createChapterHighlighter({
@@ -1533,8 +1959,99 @@
           state,
         });
 
-        // --- Mica 采样器（M5）---
-        const micaSampler = createMicaSampler();
+        // J8: updateProgress 中 Mica 模式下 --toggle-hi/mid 固定为采样色端点，
+        //     不随滚动进度 t 变化——这是设计有意为之（Mica 色相驱动，非进度驱动）。
+        // _lastBgValue:  缓存上次写入的背景色打包值，避免未变时重复 style 写入
+        // _micaActive:   Mica 采样成功后置 true，updateProgress 改用 Mica 端点
+        // _micaColorDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
+        // _micaColorHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
+        let _lastBgValue  = -1;
+        let _lastHiColor  = '';    // P5: --toggle-hi/mid/glow 缓存，Mica 模式下值固定，避免重复 setProperty
+        let _lastMidColor = '';
+        let _micaActive  = false;
+        let _micaColorDark = [0,   0,   0];
+        let _micaColorHi   = [255, 0,   0];
+
+        // --- Mica 采样器（J6: 通过 onComplete 回调写入外部状态）---
+        // J7: 传入 onComplete，在采样成功后更新模块级变量并触发进度指示器刷新
+        const micaSampler = createMicaSampler({
+          onComplete(btnDark, btnHi) {
+            _micaColorDark = btnDark;
+            _micaColorHi   = btnHi;
+            _micaActive  = true;
+            updateProgress();
+          }
+        });
+
+        /**
+         * animationController
+         * 统一管理所有 chapter-item 的 Web Animations API 实例。
+         * 职责：
+         *   play(items, buildKeyframes, duration, baseDelay, delayStep)
+         *     - 对每个 item 调用 element.animate()，存储 Animation 实例
+         *     - buildKeyframes(item) 返回该 item 的 keyframe 数组
+         *     - 返回 Promise，在最后一个动画结束后 resolve
+         *   cancel()
+         *     - 立即取消所有正在播放的动画（出场被打断时使用）
+         *   getSnapshot()
+         *     - 读取每个 item 当前的 opacity / translateX 中间值
+         *     - 返回 Map<element, { opacity, translateX }>
+         *     - 供打断机制（入场打断出场）反向构造 keyframes 使用（第2步预留）
+         */
+        const animationController = (() => {
+          // element → Animation 实例
+          const _map = new Map();
+
+          function play(items, buildKeyframes, duration, baseDelay, delayStep) {
+            // 取消已有动画（防止快速重复触发时叠加）
+            cancel();
+            const promises = items.map((item, i) => {
+              const anim = item.animate(buildKeyframes(item), {
+                duration,
+                delay:    baseDelay + i * delayStep,
+                easing:   'ease-in',
+                fill:     'forwards',   // 动画结束后保持末帧状态，直到 cancel() 清除
+              });
+              _map.set(item, anim);
+              return anim.finished;
+            });
+            // 全部完成后清除 forwards 填充，将样式控制权还给 CSS
+            return Promise.all(promises).then(() => {
+              _map.forEach(anim => anim.cancel());
+              _map.clear();
+            });
+          }
+
+          function cancel() {
+            _map.forEach(anim => anim.cancel());
+            _map.clear();
+          }
+
+          /**
+           * 读取每个 item 当前动画中间值（供打断机制使用，第2步预留）。
+           * 通过 getComputedStyle 读取合成后的实际值，与 fill:forwards 兼容。
+           */
+          function getSnapshot() {
+            const snap = new Map();
+            _map.forEach((anim, el) => {
+              const cs         = getComputedStyle(el);
+              const transform  = cs.transform;
+              let translateX   = 0;
+              if (transform && transform !== 'none') {
+                // matrix(a,b,c,d,tx,ty) → tx 为第5个值
+                const parts = transform.match(/matrix\(([^)]+)\)/);
+                if (parts) translateX = parseFloat(parts[1].split(',')[4]) || 0;
+              }
+              snap.set(el, {
+                opacity:    parseFloat(cs.opacity) || 0,
+                translateX,
+              });
+            });
+            return snap;
+          }
+
+          return { play, cancel, getSnapshot };
+        })();
 
         /**
          * buildMenuLayers（M6）：向 .side-menu 注入五层结构 DOM。
@@ -1554,32 +2071,106 @@
         }
         buildMenuLayers();
 
+        // --- 斑驳质感绘制器 ---
+        // buildMenuLayers 执行后 .menu-layer-texture 已存在于 DOM
+        const texturePainter = createTexturePainter({
+          layerEl: sideMenu.querySelector('.menu-layer-texture'),
+        });
+
+        // 文章滚动时标记两个需要随页面内容更新的模块：质感绘制器 + Mica 采样器
+        // P1: 三路 scroll 回调合并为一个监听器，减少每帧事件分发开销
+        function _onWindowScroll() {
+          highlighter.updateActiveHeading();
+          updateProgress();
+          texturePainter.markDirty();
+          micaSampler.markDirty();
+        }
+        window.addEventListener('scroll', _onWindowScroll, { passive: true });
+
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
+        // 防重入标志：openMenu / closeMenu 均含 await，快速重复触发时直接退出，避免 DOM 状态错乱。
+        let _menuOpening = false;
+        let _menuClosing = false;
+
         async function openMenu() {
-          sideMenuWrapper.classList.add('active');
-          sideMenu.classList.add('active');
-          menuMask.classList.add('active');
-          menuToggle.style.display = 'none';    // 同步隐藏按钮，防止重复点击
-          state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
-          // M5: Mica 采样（写 --reveal-hi/mid 等变量）；必须在 reveal.resizeCanvas() 之前
-          await micaSampler.sample();
-          highlighter.syncToMenu();
-          if (isDesktop) {
-            reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
-            reveal.attachScrollListener();
+          if (_menuOpening) return;
+          _menuOpening = true;
+          try {
+            // 若出场动画正在播放（用户快速关→开），立即中断并释放锁
+            if (state.animatingOut) {
+              animationController.cancel();
+              state.animatingOut = false;
+              _menuClosing = false;   // 同步重置，使 closeMenu 可再次进入
+            }
+            state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
+            // M5 Fix3: 必须在菜单显示之前采样，否则菜单覆盖视口，只能采到菜单自身的灰色
+            await micaSampler.sampleIfNeeded();
+            sideMenuWrapper.classList.add('active');
+            sideMenu.classList.add('active');
+            menuMask.classList.add('active');
+            menuToggle.style.display = 'none';
+            // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
+            texturePainter.paintIfNeeded();
+            highlighter.syncToMenu();
+            if (isDesktop && reveal) {
+              reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
+              reveal.attachScrollListener();
+            }
+          } finally {
+            _menuOpening = false;
           }
         }
 
-        function closeMenu() {
+        async function closeMenu() {
+          if (!sideMenuWrapper.classList.contains('active')) return;
+          if (_menuClosing) return;
+          _menuClosing = true;
+
+          // ── 出场动画 ──────────────────────────────────────────
+          // 1. 获取当前视口内可见的 chapter-item（视口外直接 display:none，无动画）
+          const visibleItems = highlighter.getAllItemsForViewport();
+
+          if (visibleItems.length > 0) {
+            // 2. 置出场锁：屏蔽 scroll/wheel/pointer 对状态机的干扰
+            state.animatingOut = true;
+
+            // 3. 播放出场动画：translateX(0 → 20px) + opacity(1 → 0)
+            //    延迟从左到右递增（视觉上从右往左消失：右侧先出，左侧后出）
+            //    items 按 DOM 顺序排列（从上到下 = 从左到右缩进），
+            //    反转后最右侧（最深缩进）的 item delay 最小，最左侧 delay 最大。
+            const reversed     = visibleItems.slice().reverse();
+            const DURATION     = 300;   // ms，与入场动画时长保持一致
+            const BASE_DELAY   = 0;
+            const DELAY_STEP   = 20;    // ms，每项递增
+
+            await animationController.play(
+              reversed,
+              () => [
+                { transform: 'translateX(0px)',  opacity: 1 },
+                { transform: 'translateX(20px)', opacity: 0 },
+              ],
+              DURATION,
+              BASE_DELAY,
+              DELAY_STEP
+            );
+
+            // 4. 出场完成，释放锁
+            state.animatingOut = false;
+          }
+
+          // ── 真正隐藏菜单（动画结束后） ──────────────────────
           sideMenuWrapper.classList.remove('active');
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          if (isDesktop) {
+          if (isDesktop && reveal) {
             reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
             reveal.clearAllReveal();
           }
+          // cancelHover 后移到动画结束后，彻底消除与 driveArticleScroll finally 的竞态
           highlighter.cancelHover();
+
+          _menuClosing = false;
         }
 
         // --- 初始化高亮器（传入 closeMenu 作为 item 点击回调）---
@@ -1592,6 +2183,7 @@
             canvasEl:      document.getElementById('menuRevealCanvas'),
             chapterListEl: chapterList,
             menuWrapperEl: sideMenuWrapper,
+            sideMenuEl:    sideMenu,
             targets: [
               { el: menuToggle,      range: 60, alwaysOn: true,  distFn: distToRect    },
               { el: sideMenuWrapper, range: 80, alwaysOn: false, distFn: distToRect    },
@@ -1599,14 +2191,17 @@
               { el: closeBtn,        range: 80, alwaysOn: false, distFn: distToTopEdge },
             ],
             state,
+            getAllItems: () => highlighter.getAllItems(),
           });
         }
 
-        // resize 同步进度条颜色 + canvas 尺寸（合并为单一监听器，桌面/移动端均生效）
-        window.addEventListener('resize', () => {
+        // resize：debounce 100ms，避免拖拽窗口时 getBoundingClientRect 高频触发
+        const _resizeDebounce = createDebounce(() => {
+          highlighter.rebuildHeadingTopCache();  // B3: 窗口尺寸变化后 offsetTop 可能变化
           if (reveal) reveal.handleResize();
           updateProgress();
-        }, { passive: true });
+        }, 100);
+        window.addEventListener('resize', () => _resizeDebounce.call(), { passive: true });
 
         // --- 按钮事件 ---
         menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
@@ -1616,7 +2211,7 @@
 
         toBottomBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
           closeMenu();
         });
 
@@ -1633,46 +2228,81 @@
           closeMenu();
         });
 
-        // ==================== 10. 滚动进度指示器（保持原样）====================
-        // 缓存上次写入的 redValue，避免值未变时重复触发 style 写入
-        let _lastRedValue = -1;
+        // ==================== 11. 滚动进度指示器 ====================
 
-        function updateProgress() {
-          const scrollHeight   = document.documentElement.scrollHeight - window.innerHeight;
-          const scrollPercent  = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
-          const redValue       = Math.floor(scrollPercent * 255);
-
-          if (redValue !== _lastRedValue) {
-            _lastRedValue = redValue;
-            menuToggle.style.backgroundColor = `rgb(${redValue}, 0, 0)`;
-            // ⚠️ 不再写 boxShadow，让 CSS :hover 规则正常生效（M7 依赖此修复）
+        /** 职责①：按钮背景色（滚动进度插值，写入 style.backgroundColor） */
+        function _updateBtnBg(t) {
+          const [dr, dg, db] = _micaColorDark;
+          const [hr, hg, hb] = _micaColorHi;
+          const bgR = Math.round(dr + (hr - dr) * t);
+          const bgG = Math.round(dg + (hg - dg) * t);
+          const bgB = Math.round(db + (hb - db) * t);
+          // 用合并值做脏检测（避免三通道各自比较）
+          const bgPacked = (bgR << 16) | (bgG << 8) | bgB;
+          if (bgPacked !== _lastBgValue) {
+            _lastBgValue = bgPacked;
+            menuToggle.style.backgroundColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
+            // 背景始终为深色系，字色固定白色保证可读性（日间/夜间均适用）
+            menuToggle.style.color = '#fff';
           }
-
-          const isLight    = _isLightMode;   // 读缓存，避免每次 scroll 触发 classList 查询
-          const fadeRatio  = 1 - scrollPercent;
-          let hiColor, midColor;
-          if (isLight) {
-            const r  = Math.round(20  + 60  * fadeRatio);
-            const g  = Math.round(20  + 60  * fadeRatio);
-            const b  = Math.round(60  + 120 * fadeRatio);
-            const r2 = Math.round(15  + 45  * fadeRatio);
-            const b2 = Math.round(50  + 110 * fadeRatio);
-            hiColor  = `${r}, ${g}, ${b}`;
-            midColor = `${r2}, ${g}, ${b2}`;
-          } else {
-            const gb    = Math.round(255 * (1 - fadeRatio));
-            const midR  = Math.round(180 * fadeRatio + 255 * (1 - fadeRatio));
-            const midGB = Math.round(gb * 0.5);
-            hiColor  = `255, ${gb}, ${gb}`;
-            midColor = `${midR}, ${midGB}, ${midGB}`;
-          }
-          // 直接写 CSS 变量，避免每帧重新解析整段样式规则
-          document.body.style.setProperty('--toggle-hi',  hiColor);
-          document.body.style.setProperty('--toggle-mid', midColor);
         }
 
-        window.addEventListener('scroll', updateProgress, { passive: true });
+        /**
+         * 职责②：Reveal 颜色变量（写入 --toggle-hi/mid/glow，供 ::before 伪元素使用）
+         * J8: Mica 模式下颜色由色相决定（固定），降级模式下随滚动进度插值。
+         */
+        function _updateRevealColors(t) {
+          const [dr, dg, db] = _micaColorDark;
+          const [hr, hg, hb] = _micaColorHi;
+          let hiColor, midColor;
+          if (_micaActive) {
+            // Mica 模式：hi 端直接用 _micaColorHi，mid 端取两端中间值
+            hiColor  = `${hr}, ${hg}, ${hb}`;
+            const mr = Math.round(dr + (hr - dr) * 0.5);
+            const mg = Math.round(dg + (hg - dg) * 0.5);
+            const mb = Math.round(db + (hb - db) * 0.5);
+            midColor = `${mr}, ${mg}, ${mb}`;
+          } else {
+            // 硬编码降级：与原逻辑一致
+            const fadeRatio = 1 - t;
+            if (_isLightMode) {
+              const r  = Math.round(20  + 60  * fadeRatio);
+              const g  = Math.round(20  + 60  * fadeRatio);
+              const b  = Math.round(60  + 120 * fadeRatio);
+              const r2 = Math.round(15  + 45  * fadeRatio);
+              const b2 = Math.round(50  + 110 * fadeRatio);
+              hiColor  = `${r}, ${g}, ${b}`;
+              midColor = `${r2}, ${g}, ${b2}`;
+            } else {
+              const gb    = Math.round(255 * (1 - fadeRatio));
+              const midR  = Math.round(180 * fadeRatio + 255 * (1 - fadeRatio));
+              const midGB = Math.round(gb * 0.5);
+              hiColor  = `255, ${gb}, ${gb}`;
+              midColor = `${midR}, ${midGB}, ${midGB}`;
+            }
+          }
+          // --toggle-glow: 预构建完整 rgba()，避免 rgba(var(),alpha) 跨浏览器解析歧义
+          // P5: hi/mid 均未变化时跳过，Mica 模式下这三个值在整个会话内几乎不变
+          if (hiColor !== _lastHiColor || midColor !== _lastMidColor) {
+            _lastHiColor  = hiColor;
+            _lastMidColor = midColor;
+            document.body.style.setProperty('--toggle-hi',   hiColor);
+            document.body.style.setProperty('--toggle-mid',  midColor);
+            document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
+          }
+        }
+
+        function updateProgress() {
+          const scrollHeight  = document.documentElement.scrollHeight - window.innerHeight;
+          const t = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
+          _updateBtnBg(t);
+          _updateRevealColors(t);
+        }
+
         updateProgress();
+        // 页面加载后立即取一次色，确保首次进入时按钮颜色就已匹配页面主色调
+        // 用 requestAnimationFrame 确保 DOM 完成首次渲染后再采样
+        requestAnimationFrame(() => micaSampler.sampleIfNeeded());
 
       </script>
 
