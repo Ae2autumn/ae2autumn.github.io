@@ -4,8 +4,9 @@
    <head>
 
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>gem - 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <link rel="icon" href="https://avatars.githubusercontent.com/u/195545824?v=4">
       <!--
         FOUC 防闪修复：在任何渲染发生前，检查 localStorage 与服务端主题是否冲突。
@@ -29,10 +30,6 @@
       </script>
       <style>
          /* ==================== 基础样式 ==================== */
-         html {
-            overflow-x: hidden;
-         }
-
          *, *::before, *::after {
             box-sizing: border-box;
          }
@@ -51,9 +48,12 @@
             padding: 20px;
             max-width: 1000px;
             margin: 0 auto;
+            position: relative;
             transition: background-color 0.5s ease, color 0.5s ease;
-            overflow-wrap: break-word;
+            overflow-x: hidden;
+            word-wrap: break-word;
             word-break: break-word;
+            overflow-wrap: break-word;
          }
    
          /* ==================== 主题颜色变量 ==================== */
@@ -162,6 +162,7 @@
             padding: 20px;
             padding-top: 0px;
             margin-bottom: 50px;
+            transition: color 0.5s ease;
             overflow-x: hidden;
          }
    
@@ -215,7 +216,6 @@
          }
    
          body.dark-mode .content p code { background-color: #3a3a3a; color: #f8f8f2; }
-         body.light-mode .content p code { background-color: #eef0f2; color: #333; }
    
          .content blockquote {
             margin: 1em 0;
@@ -250,7 +250,6 @@
    
          .content img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 4px; display: block; }
          .content hr { margin: 2em 0; border: none; border-top: 1px solid #ddd; }
-         body.dark-mode .content hr { border-top-color: #444; }
    
          .content a {
             color: #4da6ff;
@@ -272,10 +271,6 @@
             border-bottom: 1px solid rgba(107, 184, 255, 0.8);
             background-color: rgba(107, 184, 255, 0.1);
          }
-
-         body.light-mode .content a:hover {
-            color: #000;
-         }
    
          /* ==================== 评论区 ==================== */
          .comments {
@@ -288,7 +283,7 @@
          /* ==================== 亚克力浮动按钮 ==================== */
          .floating-btn {
             position: fixed;
-            bottom: max(30px, calc(env(safe-area-inset-bottom) + 10px));
+            bottom: 30px;
             right: 30px;
             width: 60px;
             height: 60px;
@@ -329,11 +324,10 @@
             backdrop-filter: blur(2px);
             -webkit-backdrop-filter: blur(2px);
             z-index: 998;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: none;
+            transition: opacity 0.3s ease;
          }
-         .menu-mask.active { opacity: 1; visibility: visible; }
+         .menu-mask.active { display: block; }
    
          /* ==================== 亚克力侧边菜单 wrapper ==================== */
          .side-menu-wrapper {
@@ -342,7 +336,6 @@
             right: 30px;
             width: 250px;
             height: 400px;
-            max-height: calc(100vh - 60px);
             max-width: calc(100vw - 60px);
             border-radius: 12px;
             z-index: 999;
@@ -353,7 +346,6 @@
    
          .side-menu-wrapper.active {
             display: block;
-            bottom: max(30px, calc(env(safe-area-inset-bottom) + 10px));
             animation: menuAppear 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
          }
    
@@ -705,14 +697,6 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
-         }
-
-         /* ==================== 减少动效（系统无障碍设置）==================== */
-         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-               transition-duration: 0.01ms !important;
-               animation-duration: 0.01ms !important;
-            }
          }
          
       </style>
@@ -3975,10 +3959,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
       <script>
         // ==================== 1. 工具函数 ====================
 
-        /** 根据系统"减少动效"设置决定滚动行为，避免前庭功能障碍用户不适 */
-        const _reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        function scrollBehavior() { return _reducedMotion ? 'instant' : 'smooth'; }
-
         /**
          * 通用防抖函数
          * 返回对象而非函数，方便在需要时精确 cancel。
@@ -4018,7 +3998,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
                   // 纯时间判定：位置连续稳定 ≥ 50ms 即视为滚动结束
                   if (now - stableAt >= 50) { resolve(); return; }
                 }
-                else if (now - t0 > 100) { resolve(); return; }
+                else if (now - t0 > 300) { resolve(); return; }
               }
               if (now - t0 > timeout) { resolve(); return; }
               requestAnimationFrame(check);
@@ -4289,7 +4269,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               return Promise.resolve();
             }
             return smoothScrollPromise(
-              () => chapterListEl.scrollTo({ top: target, behavior: scrollBehavior() }),
+              () => chapterListEl.scrollTo({ top: target, behavior }),
               () => chapterListEl.scrollTop
             ).finally(() => { state.programmaticScrollCount--; });
           }
@@ -4327,7 +4307,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (distToTop < 4) { onFinally(false); return; }
             state.menuDrivingArticleCount++;
             smoothScrollPromise(
-              () => heading.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }),
+              () => heading.scrollIntoView({ behavior: 'smooth', block: 'start' }),
               () => window.scrollY
             ).finally(() => {
               state.menuDrivingArticleCount--;
@@ -4489,9 +4469,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               listItem.addEventListener('click', (e) => {
                 e.stopPropagation();
                 state.currentId = heading.id;   // 立即同步，避免菜单关闭后高亮回退到旧章节
-                // 使用与 updateActiveHeading 相同的 80px offset，避免高亮与实际位置错位
-                const targetY = _headingTops[allHeadings.indexOf(heading)] - 80;
-                window.scrollTo({ top: Math.max(0, targetY), behavior: scrollBehavior() });
+                heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 onItemClick?.();
               });
 
@@ -4531,7 +4509,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               state.isMenuScrolling = true;
               state.activeState     = 'menu';
               const realtimeId = getCenteredItemId();
-              if (realtimeId && realtimeId !== state.currentId) setHighlight(realtimeId);
+              if (realtimeId) setHighlight(realtimeId);
               menuScrollDebounce.call();
             }, { passive: true });
 
@@ -4819,16 +4797,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             _prevMenuActive = menuActive;
 
             // 光照光层（.menu-layer-light）全屏坐标写入：
-            // 体积光半径 75px，超过 fadeZone（75*0.5=37.5）时光斑已完全不可见，跳过写入。
-            // 菜单不在视口中央时 cachedSideMenuRect 可能为 null，降级为始终写入。
+            // 不经过 range 裁切，鼠标在屏幕任意位置时均持续更新，
+            // 避免超出菜单边界时光源坐标跳到 -9999px 产生断片。
+            // 坐标系为相对于 .side-menu（光照光层的 position:absolute 定位父容器）。
             if (menuActive && cachedSideMenuRect) {
-              const sDistX = Math.max(cachedSideMenuRect.left - e.clientX, 0, e.clientX - cachedSideMenuRect.right);
-              const sDistY = Math.max(cachedSideMenuRect.top  - e.clientY, 0, e.clientY - cachedSideMenuRect.bottom);
-              const sDist  = Math.sqrt(sDistX * sDistX + sDistY * sDistY);
-              if (sDist <= 75 * 1.5) {
-                sideMenuEl.style.setProperty('--lx', (e.clientX - cachedSideMenuRect.left) + 'px');
-                sideMenuEl.style.setProperty('--ly', (e.clientY - cachedSideMenuRect.top)  + 'px');
-              }
+              sideMenuEl.style.setProperty('--lx', (e.clientX - cachedSideMenuRect.left) + 'px');
+              sideMenuEl.style.setProperty('--ly', (e.clientY - cachedSideMenuRect.top)  + 'px');
             }
 
             // Canvas 绘制：rAF 节流，每帧最多执行一次，合并高频 pointermove
@@ -4960,12 +4934,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             ).join('\n      ');
             const edgeRect     = `<rect width="${w}" height="${h}" fill="url(#${gradId})"/>`;
 
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" style="display:block">
-  ${defs}
-  ${noiseRect}
-  <g>${scratchPaths}</g>
-  ${edgeRect}
-</svg>`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" style="display:block">${defs}${noiseRect}<g>${scratchPaths}</g>${edgeRect}</svg>`;
           }
 
           // ── 公开接口 ──────────────────────────────────────────────
@@ -5011,7 +4980,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // ── 工具函数 ──────────────────────────────────────────
           function parseRgba(str) {
-            const m = str.match(/rgba?\(\s*(\d+)\s*[, ]\s*(\d+)\s*[, ]\s*(\d+)/);
+            const m = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
             return m ? [+m[1], +m[2], +m[3]] : null;
           }
           function isTransparent(str) {
@@ -5022,17 +4991,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           // hasChroma / rgbToHsl / hslToRgb / clamp 已提升至顶层工具函数区（1b），此处直接引用。
 
           // ── 路A：从视口内 <img> 元素采像素 ──────────────────
-          // 文章内容服务端渲染，图片列表在页面加载后不再变化，缓存一次即可
-          let _cachedImgs = null;
           function sampleFromImages() {
-            if (!_cachedImgs) _cachedImgs = Array.from(document.querySelectorAll('img'));
             const vw = window.innerWidth, vh = window.innerHeight;
             // M3: 只取视口中间 20% 矩形区域（以中心为基准，±10%）内的图片
             const cx = vw / 2, cy = vh / 2;
             const zoneW = vw * 0.1, zoneH = vh * 0.1;   // 半宽/半高
             // Q2: filter + map 合并为单次遍历，每张图只调用一次 getBoundingClientRect
             const candidates = [];
-            for (const img of _cachedImgs) {
+            for (const img of document.querySelectorAll('img')) {
               if (!img.complete || img.naturalWidth === 0) continue;
               const r = img.getBoundingClientRect();
               if (r.width <= 20 || r.height <= 20) continue;
@@ -5257,19 +5223,25 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           _menuOpening = true;
           try {
             state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
-            // M5 Fix3: 必须在菜单显示之前采样，否则菜单覆盖视口，只能采到菜单自身的灰色
-            await micaSampler.sampleIfNeeded();
+            // 先激活菜单 DOM，确保交互状态机立即就绪（touch/scroll 事件不被 Mica 采样延迟阻塞）
+            // Mica 采样在菜单显示后异步执行：视口已被菜单覆盖，采样结果仅作颜色刷新用，不影响交互
             sideMenuWrapper.classList.add('active');
             sideMenu.classList.add('active');
             menuMask.classList.add('active');
             menuToggle.style.display = 'none';
-            // 质感层：菜单 display:flex 后再取尺寸，确保 offsetWidth/Height 有效
+            // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
             texturePainter.paintIfNeeded();
             highlighter.syncToMenu();
             if (isDesktop && reveal) {
-              reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
+              reveal.resizeCanvas();
               reveal.attachScrollListener();
             }
+            // Mica 采样异步执行，不阻塞菜单交互；采样完成后用新颜色刷新 Reveal
+            micaSampler.sampleIfNeeded().then(() => {
+              if (isDesktop && reveal && sideMenuWrapper.classList.contains('active')) {
+                reveal.resizeCanvas();   // 用 Mica 新颜色更新颜色缓存
+              }
+            });
           } finally {
             _menuOpening = false;
           }
@@ -5321,25 +5293,25 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         // --- 按钮事件 ---
         menuToggle.addEventListener('click',  (e) => { e.stopPropagation(); openMenu(); });
         closeBtn.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
-        menuMask.addEventListener('click',    () => closeMenu());
+        menuMask.addEventListener('click',    (e) => { e.stopPropagation(); closeMenu(); });
         sideMenu.addEventListener('click',    (e) => e.stopPropagation());
 
         toBottomBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: scrollBehavior() });
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
           closeMenu();
         });
 
         middleBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           const middle = (document.documentElement.scrollHeight - window.innerHeight) / 2;
-          window.scrollTo({ top: middle, behavior: scrollBehavior() });
+          window.scrollTo({ top: middle, behavior: 'smooth' });
           closeMenu();
         });
 
         toTopBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          window.scrollTo({ top: 0, behavior: scrollBehavior() });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           closeMenu();
         });
 
@@ -5357,8 +5329,8 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           if (bgPacked !== _lastBgValue) {
             _lastBgValue = bgPacked;
             menuToggle.style.backgroundColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
-            // 日间模式背景为浅色系时用黑字，夜间模式用白字保证可读性
-            menuToggle.style.color = _isLightMode ? '#000' : '#fff';
+            // 背景始终为深色系，字色固定白色保证可读性（日间/夜间均适用）
+            menuToggle.style.color = '#fff';
           }
         }
 
