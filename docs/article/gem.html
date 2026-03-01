@@ -4144,7 +4144,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           menuDrivingArticleCount: 0,        // 菜单驱动的文章滚动计数
           lastMouseX:              -9999,    // 最新鼠标位置（Reveal 写，Highlighter 读）
           lastMouseY:              -9999,
-          animatingOut:            false,    // 出场动画播放锁：true 期间屏蔽 scroll/wheel/touch/pointer 对状态机的写入
         };
 
 
@@ -4392,7 +4391,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           }
 
           function onTouchEnd() {
-            if (state.animatingOut) return;
             if (state.hoveredItem) state.hoveredItem = null;
             if (state.activeState === 'menu') menuScrollDebounce.call();
           }
@@ -4435,7 +4433,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
             chapterListEl.addEventListener('wheel', () => {
-              if (state.animatingOut) return;
               if (!state.isWheelScrolling) {
                 state.isWheelScrolling = true;
                 if (state.activeState === 'hover') {
@@ -4449,7 +4446,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
             // 菜单列表滚动：实时更新高亮并触发防抖吸附
             chapterListEl.addEventListener('scroll', () => {
-              if (state.animatingOut) return;
               if (state.programmaticScrollCount > 0) return;
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
@@ -4468,7 +4464,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerover：仅在进入新 item 且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerover', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && item !== state.hoveredItem) onItemPointerEnter(item);
@@ -4477,7 +4472,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerout：relatedTarget 不在当前 item 内部、且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerout', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
@@ -4486,26 +4480,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerleave（整个列表）：isWheelScrolling/isHoverScrolling 期间屏蔽
               chapterListEl.addEventListener('pointerleave', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 if (state.activeState === 'hover') onItemPointerLeave();
               });
             }
-          }
-
-          /**
-           * 返回当前 chapterList 视口内可见的 chapter-item 列表（按 DOM 顺序）。
-           * 用于出场动画的视口过滤，避免对不可见 item 播放动画。
-           * 使用 offsetTop/offsetHeight（不触发 reflow）。
-           */
-          function getAllItemsForViewport() {
-            const containerH = chapterListEl.clientHeight;
-            const scrollTop  = chapterListEl.scrollTop;
-            return allItems.filter(item => {
-              const top = item.offsetTop;
-              const h   = item.offsetHeight;
-              return top + h > scrollTop && top < scrollTop + containerH;
-            });
           }
 
           /** 菜单打开时调用：将当前高亮项即时居中。返回 Promise 供入场动画等待（M11 预留）。 */
@@ -4530,7 +4508,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
 
-          return { init, syncToMenu, cancelHover, getAllItemsForViewport };
+          return { init, syncToMenu, cancelHover };
         }
 
 
@@ -4737,7 +4715,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // alwaysOn 元素（menuToggle）在菜单打开时为 display:none，直接跳过
               if (alwaysOn && menuActive) { clearRevealVar(el); return; }
               // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
-              const rect = (cachedTargetRects && cachedTargetRects.get(el)) ?? el.getBoundingClientRect();
+              const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
 
@@ -5118,60 +5096,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         });
 
         /**
-         * animationController
-         * 统一管理所有 chapter-item 的 Web Animations API 实例。
-         *   play(items, keyframes, duration, baseDelay, delayStep)
-         *     对每个 item 调用 element.animate()，返回 Promise（全部结束后 resolve）。
-         *   cancel()
-         *     立即取消所有正在播放的动画（出场被打断时使用）。
-         *   getSnapshot()
-         *     读取每个 item 当前的 opacity / translateX 中间值（第2步打断机制预留）。
-         */
-        const animationController = (() => {
-          const _map = new Map();
-
-          function play(items, keyframes, duration, baseDelay, delayStep) {
-            cancel();
-            const promises = items.map((item, i) => {
-              const anim = item.animate(keyframes, {
-                duration,
-                delay:  baseDelay + i * delayStep,
-                easing: 'ease-in',
-                fill:   'forwards',
-              });
-              _map.set(item, anim);
-              return anim.finished;
-            });
-            return Promise.all(promises).then(() => {
-              _map.forEach(anim => anim.cancel());
-              _map.clear();
-            });
-          }
-
-          function cancel() {
-            _map.forEach(anim => anim.cancel());
-            _map.clear();
-          }
-
-          function getSnapshot() {
-            const snap = new Map();
-            _map.forEach((_, el) => {
-              const cs        = getComputedStyle(el);
-              const transform = cs.transform;
-              let translateX  = 0;
-              if (transform && transform !== 'none') {
-                const parts = transform.match(/matrix\(([^)]+)\)/);
-                if (parts) translateX = parseFloat(parts[1].split(',')[4]) || 0;
-              }
-              snap.set(el, { opacity: parseFloat(cs.opacity) || 0, translateX });
-            });
-            return snap;
-          }
-
-          return { play, cancel, getSnapshot };
-        })();
-
-        /**
          * buildMenuLayers（M6）：向 .side-menu 注入五层结构 DOM。
          * 幂等设计：检测 .menu-layer-base 是否已存在，防止重复插入。
          * 在初始化阶段执行一次，菜单关闭/打开不会重新创建。
@@ -5202,20 +5126,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         }, { passive: true });
 
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
-        // 防重入标志：openMenu / closeMenu 均含 await，快速重复触发时直接退出，避免 DOM 状态错乱。
+        // 防重入标志：openMenu 含 await，若在 await 期间再次触发（如快速双击），
+        // 第二次调用直接退出，避免 DOM 状态错乱。
         let _menuOpening = false;
-        let _menuClosing = false;
 
         async function openMenu() {
           if (_menuOpening) return;
           _menuOpening = true;
           try {
-            // 出场动画正在播放时（用户快速关→开），立即中断并释放锁
-            if (state.animatingOut) {
-              animationController.cancel();
-              state.animatingOut = false;
-              _menuClosing = false;
-            }
             state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
             // M5 Fix3: 必须在菜单显示之前采样，否则菜单覆盖视口，只能采到菜单自身的灰色
             await micaSampler.sampleIfNeeded();
@@ -5237,43 +5155,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           }
         }
 
-        async function closeMenu() {
-          if (!sideMenuWrapper.classList.contains('active')) return;
-          if (_menuClosing) return;
-          _menuClosing = true;
-
-          // ── 出场动画 ──────────────────────────────────────────
-          const visibleItems = highlighter.getAllItemsForViewport();
-          if (visibleItems.length > 0) {
-            state.animatingOut = true;
-            // 视觉上从右往左消失：DOM 顺序反转后，最深缩进（右侧）的 item delay 最小
-            const reversed = visibleItems.slice().reverse();
-            await animationController.play(
-              reversed,
-              [
-                { transform: 'translateX(0px)',  opacity: 1 },
-                { transform: 'translateX(20px)', opacity: 0 },
-              ],
-              300,   // duration ms
-              0,     // baseDelay
-              20     // delayStep ms
-            );
-            state.animatingOut = false;
-          }
-
-          // ── 真正隐藏菜单（动画结束后） ──────────────────────
+        function closeMenu() {
           sideMenuWrapper.classList.remove('active');
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
           if (isDesktop) {
-            reveal.detachScrollListener();
+            reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
             reveal.clearAllReveal();
           }
-          // cancelHover 后移到动画结束后，消除与 driveArticleScroll finally 的竞态
           highlighter.cancelHover();
-
-          _menuClosing = false;
         }
 
         // --- 初始化高亮器（传入 closeMenu 作为 item 点击回调）---
