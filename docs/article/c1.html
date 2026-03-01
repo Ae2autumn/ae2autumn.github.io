@@ -2726,6 +2726,11 @@ Fu~fu~<br>
         /**
          * 基于 Promise 的 smooth scroll 完成检测。
          * 轮询位置变化判断滚动结束，避免硬编码超时的竞态。
+         *
+         * 状态机：
+         *   started = false → 滚动尚未发生，等待位置首次变化；
+         *                     若超过 300ms 仍无变化，视为目标已在位，直接 resolve。
+         *   started = true  → 滚动已进行中，等待位置连续稳定 ≥ 50ms 后 resolve。
          */
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
           return new Promise(resolve => {
@@ -2741,6 +2746,9 @@ Fu~fu~<br>
               if (pos !== lastPos) {
                 started = true; stableAt = null; lastPos = pos;
               } else {
+                // [FIX B1] 原代码此处为 !started，导致两个分支语义对调：
+                //   · 滚动已开始（started=true）→ 应等待 50ms 稳定，原代码却走 300ms 超时分支
+                //   · 滚动未开始（started=false）→ 应等待 300ms，原代码却走 50ms 立即 resolve
                 if (started) {
                   if (stableAt === null) stableAt = now;
                   // 纯时间判定：位置连续稳定 ≥ 50ms 即视为滚动结束
@@ -3170,6 +3178,11 @@ Fu~fu~<br>
             if (!centerId) { clearWheelLock(); return; }
 
             scrollMenuToItem(centerId).then(() => {
+              // 若菜单已被外部关闭或 hoveredItem 已被置为非 null（用户重新悬停），
+              // 则放弃后续的文章滚动与状态回落，clearWheelLock 仍须执行以解除屏蔽。
+              // 注意：此处不显式检查 activeState 是否仍为 'menu'——
+              //       外部状态变更（如 closeMenu 调用 cancelHover）已自行完成状态回落，
+              //       此处分支判断依赖 hoveredItem 作为"是否被外部接管"的信号。
               if (state.activeState !== 'menu' || state.hoveredItem) {
                 clearWheelLock();
                 return;
@@ -3268,29 +3281,32 @@ Fu~fu~<br>
             chapterListEl.addEventListener('touchcancel', onTouchEnd);
 
             if (isDesktop) {
-              // 事件委托：pointerover/pointerout 会冒泡，pointerenter/pointerleave 不冒泡。
-              // pointerover：仅在进入新 item 且没有程序驱动滚动时触发
-              chapterListEl.addEventListener('pointerover', (e) => {
-                if (e.pointerType !== 'mouse') return;
+              // 事件委托：over/out 会冒泡，enter/leave 不冒泡。
+              // 同时监听 pointer* 和 mouse* 两套事件，兼容 WebView 外接鼠标只派发 mouse* 的场景。
+              const onOver = (e) => {
+                if (e.pointerType && e.pointerType !== 'mouse') return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && item !== state.hoveredItem) onItemPointerEnter(item);
-              });
-
-              // pointerout：relatedTarget 不在当前 item 内部、且没有程序驱动滚动时触发
-              chapterListEl.addEventListener('pointerout', (e) => {
-                if (e.pointerType !== 'mouse') return;
+              };
+              const onOut = (e) => {
+                if (e.pointerType && e.pointerType !== 'mouse') return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
-              });
-
-              // pointerleave（整个列表）：isWheelScrolling/isHoverScrolling 期间屏蔽
-              chapterListEl.addEventListener('pointerleave', (e) => {
-                if (e.pointerType !== 'mouse') return;
+              };
+              const onLeave = (e) => {
+                if (e.pointerType && e.pointerType !== 'mouse') return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 if (state.activeState === 'hover') onItemPointerLeave();
-              });
+              };
+
+              chapterListEl.addEventListener('pointerover',  onOver);
+              chapterListEl.addEventListener('mouseover',    onOver);
+              chapterListEl.addEventListener('pointerout',   onOut);
+              chapterListEl.addEventListener('mouseout',     onOut);
+              chapterListEl.addEventListener('pointerleave', onLeave);
+              chapterListEl.addEventListener('mouseleave',   onLeave);
             }
           }
 
@@ -3508,11 +3524,6 @@ Fu~fu~<br>
             });
           }
 
-          // alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
-          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
-          //     声明必须位于 clearAllReveal 之前，避免函数体内赋值触发 TDZ 隐患。
-          let _prevMenuActive = false;
-
           function clearAllReveal() {
             targets.forEach(({ el }) => clearRevealVar(el));
             // 光照光层：重置全屏坐标，防止菜单关闭后光斑残留
@@ -3527,7 +3538,17 @@ Fu~fu~<br>
             cachedTargetRects = null;
           }
 
+          // alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
+          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
+          let _prevMenuActive = false;
+
           function handleMove(e) {
+            // [FIX P1] 现代桌面浏览器同时派发 pointermove 和 mousemove，handleMove 会被触发两次。
+            // 当浏览器支持 PointerEvent 时，mousemove 为冗余事件，直接短路以避免：
+            //   · CSS 变量 setProperty 双重写入
+            //   · _prevMenuActive 在同一帧内被第二次调用读到已被第一次调用更新后的脏值
+            if (e.type === 'mousemove' && window.PointerEvent) return;
+
             if (e.pointerType && e.pointerType !== 'mouse') return;
             state.lastMouseX = e.clientX;
             state.lastMouseY = e.clientY;
@@ -3535,9 +3556,7 @@ Fu~fu~<br>
 
             // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
             // 使用缓存 rect，避免每次 pointermove 对 fixed 元素重复 reflow
-            // _animating 期间 cachedTargetRects 被有意置为 null（resizeCanvas 内），
-            //     此时菜单尺寸仍在变换中，rect 无效，跳过重建以防坐标错误。
-            //     animationend 回调会在动画结束后统一重建缓存，光效恢复响应。
+            // 动画期间 cachedTargetRects 为 null，rect 此时无效，跳过重建
             if (!cachedTargetRects && !_animating) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
@@ -3546,9 +3565,6 @@ Fu~fu~<br>
                 if (!_prevMenuActive) clearRevealVar(el);
                 return;
               }
-              // _animating 期间 cachedTargetRects 为 null（见上方注释），跳过本帧更新。
-              // 不降级到实时 getBoundingClientRect——动画中的 rect 值本身就不可靠。
-              if (!cachedTargetRects) return;
               // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
               const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
@@ -3579,8 +3595,10 @@ Fu~fu~<br>
           }
 
           document.addEventListener('pointermove',  handleMove);
+          document.addEventListener('mousemove',    handleMove);
           document.addEventListener('pointerup',    handleMove);
           document.addEventListener('pointerleave', clearAllReveal);
+          document.addEventListener('mouseleave',   clearAllReveal);
           window.addEventListener('blur',           clearAllReveal);
 
           function handleResize() {
@@ -3737,7 +3755,7 @@ Fu~fu~<br>
          */
         function createMicaSampler({ onComplete }) {
 
-          // ── 工具函数 ──────────────────────────────────────────
+          // ── 工具函数 ──────────────────────────────────────────────
           function parseRgba(str) {
             const m = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
             return m ? [+m[1], +m[2], +m[3]] : null;
@@ -3978,25 +3996,15 @@ Fu~fu~<br>
           // active class 同时充当防重入检查：菜单已打开时直接跳出
           if (sideMenuWrapper.classList.contains('active')) return;
           state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
-
-          // Mica 采样必须在 menuMask 激活之前、resizeCanvas() 之前执行：
-          //   · menuMask 激活后 elementFromPoint 命中遮罩（rgba(0,0,0,0.3)），采样结果变为纯黑。
-          //   · resizeCanvas() 内 updateColorCache() 读取 CSS 变量；若 Mica 尚未写入，颜色缓存将
-          //     持有旧值，导致本次打开期间光照光颜色错误。
-          // ⚠️ 风险提示：sampleIfNeeded 的 then() 回调为微任务，在当前同步块执行完毕后才运行。
-          //     sampleIfNeeded 内部采样全程同步（无真正 I/O），CSS 变量写入在 then() 触发前已完成，
-          //     故 resizeCanvas() 读到的必然是最新 Mica 颜色。
-          //     若未来 sampleIfNeeded 内部引入真正的异步操作（如 fetch），需在 openMenu 调用前预热，
-          //     否则菜单会短暂显示旧颜色。
+          // Mica 采样必须在 menuMask 激活之前执行：
+          // menuMask 是全屏 fixed 覆盖层（pointer-events: auto），激活后 elementFromPoint
+          // 的所有采样点均命中 menuMask（background: rgba(0,0,0,0.3)），导致采到纯黑色。
+          // sample() 内部无 await，DOM 查询全程同步，此处调用不阻塞后续菜单显示。
           micaSampler.sampleIfNeeded().then(() => {
-            // 双重检查：用户可能在采样微任务排队期间关闭了菜单
-            if (!sideMenuWrapper.classList.contains('active')) return;
-            if (isDesktop && reveal) {
-              reveal.resizeCanvas();         // Mica 新颜色已写入，updateColorCache() 读到最新值
-              reveal.attachScrollListener();
+            if (isDesktop && reveal && sideMenuWrapper.classList.contains('active')) {
+              reveal.resizeCanvas();   // 用 Mica 新颜色更新颜色缓存
             }
           });
-
           sideMenuWrapper.classList.add('active');
           sideMenu.classList.add('active');
           menuMask.classList.add('active');
@@ -4004,8 +4012,12 @@ Fu~fu~<br>
           // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
           texturePainter.paintIfNeeded();
           // TODO(入场动画)：实现爆炸入场动画时，需 await syncToMenu() 完成后再触发；
-          //                  届时将 openMenu 改为 async 并在此处 await。
+          //                  届时将 openMenu 恢复为 async 并在此处 await。
           highlighter.syncToMenu();
+          if (isDesktop && reveal) {
+            reveal.resizeCanvas();
+            reveal.attachScrollListener();
+          }
         }
 
         function closeMenu() {
