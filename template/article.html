@@ -574,14 +574,14 @@
       .menu-layer-texture {
          z-index: 10;
          mix-blend-mode: overlay;
-         opacity: var(--texture-opacity, 0.07);
+         opacity: var(--texture-opacity, 0.12);
          border-radius: 11px;
          overflow: hidden;
       }
 
       body.light-mode .menu-layer-texture {
          mix-blend-mode: soft-light;
-         opacity: var(--texture-opacity, 0.06);
+         opacity: var(--texture-opacity, 0.10);
       }
 
       /* ==================== 菜单左侧：章节列表 ==================== */
@@ -923,11 +923,6 @@
         /**
          * 基于 Promise 的 smooth scroll 完成检测。
          * 轮询位置变化判断滚动结束，避免硬编码超时的竞态。
-         *
-         * 状态机：
-         *   started = false → 滚动尚未发生，等待位置首次变化；
-         *                     若超过 300ms 仍无变化，视为目标已在位，直接 resolve。
-         *   started = true  → 滚动已进行中，等待位置连续稳定 ≥ 50ms 后 resolve。
          */
         function smoothScrollPromise(scrollFn, getPosition, timeout = 1000) {
           return new Promise(resolve => {
@@ -943,9 +938,6 @@
               if (pos !== lastPos) {
                 started = true; stableAt = null; lastPos = pos;
               } else {
-                // [FIX B1] 原代码此处为 !started，导致两个分支语义对调：
-                //   · 滚动已开始（started=true）→ 应等待 50ms 稳定，原代码却走 300ms 超时分支
-                //   · 滚动未开始（started=false）→ 应等待 300ms，原代码却走 50ms 立即 resolve
                 if (started) {
                   if (stableAt === null) stableAt = now;
                   // 纯时间判定：位置连续稳定 ≥ 50ms 即视为滚动结束
@@ -1375,11 +1367,6 @@
             if (!centerId) { clearWheelLock(); return; }
 
             scrollMenuToItem(centerId).then(() => {
-              // 若菜单已被外部关闭或 hoveredItem 已被置为非 null（用户重新悬停），
-              // 则放弃后续的文章滚动与状态回落，clearWheelLock 仍须执行以解除屏蔽。
-              // 注意：此处不显式检查 activeState 是否仍为 'menu'——
-              //       外部状态变更（如 closeMenu 调用 cancelHover）已自行完成状态回落，
-              //       此处分支判断依赖 hoveredItem 作为"是否被外部接管"的信号。
               if (state.activeState !== 'menu' || state.hoveredItem) {
                 clearWheelLock();
                 return;
@@ -1605,6 +1592,10 @@
             canvasEl.height      = r.height;
             canvasEl.style.left  = r.left + 'px';
             canvasEl.style.top   = r.top  + 'px';
+            // 预存取整尺寸（canvas width/height 为整数），供 drawDividerGlow 校验时直接比较，
+            // 避免每帧 rAF 回调中重复执行 Math.round()。
+            r._intW = canvasEl.width;
+            r._intH = canvasEl.height;
             cachedMenuRect     = r;
             cachedSideMenuRect = null;   // 动画期间坐标无效，animationend 后再赋值
             updateColorCache();
@@ -1675,8 +1666,8 @@
             //     避免高频 rAF 回调在 fixed 元素上重复触发 getBoundingClientRect reflow。
             let menuRect = cachedMenuRect;
             if (!menuRect ||
-                canvasEl.width  !== Math.round(menuRect.width)  ||
-                canvasEl.height !== Math.round(menuRect.height) ||
+                canvasEl.width  !== menuRect._intW ||
+                canvasEl.height !== menuRect._intH ||
                 parseFloat(canvasEl.style.left) !== menuRect.left ||
                 parseFloat(canvasEl.style.top)  !== menuRect.top) {
               menuRect            = chapterListEl.getBoundingClientRect();
@@ -1684,6 +1675,8 @@
               canvasEl.height     = menuRect.height;
               canvasEl.style.left = menuRect.left + 'px';
               canvasEl.style.top  = menuRect.top  + 'px';
+              menuRect._intW      = canvasEl.width;
+              menuRect._intH      = canvasEl.height;
               cachedMenuRect      = menuRect;
               cachedItemRects     = null;   // canvas 尺寸变了，旧缓存坐标已失效
             }
@@ -1729,7 +1722,7 @@
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             canvasEl.classList.remove('active');
             rafPending = false;
-            _prevMenuActive = false;   // ⚠️ 必须重置：确保下次菜单打开时 alwaysOn 元素（menuToggle）的 Reveal 清除逻辑能正常触发
+            _prevMenuActive = false;   // ⚠️ 必须重置：确保下次菜单打开后第一次 handleMove 时，alwaysOn 元素（menuToggle）的 Reveal 能被正确清除（状态切换帧仅清除一次）
             // 菜单关闭后 menuToggle 重新可见，旧缓存（含 display:none 时的零尺寸 rect）已失效，
             // 置 null 使下次 pointermove 重建缓存，确保 alwaysOn 元素 Reveal 坐标正确。
             cachedTargetRects = null;
@@ -1740,12 +1733,6 @@
           let _prevMenuActive = false;
 
           function handleMove(e) {
-            // [FIX P1] 现代桌面浏览器同时派发 pointermove 和 mousemove，handleMove 会被触发两次。
-            // 当浏览器支持 PointerEvent 时，mousemove 为冗余事件，直接短路以避免：
-            //   · CSS 变量 setProperty 双重写入
-            //   · _prevMenuActive 在同一帧内被第二次调用读到已被第一次调用更新后的脏值
-            if (e.type === 'mousemove' && window.PointerEvent) return;
-
             if (e.pointerType && e.pointerType !== 'mouse') return;
             state.lastMouseX = e.clientX;
             state.lastMouseY = e.clientY;
@@ -1859,13 +1846,13 @@
             // 对角线长度：供所有划痕复用，避免 O(n) 重复开方
             const diag         = Math.sqrt(w * w + h * h);
 
-            // 划痕数量：金属质感多，亚克力少
-            const scratchCount = isLight ? randInt(3, 7) : randInt(6, 14);
+            // 划痕数量：金属质感多，亚克力少；下限保证至少有明显划痕
+            const scratchCount = isLight ? randInt(4, 8) : randInt(8, 16);
             const scratches    = Array.from({ length: scratchCount }, () => makeScratchPath(w, h, diag));
 
             // 划痕粗细与透明度：日间细而淡，夜间略粗略重
             const scratchW     = isLight ? rand(0.3, 0.8)  : rand(0.5, 1.5);
-            const scratchAlpha = isLight ? rand(0.25, 0.45): rand(0.35, 0.60);
+            const scratchAlpha = isLight ? rand(0.40, 0.60): rand(0.50, 0.75);
 
             // 噪点频率：日间细腻，夜间粗粒
             const noiseFreqX   = isLight ? rand(0.55, 0.80): rand(0.35, 0.55);
@@ -1952,7 +1939,7 @@
          */
         function createMicaSampler({ onComplete }) {
 
-          // ── 工具函数 ──────────────────────────────────────────────
+          // ── 工具函数 ──────────────────────────────────────────
           function parseRgba(str) {
             const m = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
             return m ? [+m[1], +m[2], +m[3]] : null;
@@ -2153,13 +2140,211 @@
           }
         });
 
+        // ==================== 10a. 章节项动画控制器 ====================
+
+        /**
+         * createAnimationController
+         * 统一管理 chapter-item 的入场 / 出场动画，支持打断机制。
+         *
+         * 动画参数（固定）：
+         *   · 时长：300ms
+         *   · 位移：translateX(20px → 0)（入场）/ translateX(0 → 20px)（出场）
+         *   · 透明度：opacity(0 → 1)（入场）/ opacity(1 → 0)（出场）
+         *   · 缓动：cubic-bezier(0.25, 0.46, 0.45, 0.94)
+         *   · 相邻 item 延迟差：50ms，从上到下依次出现
+         *
+         * 视口过滤：
+         *   · 仅对 chapterListEl 当前可见视口内的 item 播放动画
+         *   · 视口外的 item 直接设置目标状态（不参与动画）
+         *
+         * 打断机制（出场中途触发入场）：
+         *   · 读取每个 item 当前的 computedStyle transform / opacity 中间值
+         *   · 以该中间值为起点构造入场 keyframes，实现平滑衔接
+         *
+         * 对外暴露：playEnter() / playExit() → Promise<void>
+         */
+        function createAnimationController({ chapterListEl, getAllItems }) {
+          const DURATION   = 300;
+          const STAGGER    = 50;
+          const EASING     = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          const TRANSLATE  = 20;   // px，translateX 偏移量
+
+          // 当前所有 item 正在运行的 Animation 实例（用于打断时读取中间值）
+          let _animations = [];
+          // 标记当前正在播放的动画类型，用于外部判断是否处于出场动画中
+          let _phase = 'idle';   // 'idle' | 'enter' | 'exit'
+
+          /** 获取视口内的 item（相对于 chapterListEl 的可见区域）。*/
+          function getVisibleItems() {
+            const items       = getAllItems();
+            const listTop     = chapterListEl.scrollTop;
+            const listBottom  = listTop + chapterListEl.clientHeight;
+            const inViewport  = [];
+            const outViewport = [];
+            items.forEach(item => {
+              const top    = item.offsetTop;
+              const bottom = top + item.offsetHeight;
+              // item 与可视区域有任何交叉即视为在视口内
+              if (bottom > listTop && top < listBottom) {
+                inViewport.push(item);
+              } else {
+                outViewport.push(item);
+              }
+            });
+            return { inViewport, outViewport };
+          }
+
+          /** 立即终止所有正在运行的动画，并将 item 留在当前位置（不跳到终态）。*/
+          function cancelAll() {
+            _animations.forEach(anim => {
+              if (anim && anim.playState !== 'finished') anim.cancel();
+            });
+            _animations = [];
+          }
+
+          /**
+           * 读取 item 当前的视觉中间值（供打断时构造起点 keyframe）。
+           * Web Animations API 的 currentTime 可直接读取插值结果，
+           * 但 cancel() 后中间值会丢失；故在 cancel 之前读取。
+           * 返回 { translateX: number, opacity: number }。
+           */
+          function readCurrentState(item) {
+            const cs = getComputedStyle(item);
+            // 解析 matrix(a,b,c,d,tx,ty) 或 matrix3d 中的 tx 分量
+            const matrix = new DOMMatrix(cs.transform);
+            return {
+              translateX: matrix.m41,   // tx
+              opacity:    parseFloat(cs.opacity),
+            };
+          }
+
+          /**
+           * 播放入场动画。
+           * interrupted: true 时从出场中间值反向构造起点（打断机制）。
+           * 返回 Promise，在所有 item 动画完成后 resolve。
+           */
+          function playEnter(interrupted = false) {
+            // 打断前先读取每个 item 的当前状态，cancel() 会清除中间值
+            const items = getAllItems();
+            const midStates = interrupted
+              ? items.map(item => readCurrentState(item))
+              : null;
+
+            cancelAll();
+            _phase = 'enter';
+
+            const { inViewport, outViewport } = getVisibleItems();
+
+            // 视口外：直接设为终态（完全可见，无位移）
+            outViewport.forEach(item => {
+              item.style.transform = 'translateX(0)';
+              item.style.opacity   = '1';
+            });
+
+            if (inViewport.length === 0) {
+              _phase = 'idle';
+              return Promise.resolve();
+            }
+
+            const promises = inViewport.map((item, i) => {
+              // 起点：打断时从中间值开始，否则从初始偏移开始
+              const itemIndex   = items.indexOf(item);
+              const startX      = interrupted && midStates
+                ? (midStates[itemIndex]?.translateX ?? TRANSLATE)
+                : TRANSLATE;
+              const startOpacity = interrupted && midStates
+                ? (midStates[itemIndex]?.opacity ?? 0)
+                : 0;
+
+              const keyframes = [
+                { transform: `translateX(${startX}px)`, opacity: startOpacity },
+                { transform: 'translateX(0)',            opacity: 1            },
+              ];
+
+              const anim = item.animate(keyframes, {
+                duration:   DURATION,
+                delay:      i * STAGGER,
+                easing:     EASING,
+                fill:       'forwards',
+              });
+
+              _animations.push(anim);
+
+              return anim.finished;
+            });
+
+            return Promise.all(promises).then(() => {
+              if (_phase === 'enter') _phase = 'idle';
+            }).catch(() => {
+              // animate() 被 cancel() 打断时 finished 会 reject，静默忽略
+            });
+          }
+
+          /**
+           * 播放出场动画。
+           * 返回 Promise，在所有 item 动画完成后 resolve（供 closeMenu 等待）。
+           */
+          function playExit() {
+            cancelAll();
+            _phase = 'exit';
+
+            const { inViewport, outViewport } = getVisibleItems();
+
+            // 视口外：直接设为终态（完全透明，带位移）
+            outViewport.forEach(item => {
+              item.style.transform = `translateX(${TRANSLATE}px)`;
+              item.style.opacity   = '0';
+            });
+
+            if (inViewport.length === 0) {
+              _phase = 'idle';
+              return Promise.resolve();
+            }
+
+            const promises = inViewport.map((item, i) => {
+              const keyframes = [
+                { transform: 'translateX(0)',            opacity: 1 },
+                { transform: `translateX(${TRANSLATE}px)`, opacity: 0 },
+              ];
+
+              const anim = item.animate(keyframes, {
+                duration:   DURATION,
+                delay:      i * STAGGER,
+                easing:     EASING,
+                fill:       'forwards',
+              });
+
+              _animations.push(anim);
+
+              return anim.finished;
+            });
+
+            return Promise.all(promises).then(() => {
+              if (_phase === 'exit') _phase = 'idle';
+            }).catch(() => {});
+          }
+
+          /** 立即将所有 item 重置为初始可见状态（菜单强制关闭时使用）。*/
+          function reset() {
+            cancelAll();
+            _phase = 'idle';
+            getAllItems().forEach(item => {
+              item.style.transform = '';
+              item.style.opacity   = '';
+            });
+          }
+
+          return { playEnter, playExit, reset, get phase() { return _phase; } };
+        }
+
+
         /**
          * buildMenuLayers：向 .side-menu 注入五层结构 DOM。
          * 幂等设计：检测 .menu-layer-base 是否已存在，防止重复插入。
          * 在初始化阶段执行一次，菜单关闭/打开不会重新创建。
          */
         function buildMenuLayers() {
-          if (sideMenu.querySelector('.menu-layer-base')) return;
+          if (sideMenu.children[0]?.classList.contains('menu-layer-base')) return;
           const fragment = document.createDocumentFragment();
           ['base', 'light', 'acrylic', 'texture'].forEach(name => {
             const layer = document.createElement('div');
@@ -2177,6 +2362,14 @@
           layerEl: sideMenu.querySelector('.menu-layer-texture'),
         });
 
+        // --- 章节项动画控制器 ---
+        // highlighter.init() 完成后 getAllItems() 才有内容，此处仅创建控制器实例；
+        // 实际调用 playEnter / playExit 在 openMenu / closeMenu 中进行。
+        const animCtrl = createAnimationController({
+          chapterListEl: chapterList,
+          getAllItems:    () => highlighter.getAllItems(),
+        });
+
         // 文章滚动时标记两个需要随页面内容更新的模块：质感绘制器 + Mica 采样器
         // 三路 scroll 回调合并为一个监听器，减少每帧事件分发开销
         function _onWindowScroll() {
@@ -2189,45 +2382,83 @@
 
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
 
+        // _menuClosing：出场动画播放期间为 true，防止 openMenu 的防重入检查误判
+        // （此时 sideMenuWrapper 仍有 active class，但菜单正在关闭）
+        let _menuClosing = false;
+
         function openMenu() {
-          // active class 同时充当防重入检查：菜单已打开时直接跳出
-          if (sideMenuWrapper.classList.contains('active')) return;
-          state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
+          // 防重入：菜单已完全打开时跳出；出场动画播放中则允许打断（_menuClosing 标志）
+          if (sideMenuWrapper.classList.contains('active') && !_menuClosing) return;
+
+          // 打断出场动画：_menuClosing 为 true 时，菜单 DOM 仍可见，直接触发打断入场
+          const interrupted = _menuClosing;
+          _menuClosing = false;
+
+          state.isWheelScrolling = false;   // 防御：关/开之间若 debounce 尚未触发，复位屏蔽标志
+
           // Mica 采样必须在 menuMask 激活之前执行：
           // menuMask 是全屏 fixed 覆盖层（pointer-events: auto），激活后 elementFromPoint
           // 的所有采样点均命中 menuMask（background: rgba(0,0,0,0.3)），导致采到纯黑色。
-          // sample() 内部无 await，DOM 查询全程同步，此处调用不阻塞后续菜单显示。
           micaSampler.sampleIfNeeded().then(() => {
             if (isDesktop && reveal && sideMenuWrapper.classList.contains('active')) {
               reveal.resizeCanvas();   // 用 Mica 新颜色更新颜色缓存
             }
           });
-          sideMenuWrapper.classList.add('active');
-          sideMenu.classList.add('active');
-          menuMask.classList.add('active');
-          menuToggle.classList.add('hidden');
+
+          // 非打断路径才需要激活 DOM（打断时菜单仍处于 active 状态）
+          if (!interrupted) {
+            sideMenuWrapper.classList.add('active');
+            sideMenu.classList.add('active');
+            menuMask.classList.add('active');
+            menuToggle.classList.add('hidden');
+          }
+
           // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
           texturePainter.paintIfNeeded();
-          // TODO(入场动画)：实现爆炸入场动画时，需 await syncToMenu() 完成后再触发；
-          //                  届时将 openMenu 恢复为 async 并在此处 await。
-          highlighter.syncToMenu();
+
+          // syncToMenu 用 instant 将高亮项即时居中，完成后 item 的 offsetTop 已稳定，
+          // 再触发入场动画，确保 getVisibleItems() 拿到的是最终布局位置。
+          highlighter.syncToMenu().then(() => {
+            // 若 openMenu 在 syncToMenu 期间被再次打断（极端快速操作），直接退出
+            if (!sideMenuWrapper.classList.contains('active') || _menuClosing) return;
+            animCtrl.playEnter(interrupted);
+          });
+
           if (isDesktop && reveal) {
             reveal.resizeCanvas();
             reveal.attachScrollListener();
           }
         }
 
-        function closeMenu() {
+        async function closeMenu() {
           if (!sideMenuWrapper.classList.contains('active')) return;
+          // 防止在出场动画期间重复触发
+          if (_menuClosing) return;
+          _menuClosing = true;
+
+          // 动画播放锁期间屏蔽状态机干扰：
+          // cancelHover 在此之前调用，确保 hover 链路的异步回调不再写入状态
+          highlighter.cancelHover();
+
+          if (isDesktop && reveal) {
+            reveal.detachScrollListener();   // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
+            reveal.clearAllReveal();
+          }
+
+          // 播放出场动画，等待所有 item 完成后再移除 active class
+          await animCtrl.playExit();
+
+          // 动画结束后检查是否已被 openMenu 打断（_menuClosing 会被 openMenu 置 false）
+          if (!_menuClosing) return;
+          _menuClosing = false;
+
           sideMenuWrapper.classList.remove('active');
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.classList.remove('hidden');
-          if (isDesktop && reveal) {
-            reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
-            reveal.clearAllReveal();
-          }
-          highlighter.cancelHover();
+
+          // 重置 item 样式，确保下次入场时从干净状态开始
+          animCtrl.reset();
         }
 
         // --- 初始化高亮器（传入 closeMenu 作为 item 点击回调）---
