@@ -1612,8 +1612,8 @@ Duty,我沉默了.原来是因为负责,也就像你在对着空谷嘶吼,却期
                 if (!_prevMenuActive) clearRevealVar(el);
                 return;
               }
-              // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
-              const rect = cachedTargetRects.get(el) ?? el.getBoundingClientRect();
+              // 统一从缓存读取 rect；缓存为 null 或 key 缺失时降级到实时查询（防御性回退）
+              const rect = (cachedTargetRects && cachedTargetRects.get(el)) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
             _prevMenuActive = menuActive;
