@@ -881,30 +881,38 @@
          z-index: 11;
          flex: 1;
          min-width: 0;
-         padding: 14px 10px;
-         overflow-y: auto;
-         scrollbar-width: none;
+         display: flex;
+         flex-direction: column;
+         overflow: hidden;
          background: transparent;
       }
 
-      /* 章节列表顶部标签 */
+      /* 固定标题行 */
       .menu-left::before {
          content: 'CONTENTS';
+         flex-shrink: 0;
          display: block;
          font-size: 0.65rem;
          font-weight: 700;
          letter-spacing: 0.12em;
          color: rgba(var(--reveal-mid), 0.45);
-         padding: 0 10px 10px;
+         padding: 14px 20px 10px;
          border-bottom: 1px solid var(--divider);
-         margin-bottom: 8px;
       }
 
       body.light-mode .menu-left::before {
          color: rgba(var(--reveal-mid), 0.55);
       }
 
-      .menu-left::-webkit-scrollbar { display: none; }
+      /* 滚动区：撑满剩余高度 */
+      #chapterList {
+         flex: 1;
+         overflow-y: auto;
+         scrollbar-width: none;
+         padding: 8px 10px 14px;
+      }
+
+      #chapterList::-webkit-scrollbar { display: none; }
 
 
       /* Canvas 叠加层 */
