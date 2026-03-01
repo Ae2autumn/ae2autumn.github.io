@@ -4338,6 +4338,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (allHeadings.length === 0) return;
             if (state.menuDrivingArticleCount > 0) return;
             if (state.isHoverScrolling) return;
+            if (state.isWheelScrolling) return;  // 菜单滚轮操作期间，禁止文章位置覆盖菜单选择结果
             const scrollY = window.scrollY;
             const offset  = 80;
             let current   = allHeadings[0];
