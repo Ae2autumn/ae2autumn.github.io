@@ -1123,7 +1123,6 @@
             if (allHeadings.length === 0) return;
             if (state.menuDrivingArticleCount > 0) return;
             if (state.isHoverScrolling) return;
-            if (state.isWheelScrolling) return;  // 菜单滚轮操作期间，禁止文章位置覆盖菜单选择结果
             const scrollY = window.scrollY;
             const offset  = 80;
             let current   = allHeadings[0];
@@ -1219,12 +1218,14 @@
                 driveArticleScroll(centerId, () => {
                   clearWheelLock();
                   if (state.activeState === 'menu' && !state.hoveredItem) {
+                    menuSyncDebounce.cancel();  // 取消残余 scroll 事件可能触发的 menuSyncDebounce，防止菜单跳回旧位置
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
                 clearWheelLock();
+                menuSyncDebounce.cancel();
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
