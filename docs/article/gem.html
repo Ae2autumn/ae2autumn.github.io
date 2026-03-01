@@ -40,7 +40,6 @@
          }
    
          body {
-            --menu-right-width: 50px;   /* Q5: menu-right 宽度单一来源，.menu-layer-base 渐变分割点引用此值 */
             background-color: #121212;
             color: #fff;
             font-family: Arial, sans-serif;
@@ -423,8 +422,8 @@
             background: linear-gradient(
                to right,
                rgba(var(--mica-dark-left,  18, 18, 18), 0.55) 0%,
-               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) calc(100% - var(--menu-right-width)),
-               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-left,  18, 18, 18), 0.55) calc(100% - 50px),
+               rgba(var(--mica-dark-right,  0,  0,  0), 0.55) calc(100% - 50px),
                rgba(var(--mica-dark-right,  0,  0,  0), 0.55) 100%
             );
             backdrop-filter: blur(7px);
@@ -434,8 +433,8 @@
             background: linear-gradient(
                to right,
                rgba(var(--mica-dark-left,  255, 255, 255), 0.55) 0%,
-               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) calc(100% - var(--menu-right-width)),
-               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) calc(100% - var(--menu-right-width)),
+               rgba(var(--mica-dark-left,  255, 255, 255), 0.55) calc(100% - 50px),
+               rgba(var(--mica-dark-right, 220, 220, 220), 0.55) calc(100% - 50px),
                rgba(var(--mica-dark-right, 220, 220, 220), 0.55) 100%
             );
          }
@@ -485,8 +484,7 @@
          .menu-left {
             position: relative;
             z-index: 11;            /* 覆盖在 .menu-layer-* (z-index 7-10) 之上 */
-            flex: 1;                /* 自动填充 menu-right 之外的剩余空间，无需随 --menu-right-width 手动同步 */
-            min-width: 0;           /* 防止 flex 子元素溢出父容器 */
+            width: 200px;
             padding: 20px;
             overflow-y: auto;
             scrollbar-width: none;
@@ -560,8 +558,9 @@
          .menu-right {
             position: relative;
             z-index: 11;            /* 同上，覆盖在 .menu-layer-* 之上 */
-            width: var(--menu-right-width);
+            width: 50px;
             height: 100%;
+            min-height: 100%;
             display: flex;
             flex-direction: column;
             /* C3: 使用 --mica-dark-right，fallback 与原 rgba(0,0,0,0.2) 一致 */
@@ -616,7 +615,9 @@
             cursor: pointer;
             transition: all 0.2s;
             font-size: 20px;
-            width: var(--menu-right-width);
+            width: 50px;
+            height: 47px;
+            text-align: center;
             border-radius: 0;
             display: flex;
             justify-content: center;
@@ -4037,24 +4038,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           if (!el) return;
           const r    = rect || el.getBoundingClientRect();
           const dist = distFn(mouseX, mouseY, r);
-          // O-2: --rx/--ry 脏检测，坐标未变时跳过写入（pointerup 等静止事件频繁触发时有效）
-          const rxVal = (mouseX - r.left) + 'px';
-          const ryVal = (mouseY - r.top)  + 'px';
-          if (el._revealRx !== rxVal) { el._revealRx = rxVal; el.style.setProperty('--rx', rxVal); }
-          if (el._revealRy !== ryVal) { el._revealRy = ryVal; el.style.setProperty('--ry', ryVal); }
+          el.style.setProperty('--rx', (mouseX - r.left) + 'px');
+          el.style.setProperty('--ry', (mouseY - r.top)  + 'px');
           // 衰减：range 内为 1，fadeZone 内线性降至 0，之外为 0
           const fadeZone = range * 0.5;
           const ro = dist <= range            ? 1
                    : dist <= range + fadeZone ? 1 - (dist - range) / fadeZone
                    : 0;
-          // O-1: 脏检测——对 0/1 直接写字面量（避免 toFixed 字符串分配），
-          //      中间值保留 3 位精度；相同值时跳过 setProperty，减少样式层写入。
-          //      上次写入值缓存在元素的 _revealRo 属性上，无需外部 Map。
-          const roStr = ro === 1 ? '1' : ro === 0 ? '0' : ro.toFixed(3);
-          if (el._revealRo !== roStr) {
-            el._revealRo = roStr;
-            el.style.setProperty('--ro', roStr);
-          }
+          el.style.setProperty('--ro', ro.toFixed(3));
         }
 
         /** 清除单个元素的 Reveal 变量（含衰减系数）。 */
@@ -4063,14 +4054,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           el.style.setProperty('--rx', '-9999px');
           el.style.setProperty('--ry', '-9999px');
           el.style.setProperty('--ro', '0');
-          el._revealRo = '0';   // O-1: 同步重置缓存，防止下次进入时脏检测误判
-          el._revealRx = '-9999px';  // O-2: 同步重置坐标缓存
-          el._revealRy = '-9999px';
         }
 
-        // ==================== 1b. 颜色工具函数（HSL / chroma，供 Mica 采样器使用）====================
-        // 注：这些函数与 Reveal 效果无关，使用者是第 9 节 createMicaSampler。
-        //     因为被 createMicaSampler 闭包捕获，须在其之前定义，故放在此处。
+        // ==================== 1b. 颜色工具函数（供 Mica 采样器等多处复用）====================
 
         function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
@@ -4101,24 +4087,22 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           return [h * 360, s * 100, l * 100];
         }
 
-        /** hue2rgb 提升为模块级纯函数，避免每次 hslToRgb 调用时重复分配闭包对象。 */
-        function _hue2rgb(p, q, t) {
-          if (t < 0) t += 1; if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        }
-
         function hslToRgb(h, s, l) {
           h /= 360; s /= 100; l /= 100;
           if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
           const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
           const p = 2 * l - q;
+          const hue2rgb = t => {
+            if (t < 0) t += 1; if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
           return [
-            Math.round(_hue2rgb(p, q, h + 1/3) * 255),
-            Math.round(_hue2rgb(p, q, h)       * 255),
-            Math.round(_hue2rgb(p, q, h - 1/3) * 255),
+            Math.round(hue2rgb(h + 1/3) * 255),
+            Math.round(hue2rgb(h)       * 255),
+            Math.round(hue2rgb(h - 1/3) * 255),
           ];
         }
 
@@ -4160,7 +4144,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           menuDrivingArticleCount: 0,        // 菜单驱动的文章滚动计数
           lastMouseX:              -9999,    // 最新鼠标位置（Reveal 写，Highlighter 读）
           lastMouseY:              -9999,
-          animatingOut:            false,    // 出场动画播放锁：true 期间屏蔽 scroll/pointer 对状态机的写入
+          animatingOut:            false,    // 出场动画播放锁：true 期间屏蔽 scroll/wheel/touch/pointer 对状态机的写入
         };
 
 
@@ -4205,28 +4189,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           let allItems = [];
           // 缓存当前持有 .current / .hovered 的 DOM 元素，避免每次 setHighlight 调用 querySelectorAll
           let _currentHighlightEl = null;
-          // B3: 预缓存每个 heading 相对文档顶部的 offsetTop，避免 scroll 高频 reflow。
-          //     resize 时需调用 rebuildHeadingTopCache() 重建。
-          let _headingTops = [];
-          // Opt-1: 预缓存每个 chapter-item 的 offsetTop + offsetHeight，
-          //        供 getCenteredItemId 使用，避免 scroll 实时回调中 O(n) getBoundingClientRect reflow。
-          //        与 _headingTops 同步重建（init 后一次，resize 后一次）。
-          let _itemOffsetCache = [];  // { offsetTop, height }[]
-
-          // B3: 重建 heading offsetTop 缓存。读取 offsetTop 不触发 reflow（非 getBoundingClientRect）。
-          //     在 init 完成后调用一次，之后由外部 resize 事件触发重建。
-          function rebuildHeadingTopCache() {
-            _headingTops = allHeadings.map(h => {
-              let top = 0, el = h;
-              while (el) { top += el.offsetTop; el = el.offsetParent; }
-              return top;
-            });
-            // Opt-1: 同步重建 item offsetTop 缓存（读取 offsetTop 不触发 reflow）
-            _itemOffsetCache = allItems.map(item => ({
-              offsetTop: item.offsetTop,
-              height:    item.offsetHeight,
-            }));
-          }
 
           // 主动查询当前鼠标位置下是否有 chapter-item（不依赖浏览器补发的 pointer 事件）
           function getItemAtPointer() {
@@ -4254,41 +4216,26 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // J4: 使用 Map 替代 querySelector
             const item = _itemMap.get(id);
             if (!item) return Promise.resolve();
-            const target = Math.max(0, item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2);
+            const target = item.offsetTop - (chapterListEl.clientHeight - item.offsetHeight) / 2;
             if (chapterListEl.scrollHeight <= chapterListEl.clientHeight) return Promise.resolve();
-            // B6（修正位置）: 目标与当前 scrollTop 差距 < 1px，视为已到位，跳过滚动。
-            // 在此处判断（基于目标值）而非在 smoothScrollPromise 内判断（基于调用后的实时位置），
-            // 避免 smooth scroll 异步特性导致"调用后立即取位置仍未变"的误判。
-            if (Math.abs(target - chapterListEl.scrollTop) < 1) return Promise.resolve();
 
             state.programmaticScrollCount++;
-            // instant 滚动同帧完成，smoothScrollPromise 轮询会误判为"未启动"并等待 300ms。
-            // 在此处单独处理：同步执行 scrollTo 后直接 resolve，保持 count 语义正确。
-            if (behavior === 'instant') {
-              chapterListEl.scrollTo({ top: target, behavior: 'instant' });
-              state.programmaticScrollCount--;
-              return Promise.resolve();
-            }
             return smoothScrollPromise(
-              () => chapterListEl.scrollTo({ top: target, behavior }),
+              () => chapterListEl.scrollTo({ top: Math.max(0, target), behavior }),
               () => chapterListEl.scrollTop
             ).finally(() => { state.programmaticScrollCount--; });
           }
 
-          // Opt-1: getCenteredItemId 改用 _itemOffsetCache（offsetTop + offsetHeight），
-          //        完全不触发 reflow，scroll 实时回调中性能大幅提升。
-          //        containerHalf = chapterListEl.clientHeight / 2：容器高度在 resize 后才变化，
-          //        此处直接读取（不触发 reflow，clientHeight 为布局属性）。
+          // J4: 找到当前菜单可视区中心最近的 item，使用缓存列表替代 querySelectorAll
           function getCenteredItemId() {
-            const half = chapterListEl.clientHeight / 2;
-            const scrollTop = chapterListEl.scrollTop;
+            const containerR = chapterListEl.getBoundingClientRect();
+            const centerY    = containerR.top + containerR.height / 2;
             let best = null, bestDist = Infinity;
-            for (let i = 0; i < allItems.length; i++) {
-              const { offsetTop, height } = _itemOffsetCache[i];
-              const itemCenter = offsetTop + height / 2 - scrollTop;
-              const dist = Math.abs(itemCenter - half);
-              if (dist < bestDist) { bestDist = dist; best = allItems[i]; }
-            }
+            allItems.forEach(item => {
+              const r    = item.getBoundingClientRect();
+              const dist = Math.abs(r.top + r.height / 2 - centerY);
+              if (dist < bestDist) { bestDist = dist; best = item; }
+            });
             return best ? best.dataset.id : null;
           }
 
@@ -4312,7 +4259,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               () => window.scrollY
             ).finally(() => {
               state.menuDrivingArticleCount--;
-              if (!state.animatingOut) onFinally(true);   // 出场锁期间放弃回调，防止竞态写入状态机
+              onFinally(true);
             });
           }
 
@@ -4341,9 +4288,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const scrollY = window.scrollY;
             const offset  = 80;
             let current   = allHeadings[0];
-            // B3: 使用预缓存的 offsetTop，避免每次 scroll 触发 O(n) getBoundingClientRect reflow
             for (let i = 0; i < allHeadings.length; i++) {
-              if (_headingTops[i] <= scrollY + offset) current = allHeadings[i];
+              const top = allHeadings[i].getBoundingClientRect().top + scrollY;
+              if (top <= scrollY + offset) current = allHeadings[i];
               else break;
             }
             if (current.id !== state.currentId || state.activeState !== 'scroll') {
@@ -4411,18 +4358,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             scrollMenuToItem(state.currentId);
           }
 
-          // Q3: 统一封装 isWheelScrolling 复位，防止多处散落导致遗漏
-          function clearWheelLock() { state.isWheelScrolling = false; }
-
           // --- 状态：menu ---
           function onMenuScrollDebounced() {
             state.isMenuScrolling = false;
             const centerId = getCenteredItemId();
-            if (!centerId) { clearWheelLock(); return; }
+            if (!centerId) { state.isWheelScrolling = false; return; }
 
             scrollMenuToItem(centerId).then(() => {
               if (state.activeState !== 'menu' || state.hoveredItem) {
-                clearWheelLock();
+                state.isWheelScrolling = false;
                 return;
               }
               state.currentId = centerId;
@@ -4431,23 +4375,24 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               const targetHeading = document.getElementById(centerId);
               if (targetHeading) {
                 driveArticleScroll(centerId, () => {
-                  clearWheelLock();
+                  state.isWheelScrolling = false;
                   if (state.activeState === 'menu' && !state.hoveredItem) {
                     state.activeState = 'scroll';
                     setHighlight(state.currentId);
                   }
                 });
               } else {
-                clearWheelLock();
+                state.isWheelScrolling = false;
                 state.activeState = 'scroll';
                 setHighlight(state.currentId);
               }
             }).catch(() => {
-              clearWheelLock();
+              state.isWheelScrolling = false;
             });
           }
 
           function onTouchEnd() {
+            if (state.animatingOut) return;
             if (state.hoveredItem) state.hoveredItem = null;
             if (state.activeState === 'menu') menuScrollDebounce.call();
           }
@@ -4483,16 +4428,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             if (allHeadings.length > 0) {
               state.currentId = allHeadings[0].id;
               applyScrollState(state.currentId);
-              rebuildHeadingTopCache();   // B3: 首次构建缓存
             }
 
-            // P1: window scroll 监听由外部 _onWindowScroll 统一调度，此处不再重复绑定。
-            //     updateActiveHeading 将被 _onWindowScroll 在每次 scroll 时调用。
+            window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
             // 滚轮：设置屏蔽标志，防止假 pointer 事件干扰
             // 从 hover 切出时立即 setHighlight，清除残留的 .hovered 类，避免双高亮
             chapterListEl.addEventListener('wheel', () => {
-              if (state.animatingOut) return;   // 出场动画播放锁
+              if (state.animatingOut) return;
               if (!state.isWheelScrolling) {
                 state.isWheelScrolling = true;
                 if (state.activeState === 'hover') {
@@ -4506,7 +4449,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
             // 菜单列表滚动：实时更新高亮并触发防抖吸附
             chapterListEl.addEventListener('scroll', () => {
-              if (state.animatingOut) return;    // 出场动画播放锁
+              if (state.animatingOut) return;
               if (state.programmaticScrollCount > 0) return;
               if (state.activeState === 'hover') return;
               state.isMenuScrolling = true;
@@ -4525,7 +4468,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerover：仅在进入新 item 且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerover', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;    // 出场动画播放锁
+                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && item !== state.hoveredItem) onItemPointerEnter(item);
@@ -4534,7 +4477,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerout：relatedTarget 不在当前 item 内部、且没有程序驱动滚动时触发
               chapterListEl.addEventListener('pointerout', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;    // 出场动画播放锁
+                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 const item = e.target.closest('.chapter-item');
                 if (item && !item.contains(e.relatedTarget)) onItemPointerLeave();
@@ -4543,7 +4486,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               // pointerleave（整个列表）：isWheelScrolling/isHoverScrolling 期间屏蔽
               chapterListEl.addEventListener('pointerleave', (e) => {
                 if (e.pointerType !== 'mouse') return;
-                if (state.animatingOut) return;    // 出场动画播放锁
+                if (state.animatingOut) return;
                 if (state.isWheelScrolling || state.isHoverScrolling) return;
                 if (state.activeState === 'hover') onItemPointerLeave();
               });
@@ -4552,14 +4495,16 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           /**
            * 返回当前 chapterList 视口内可见的 chapter-item 列表（按 DOM 顺序）。
-           * 用于出场/入场动画的视口过滤，复用 _itemOffsetCache 避免 reflow。
+           * 用于出场动画的视口过滤，避免对不可见 item 播放动画。
+           * 使用 offsetTop/offsetHeight（不触发 reflow）。
            */
           function getAllItemsForViewport() {
             const containerH = chapterListEl.clientHeight;
             const scrollTop  = chapterListEl.scrollTop;
-            return allItems.filter((item, i) => {
-              const { offsetTop, height } = _itemOffsetCache[i] || { offsetTop: item.offsetTop, height: item.offsetHeight };
-              return offsetTop + height > scrollTop && offsetTop < scrollTop + containerH;
+            return allItems.filter(item => {
+              const top = item.offsetTop;
+              const h   = item.offsetHeight;
+              return top + h > scrollTop && top < scrollTop + containerH;
             });
           }
 
@@ -4578,7 +4523,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           function cancelHover() {
             hoverScrollDebounce.cancel();
             state.isHoverScrolling = false;   // 确保 async 跳转中途关闭菜单时不留脏状态
-            state.isMenuScrolling  = false;   // Q3: 菜单关闭时一并复位，防止下次打开时 menuSyncDebounce 被阻塞
             state.hoveredItem = null;
             if (state.activeState === 'hover') {
               state.activeState = 'scroll';
@@ -4586,7 +4530,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
 
-          return { init, syncToMenu, cancelHover, updateActiveHeading, rebuildHeadingTopCache, getAllItems: () => allItems, getAllItemsForViewport };
+          return { init, syncToMenu, cancelHover, getAllItemsForViewport };
         }
 
 
@@ -4597,7 +4541,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          *   resizeCanvas()   - 菜单打开时调用，初始化 canvas 尺寸
          *   clearAllReveal() - 菜单关闭时调用，清除所有光效
          */
-        function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, sideMenuEl, targets, state, getAllItems }) {
+        function initRevealEffect({ canvasEl, chapterListEl, menuWrapperEl, sideMenuEl, targets, state }) {
           const ctx = canvasEl.getContext('2d');
           let cachedMenuRect  = null;
 
@@ -4613,8 +4557,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           let cachedTargetRects = null; // Map<el, DOMRect>
           // ⑤ sideMenu rect 缓存：光照光层坐标基准（整个菜单含 menu-right），由 resizeCanvas 更新
           let cachedSideMenuRect = null;
-          // ⑥ 动画播放标志：menuAppear 动画期间阻止 handleMove 用失效 rect 重建缓存
-          let _animating = false;
           const isMenuActive = () => menuWrapperEl.classList.contains('active');
 
           /** 刷新 target rect 缓存。
@@ -4631,12 +4573,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             });
           }
 
-          /** 构建 item rect 缓存（相对于 menuRect），使用调用方已有的 menuRect 避免重复 reflow。
-           *  Decouple-1: 复用 Highlighter 暴露的 getAllItems()，避免重复 querySelectorAll。 */
+          /** 构建 item rect 缓存（相对于 menuRect），使用调用方已有的 menuRect 避免重复 reflow。 */
           function buildItemRectCache(menuRect) {
-            const items = getAllItems();
-            // 过滤最后一个 item（无分隔线），与原 :not(:last-child) 行为一致
-            cachedItemRects = items.slice(0, -1).map(item => {
+            cachedItemRects = Array.from(
+              chapterListEl.querySelectorAll('.chapter-item:not(:last-child)')
+            ).map(item => {
               const r = item.getBoundingClientRect();
               return {
                 lineY:     r.bottom - menuRect.top,
@@ -4668,17 +4609,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 返回变换中的小尺寸，先置 null，动画结束后统一刷新，避免光照光坐标偏移。
             cachedTargetRects = null;
             const wrapper = menuWrapperEl;
-            // P5-fix: 动画期间置标志，阻止 handleMove 用失效 rect 重建缓存
-            _animating = wrapper.getAnimations().length > 0;
             const onAnimEnd = () => {
               wrapper.removeEventListener('animationend', onAnimEnd);
-              _animating = false;
               if (isMenuActive()) {
                 refreshTargetRects();
                 cachedSideMenuRect = sideMenuEl.getBoundingClientRect();
               }
             };
-            if (_animating) {
+            if (wrapper.getAnimations().length > 0) {
               wrapper.addEventListener('animationend', onAnimEnd);
             } else {
               refreshTargetRects();
@@ -4724,15 +4662,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const colorHi  = cachedColorHi;
             const colorMid = cachedColorMid;
 
-            // P3: 优先使用 cachedMenuRect（resizeCanvas 时已更新），仅在校验不符时才重新取，
-            //     避免高频 rAF 回调在 fixed 元素上重复触发 getBoundingClientRect reflow。
-            let menuRect = cachedMenuRect;
-            if (!menuRect ||
-                canvasEl.width  !== Math.round(menuRect.width)  ||
+            // 全局只取一次 rect，校验、缓存构建都用这同一个值
+            const menuRect = chapterListEl.getBoundingClientRect();
+
+            // 尺寸/位置校验：canvas 与实际位置不符时修正，并同步作废 item 缓存
+            if (canvasEl.width  !== Math.round(menuRect.width)  ||
                 canvasEl.height !== Math.round(menuRect.height) ||
                 parseFloat(canvasEl.style.left) !== menuRect.left ||
                 parseFloat(canvasEl.style.top)  !== menuRect.top) {
-              menuRect            = chapterListEl.getBoundingClientRect();
               canvasEl.width      = menuRect.width;
               canvasEl.height     = menuRect.height;
               canvasEl.style.left = menuRect.left + 'px';
@@ -4747,8 +4684,6 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 懒加载：传入已有的 menuRect，避免再次 reflow
             if (!cachedItemRects) buildItemRectCache(menuRect);
 
-            // lineWidth 固定为 1，提到循环外避免每条分隔线重复设置
-            ctx.lineWidth = 1;
             cachedItemRects.forEach(({ lineY, lineLeft, lineRight }) => {
               if (lineY < 0 || lineY > canvasEl.height) return;
 
@@ -4769,6 +4704,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               ctx.beginPath();
               ctx.moveTo(lineLeft,  lineY);
               ctx.lineTo(lineRight, lineY);
+              ctx.lineWidth   = 1;
               ctx.strokeStyle = grad;
               ctx.stroke();
             });
@@ -4782,15 +4718,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
             canvasEl.classList.remove('active');
             rafPending = false;
-            _prevMenuActive = false;   // P4: 重置状态，确保下次菜单打开时 alwaysOn 元素能正确清除
             // 菜单关闭后 menuToggle 重新可见，旧缓存（含 display:none 时的零尺寸 rect）已失效，
             // 置 null 使下次 pointermove 重建缓存，确保 alwaysOn 元素 Reveal 坐标正确。
             cachedTargetRects = null;
           }
-
-          // P4: alwaysOn 元素（menuToggle）在菜单打开时隐藏，只需在状态切换时清除一次，
-          //     而非每次 pointermove 都重复写入 -9999px。用标志位追踪上一帧的菜单状态。
-          let _prevMenuActive = false;
 
           function handleMove(e) {
             if (e.pointerType && e.pointerType !== 'mouse') return;
@@ -4800,20 +4731,15 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
             // CSS 变量更新：不涉及绘制，直接同步执行（开销很低）
             // 使用缓存 rect，避免每次 pointermove 对 fixed 元素重复 reflow
-            // P5-fix: 动画期间 cachedTargetRects 为 null，但 rect 此时无效，跳过重建
-            if (!cachedTargetRects && !_animating) refreshTargetRects();
+            if (!cachedTargetRects) refreshTargetRects();
             targets.forEach(({ el, range, alwaysOn, distFn }) => {
               if (!alwaysOn && !menuActive) { clearRevealVar(el); return; }
-              // P4: alwaysOn 元素（menuToggle）菜单打开时隐藏，只在状态切换帧清除一次
-              if (alwaysOn && menuActive) {
-                if (!_prevMenuActive) clearRevealVar(el);
-                return;
-              }
-              // 统一从缓存读取 rect；缓存为 null 或 key 缺失时降级到实时查询（防御性回退）
+              // alwaysOn 元素（menuToggle）在菜单打开时为 display:none，直接跳过
+              if (alwaysOn && menuActive) { clearRevealVar(el); return; }
+              // 统一从缓存读取 rect；缓存缺失时降级到实时查询（防御性回退）
               const rect = (cachedTargetRects && cachedTargetRects.get(el)) ?? el.getBoundingClientRect();
               updateRevealVar(el, e.clientX, e.clientY, range, distFn, rect);
             });
-            _prevMenuActive = menuActive;
 
             // 光照光层（.menu-layer-light）全屏坐标写入：
             // 不经过 range 裁切，鼠标在屏幕任意位置时均持续更新，
@@ -4860,9 +4786,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
          * 负责向 .menu-layer-texture 注入 SVG 斑驳质感，并管理其生命周期。
          *
          * 质感构成（三层叠加）：
-         *   ① 噪点底层   feTurbulence(fractalNoise) + feColorMatrix(saturate=0) + feBlend(overlay)
+         *   ① 噪点底层   feTurbulence(fractalNoise) + feColorMatrix 灰度化
          *   ② 划痕层     随机贝塞尔曲线路径，模拟拉丝/划痕
-         *   ③ 边缘磨损层 radialGradient 遮罩，四角更重
+         *   ③ 边缘磨损层 径向渐变遮罩，四角更重
          *
          * 再生时机：
          *   · markDirty()      → 仅置 _dirty = true（绑定到 scroll，零开销）
@@ -4875,12 +4801,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
           // ── 随机工具 ──────────────────────────────────────────────
           function rand(min, max) { return min + Math.random() * (max - min); }
-          function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+          function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
 
           // ── 生成单条划痕路径（SVG path d 字符串）─────────────────
           // 起点随机落在四边，终点偏向对侧，中途有贝塞尔弯折
-          // diag 由 buildSVG 预计算后传入，避免每条划痕重复开方
-          function makeScratchPath(w, h, diag) {
+          function makeScratchPath(w, h) {
             const edge = randInt(0, 3);
             let x0, y0;
             switch (edge) {
@@ -4889,6 +4814,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               case 2: x0 = rand(0, w);  y0 = h;           break;
               default:x0 = 0;           y0 = rand(0, h);  break;
             }
+            const diag   = Math.sqrt(w * w + h * h);
             const length = rand(diag * 0.15, diag * 0.60);
             const angle  = rand(0, Math.PI * 2);
             const x1     = x0 + Math.cos(angle) * length;
@@ -4901,12 +4827,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           // ── 生成完整 SVG 字符串 ───────────────────────────────────
           function buildSVG(w, h, isLight) {
             const noiseSeed    = randInt(0, 9999);
-            // 对角线长度：供所有划痕复用，避免 O(n) 重复开方
-            const diag         = Math.sqrt(w * w + h * h);
 
             // 划痕数量：金属质感多，亚克力少
             const scratchCount = isLight ? randInt(3, 7) : randInt(6, 14);
-            const scratches    = Array.from({ length: scratchCount }, () => makeScratchPath(w, h, diag));
+            const scratches    = Array.from({ length: scratchCount }, () => makeScratchPath(w, h));
 
             // 划痕粗细与透明度：日间细而淡，夜间略粗略重
             const scratchW     = isLight ? rand(0.3, 0.8)  : rand(0.5, 1.5);
@@ -5015,21 +4939,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // M3: 只取视口中间 20% 矩形区域（以中心为基准，±10%）内的图片
             const cx = vw / 2, cy = vh / 2;
             const zoneW = vw * 0.1, zoneH = vh * 0.1;   // 半宽/半高
-            // Q2: filter + map 合并为单次遍历，每张图只调用一次 getBoundingClientRect
-            const candidates = [];
-            for (const img of document.querySelectorAll('img')) {
-              if (!img.complete || img.naturalWidth === 0) continue;
+            const imgs = Array.from(document.querySelectorAll('img')).filter(img => {
+              if (!img.complete || img.naturalWidth === 0) return false;
               const r = img.getBoundingClientRect();
-              if (r.width <= 20 || r.height <= 20) continue;
-              if (r.right  > cx - zoneW && r.left   < cx + zoneW &&
-                  r.bottom > cy - zoneH && r.top    < cy + zoneH) {
-                candidates.push({ img, area: r.width * r.height });
-              }
-            }
-            if (candidates.length === 0) return null;
-            candidates.sort((a, b) => b.area - a.area);
+              if (r.width <= 20 || r.height <= 20) return false;
+              // 与中间 20% 矩形有交叉
+              return r.right  > cx - zoneW && r.left   < cx + zoneW &&
+                     r.bottom > cy - zoneH && r.top    < cy + zoneH;
+            });
+            if (imgs.length === 0) return null;
+            // J5: sort 前预计算 rect，避免 comparator 内反复 reflow（O(n log n) 次 → O(n) 次）
+            const withArea = imgs.map(img => {
+              const r = img.getBoundingClientRect();
+              return { img, area: r.width * r.height };
+            });
+            withArea.sort((a, b) => b.area - a.area);
             try {
-              const img = candidates[0].img;
+              const img = withArea[0].img;
               const SIZE = 40;
               const offscreen = document.createElement('canvas');
               offscreen.width = SIZE; offscreen.height = SIZE;
@@ -5057,28 +4983,23 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             const rx = vw * 0.1, ry = vh * 0.1;
             const GRID = 4;
             const colors = [];
-            // B2: 跨采样点去重，避免多点命中同一容器时重复 getComputedStyle
-            const visited = new Set();
             for (let i = 0; i < GRID; i++) {
               for (let j = 0; j < GRID; j++) {
                 const x = cx - rx + rx * 2 * i / (GRID - 1);
                 const y = cy - ry + ry * 2 * j / (GRID - 1);
                 let el = document.elementFromPoint(x, y);
                 while (el && el !== document.documentElement) {
-                  if (!visited.has(el)) {
-                    visited.add(el);
-                    const cs = getComputedStyle(el);
-                    if (!isTransparent(cs.backgroundColor)) {
-                      const rgb = parseRgba(cs.backgroundColor);
+                  const cs = getComputedStyle(el);
+                  if (!isTransparent(cs.backgroundColor)) {
+                    const rgb = parseRgba(cs.backgroundColor);
+                    if (rgb) colors.push(rgb);
+                  }
+                  // 采文字色：有直接文本子节点的元素
+                  for (const node of el.childNodes) {
+                    if (node.nodeType === 3 && node.textContent.trim()) {
+                      const rgb = parseRgba(cs.color);
                       if (rgb) colors.push(rgb);
-                    }
-                    // 采文字色：有直接文本子节点的元素
-                    for (const node of el.childNodes) {
-                      if (node.nodeType === 3 && node.textContent.trim()) {
-                        const rgb = parseRgba(cs.color);
-                        if (rgb) colors.push(rgb);
-                        break;
-                      }
+                      break;
                     }
                   }
                   el = el.parentElement;
@@ -5178,21 +5099,19 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         //     不随滚动进度 t 变化——这是设计有意为之（Mica 色相驱动，非进度驱动）。
         // _lastBgValue:  缓存上次写入的背景色打包值，避免未变时重复 style 写入
         // _micaActive:   Mica 采样成功后置 true，updateProgress 改用 Mica 端点
-        // _micaColorDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
-        // _micaColorHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
-        let _lastBgValue  = -1;
-        let _lastHiColor  = '';    // P5: --toggle-hi/mid/glow 缓存，Mica 模式下值固定，避免重复 setProperty
-        let _lastMidColor = '';
+        // _micaBtnDark:  Mica 深色端点 [r,g,b]（替代硬编码 0,0,0）
+        // _micaBtnHi:    Mica 亮色端点 [r,g,b]（替代硬编码 255,0,0）
+        let _lastBgValue = -1;
         let _micaActive  = false;
-        let _micaColorDark = [0,   0,   0];
-        let _micaColorHi   = [255, 0,   0];
+        let _micaBtnDark = [0,   0,   0];
+        let _micaBtnHi   = [255, 0,   0];
 
         // --- Mica 采样器（J6: 通过 onComplete 回调写入外部状态）---
         // J7: 传入 onComplete，在采样成功后更新模块级变量并触发进度指示器刷新
         const micaSampler = createMicaSampler({
           onComplete(btnDark, btnHi) {
-            _micaColorDark = btnDark;
-            _micaColorHi   = btnHi;
+            _micaBtnDark = btnDark;
+            _micaBtnHi   = btnHi;
             _micaActive  = true;
             updateProgress();
           }
@@ -5201,36 +5120,28 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         /**
          * animationController
          * 统一管理所有 chapter-item 的 Web Animations API 实例。
-         * 职责：
-         *   play(items, buildKeyframes, duration, baseDelay, delayStep)
-         *     - 对每个 item 调用 element.animate()，存储 Animation 实例
-         *     - buildKeyframes(item) 返回该 item 的 keyframe 数组
-         *     - 返回 Promise，在最后一个动画结束后 resolve
+         *   play(items, keyframes, duration, baseDelay, delayStep)
+         *     对每个 item 调用 element.animate()，返回 Promise（全部结束后 resolve）。
          *   cancel()
-         *     - 立即取消所有正在播放的动画（出场被打断时使用）
+         *     立即取消所有正在播放的动画（出场被打断时使用）。
          *   getSnapshot()
-         *     - 读取每个 item 当前的 opacity / translateX 中间值
-         *     - 返回 Map<element, { opacity, translateX }>
-         *     - 供打断机制（入场打断出场）反向构造 keyframes 使用（第2步预留）
+         *     读取每个 item 当前的 opacity / translateX 中间值（第2步打断机制预留）。
          */
         const animationController = (() => {
-          // element → Animation 实例
           const _map = new Map();
 
-          function play(items, buildKeyframes, duration, baseDelay, delayStep) {
-            // 取消已有动画（防止快速重复触发时叠加）
+          function play(items, keyframes, duration, baseDelay, delayStep) {
             cancel();
             const promises = items.map((item, i) => {
-              const anim = item.animate(buildKeyframes(item), {
+              const anim = item.animate(keyframes, {
                 duration,
-                delay:    baseDelay + i * delayStep,
-                easing:   'ease-in',
-                fill:     'forwards',   // 动画结束后保持末帧状态，直到 cancel() 清除
+                delay:  baseDelay + i * delayStep,
+                easing: 'ease-in',
+                fill:   'forwards',
               });
               _map.set(item, anim);
               return anim.finished;
             });
-            // 全部完成后清除 forwards 填充，将样式控制权还给 CSS
             return Promise.all(promises).then(() => {
               _map.forEach(anim => anim.cancel());
               _map.clear();
@@ -5242,25 +5153,17 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             _map.clear();
           }
 
-          /**
-           * 读取每个 item 当前动画中间值（供打断机制使用，第2步预留）。
-           * 通过 getComputedStyle 读取合成后的实际值，与 fill:forwards 兼容。
-           */
           function getSnapshot() {
             const snap = new Map();
-            _map.forEach((anim, el) => {
-              const cs         = getComputedStyle(el);
-              const transform  = cs.transform;
-              let translateX   = 0;
+            _map.forEach((_, el) => {
+              const cs        = getComputedStyle(el);
+              const transform = cs.transform;
+              let translateX  = 0;
               if (transform && transform !== 'none') {
-                // matrix(a,b,c,d,tx,ty) → tx 为第5个值
                 const parts = transform.match(/matrix\(([^)]+)\)/);
                 if (parts) translateX = parseFloat(parts[1].split(',')[4]) || 0;
               }
-              snap.set(el, {
-                opacity:    parseFloat(cs.opacity) || 0,
-                translateX,
-              });
+              snap.set(el, { opacity: parseFloat(cs.opacity) || 0, translateX });
             });
             return snap;
           }
@@ -5293,14 +5196,10 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
         });
 
         // 文章滚动时标记两个需要随页面内容更新的模块：质感绘制器 + Mica 采样器
-        // P1: 三路 scroll 回调合并为一个监听器，减少每帧事件分发开销
-        function _onWindowScroll() {
-          highlighter.updateActiveHeading();
-          updateProgress();
+        window.addEventListener('scroll', () => {
           texturePainter.markDirty();
           micaSampler.markDirty();
-        }
-        window.addEventListener('scroll', _onWindowScroll, { passive: true });
+        }, { passive: true });
 
         // --- 菜单控制（UI 层操作 + 调用各模块接口）---
         // 防重入标志：openMenu / closeMenu 均含 await，快速重复触发时直接退出，避免 DOM 状态错乱。
@@ -5311,11 +5210,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           if (_menuOpening) return;
           _menuOpening = true;
           try {
-            // 若出场动画正在播放（用户快速关→开），立即中断并释放锁
+            // 出场动画正在播放时（用户快速关→开），立即中断并释放锁
             if (state.animatingOut) {
               animationController.cancel();
               state.animatingOut = false;
-              _menuClosing = false;   // 同步重置，使 closeMenu 可再次进入
+              _menuClosing = false;
             }
             state.isWheelScrolling = false;        // 防御：关/开菜单之间若 debounce 尚未触发，复位屏蔽标志
             // M5 Fix3: 必须在菜单显示之前采样，否则菜单覆盖视口，只能采到菜单自身的灰色
@@ -5327,7 +5226,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 质感层：按需重建（滚动后 _dirty=true 时才重新生成 SVG）
             texturePainter.paintIfNeeded();
             highlighter.syncToMenu();
-            if (isDesktop && reveal) {
+            if (isDesktop) {
+              // J9: reveal 在 initRevealEffect 赋值后方可调用，此处加 null guard 防御极端时序
+              if (!reveal) return;
               reveal.resizeCanvas();               // 读取颜色缓存（在 Mica 之后）
               reveal.attachScrollListener();
             }
@@ -5342,34 +5243,21 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           _menuClosing = true;
 
           // ── 出场动画 ──────────────────────────────────────────
-          // 1. 获取当前视口内可见的 chapter-item（视口外直接 display:none，无动画）
           const visibleItems = highlighter.getAllItemsForViewport();
-
           if (visibleItems.length > 0) {
-            // 2. 置出场锁：屏蔽 scroll/wheel/pointer 对状态机的干扰
             state.animatingOut = true;
-
-            // 3. 播放出场动画：translateX(0 → 20px) + opacity(1 → 0)
-            //    延迟从左到右递增（视觉上从右往左消失：右侧先出，左侧后出）
-            //    items 按 DOM 顺序排列（从上到下 = 从左到右缩进），
-            //    反转后最右侧（最深缩进）的 item delay 最小，最左侧 delay 最大。
-            const reversed     = visibleItems.slice().reverse();
-            const DURATION     = 300;   // ms，与入场动画时长保持一致
-            const BASE_DELAY   = 0;
-            const DELAY_STEP   = 20;    // ms，每项递增
-
+            // 视觉上从右往左消失：DOM 顺序反转后，最深缩进（右侧）的 item delay 最小
+            const reversed = visibleItems.slice().reverse();
             await animationController.play(
               reversed,
-              () => [
+              [
                 { transform: 'translateX(0px)',  opacity: 1 },
                 { transform: 'translateX(20px)', opacity: 0 },
               ],
-              DURATION,
-              BASE_DELAY,
-              DELAY_STEP
+              300,   // duration ms
+              0,     // baseDelay
+              20     // delayStep ms
             );
-
-            // 4. 出场完成，释放锁
             state.animatingOut = false;
           }
 
@@ -5378,11 +5266,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
           sideMenu.classList.remove('active');
           menuMask.classList.remove('active');
           menuToggle.style.display = 'flex';
-          if (isDesktop && reveal) {
-            reveal.detachScrollListener();  // 仅移除 canvas scroll 监听，保留 menuToggle Reveal
+          if (isDesktop) {
+            reveal.detachScrollListener();
             reveal.clearAllReveal();
           }
-          // cancelHover 后移到动画结束后，彻底消除与 driveArticleScroll finally 的竞态
+          // cancelHover 后移到动画结束后，消除与 driveArticleScroll finally 的竞态
           highlighter.cancelHover();
 
           _menuClosing = false;
@@ -5406,13 +5294,11 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
               { el: closeBtn,        range: 80, alwaysOn: false, distFn: distToTopEdge },
             ],
             state,
-            getAllItems: () => highlighter.getAllItems(),
           });
         }
 
         // resize：debounce 100ms，避免拖拽窗口时 getBoundingClientRect 高频触发
         const _resizeDebounce = createDebounce(() => {
-          highlighter.rebuildHeadingTopCache();  // B3: 窗口尺寸变化后 offsetTop 可能变化
           if (reveal) reveal.handleResize();
           updateProgress();
         }, 100);
@@ -5426,7 +5312,7 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         toBottomBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
           closeMenu();
         });
 
@@ -5445,10 +5331,14 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
 
         // ==================== 11. 滚动进度指示器 ====================
 
-        /** 职责①：按钮背景色（滚动进度插值，写入 style.backgroundColor） */
-        function _updateBtnBg(t) {
-          const [dr, dg, db] = _micaColorDark;
-          const [hr, hg, hb] = _micaColorHi;
+        function updateProgress() {
+          const scrollHeight  = document.documentElement.scrollHeight - window.innerHeight;
+          const scrollPercent = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
+          const t = scrollPercent;   // 0（顶部）→ 1（底部）
+
+          // 按钮背景色：在 dark/hi 两端点之间按进度插值
+          const [dr, dg, db] = _micaBtnDark;
+          const [hr, hg, hb] = _micaBtnHi;
           const bgR = Math.round(dr + (hr - dr) * t);
           const bgG = Math.round(dg + (hg - dg) * t);
           const bgB = Math.round(db + (hb - db) * t);
@@ -5460,18 +5350,13 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             // 背景始终为深色系，字色固定白色保证可读性（日间/夜间均适用）
             menuToggle.style.color = '#fff';
           }
-        }
 
-        /**
-         * 职责②：Reveal 颜色变量（写入 --toggle-hi/mid/glow，供 ::before 伪元素使用）
-         * J8: Mica 模式下颜色由色相决定（固定），降级模式下随滚动进度插值。
-         */
-        function _updateRevealColors(t) {
-          const [dr, dg, db] = _micaColorDark;
-          const [hr, hg, hb] = _micaColorHi;
+          // J8: --toggle-hi/mid/glow 的计算逻辑说明：
+          //   · Mica 模式：hi/mid 固定为采样色端点（设计有意为之，颜色由 Mica 色相决定，非滚动进度）
+          //   · 降级模式：hi/mid 随滚动进度在主题硬编码色值之间插值
           let hiColor, midColor;
           if (_micaActive) {
-            // Mica 模式：hi 端直接用 _micaColorHi，mid 端取两端中间值
+            // Mica 模式：hi 端直接用 _micaBtnHi，mid 端取两端中间值
             hiColor  = `${hr}, ${hg}, ${hb}`;
             const mr = Math.round(dr + (hr - dr) * 0.5);
             const mg = Math.round(dg + (hg - dg) * 0.5);
@@ -5479,8 +5364,9 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             midColor = `${mr}, ${mg}, ${mb}`;
           } else {
             // 硬编码降级：与原逻辑一致
+            const isLight   = _isLightMode;
             const fadeRatio = 1 - t;
-            if (_isLightMode) {
+            if (isLight) {
               const r  = Math.round(20  + 60  * fadeRatio);
               const g  = Math.round(20  + 60  * fadeRatio);
               const b  = Math.round(60  + 120 * fadeRatio);
@@ -5497,23 +5383,12 @@ Autumn，作为你这段旅程的见证者，我看着你从泥泞中挣扎，�
             }
           }
           // --toggle-glow: 预构建完整 rgba()，避免 rgba(var(),alpha) 跨浏览器解析歧义
-          // P5: hi/mid 均未变化时跳过，Mica 模式下这三个值在整个会话内几乎不变
-          if (hiColor !== _lastHiColor || midColor !== _lastMidColor) {
-            _lastHiColor  = hiColor;
-            _lastMidColor = midColor;
-            document.body.style.setProperty('--toggle-hi',   hiColor);
-            document.body.style.setProperty('--toggle-mid',  midColor);
-            document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
-          }
+          document.body.style.setProperty('--toggle-hi',   hiColor);
+          document.body.style.setProperty('--toggle-mid',  midColor);
+          document.body.style.setProperty('--toggle-glow', `rgba(${hiColor}, 0.45)`);
         }
 
-        function updateProgress() {
-          const scrollHeight  = document.documentElement.scrollHeight - window.innerHeight;
-          const t = scrollHeight > 0 ? Math.min(window.scrollY / scrollHeight, 1) : 0;
-          _updateBtnBg(t);
-          _updateRevealColors(t);
-        }
-
+        window.addEventListener('scroll', updateProgress, { passive: true });
         updateProgress();
         // 页面加载后立即取一次色，确保首次进入时按钮颜色就已匹配页面主色调
         // 用 requestAnimationFrame 确保 DOM 完成首次渲染后再采样
