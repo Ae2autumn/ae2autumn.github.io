@@ -10,20 +10,28 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
-- id: gem
-  title: gem
-  date: '2026-03-15'
-  tags: []
+- id: '19'
+  title: '03.27'
+  date: '2026-03-27'
+  tags:
+  - 记录
   content: 暂无简介
-  url: article/gem.html
-  verticalTitle: gem
+  url: article/19.html
+  verticalTitle: '03.27'
 - id: c1
   title: c1
-  date: '2026-03-15'
+  date: '2026-03-27'
   tags: []
   content: 暂无简介
   url: article/c1.html
   verticalTitle: c1
+- id: gem
+  title: gem
+  date: '2026-03-27'
+  tags: []
+  content: 暂无简介
+  url: article/gem.html
+  verticalTitle: gem
 - id: '18'
   title: '"我"'
   date: '2026-02-24'
