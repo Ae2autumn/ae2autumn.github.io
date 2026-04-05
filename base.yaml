@@ -10,6 +10,14 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: '21'
+  title: '04.05'
+  date: '2026-04-05'
+  tags:
+  - 记录
+  content: 暂无简介
+  url: article/21.html
+  verticalTitle: '04.05'
 - id: c1
   title: c1
   date: '2026-04-05'
