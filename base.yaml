@@ -10,6 +10,20 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
+- id: c1
+  title: c1
+  date: '2026-04-08'
+  tags: []
+  content: 暂无简介
+  url: article/c1.html
+  verticalTitle: c1
+- id: gem
+  title: gem
+  date: '2026-04-08'
+  tags: []
+  content: 暂无简介
+  url: article/gem.html
+  verticalTitle: gem
 - id: '21'
   title: '04.05'
   date: '2026-04-05'
@@ -18,20 +32,6 @@ articles:
   content: 暂无简介
   url: article/21.html
   verticalTitle: '04.05'
-- id: c1
-  title: c1
-  date: '2026-04-05'
-  tags: []
-  content: 暂无简介
-  url: article/c1.html
-  verticalTitle: c1
-- id: gem
-  title: gem
-  date: '2026-04-05'
-  tags: []
-  content: 暂无简介
-  url: article/gem.html
-  verticalTitle: gem
 - id: '19'
   title: '03.27'
   date: '2026-03-27'
