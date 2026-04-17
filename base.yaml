@@ -2,7 +2,7 @@ blog:
   avatar: https://avatars.githubusercontent.com/u/195545824?v=4
   name: 𝐀𝐞𝟏𝐚𝐮𝐭𝐮𝐦𝐧
   sname: 特别项目
-  description: 𝕚 𝕨𝕒𝕤 𝕥𝕖𝕞𝕡𝕠𝕣𝕒𝕣𝕪 𝟚 𝕦
+  description: 𝔸 ℍ𝕚𝕟𝕥 𝕠𝕗 𝔹𝕚𝕥𝕥𝕖𝕣𝕟𝕖𝕤𝕤, 𝕒 𝕎𝕚𝕤𝕡 𝕠𝕗 𝕊𝕨𝕖𝕖𝕥𝕟𝕖𝕤𝕤, 𝕒 𝕋𝕠𝕦𝕔𝕙 𝕠𝕗 𝕋𝕒𝕣𝕥𝕟𝕖𝕤𝕤
   favicon: https://avatars.githubusercontent.com/u/195545824?v=4
   theme:
     mode: dark
@@ -12,14 +12,14 @@ blog:
 articles:
 - id: c1
   title: c1
-  date: '2026-04-08'
+  date: '2026-04-17'
   tags: []
   content: 暂无简介
   url: article/c1.html
   verticalTitle: c1
 - id: gem
   title: gem
-  date: '2026-04-08'
+  date: '2026-04-17'
   tags: []
   content: 暂无简介
   url: article/gem.html
