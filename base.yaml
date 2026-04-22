@@ -12,14 +12,21 @@ blog:
 articles:
 - id: c1
   title: c1
-  date: '2026-04-17'
+  date: '2026-04-22'
   tags: []
   content: 暂无简介
   url: article/c1.html
   verticalTitle: c1
+- id: SKILL
+  title: SKILL
+  date: '2026-04-22'
+  tags: []
+  content: 暂无简介
+  url: article/SKILL.html
+  verticalTitle: SKILL
 - id: gem
   title: gem
-  date: '2026-04-17'
+  date: '2026-04-22'
   tags: []
   content: 暂无简介
   url: article/gem.html
