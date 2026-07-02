@@ -10,27 +10,35 @@ blog:
     dark_bg: '#121212'
     light_bg: '#f5f7fa'
 articles:
-- id: c1
-  title: c1
-  date: '2026-04-22'
-  tags: []
+- id: '22'
+  title: '07.02'
+  date: '2026-07-02'
+  tags:
+  - 记录
   content: 暂无简介
-  url: article/c1.html
-  verticalTitle: c1
+  url: article/22.html
+  verticalTitle: '07.02'
 - id: SKILL
   title: SKILL
-  date: '2026-04-22'
+  date: '2026-07-02'
   tags: []
   content: 暂无简介
   url: article/SKILL.html
   verticalTitle: SKILL
 - id: gem
   title: gem
-  date: '2026-04-22'
+  date: '2026-07-02'
   tags: []
   content: 暂无简介
   url: article/gem.html
   verticalTitle: gem
+- id: c1
+  title: c1
+  date: '2026-07-02'
+  tags: []
+  content: 暂无简介
+  url: article/c1.html
+  verticalTitle: c1
 - id: '21'
   title: '04.05'
   date: '2026-04-05'
